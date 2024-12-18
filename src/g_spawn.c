@@ -1673,6 +1673,14 @@ void SP_worldspawn (edict_t *ent)
 	gi.soundindex ("weapons/gundrop.wav");
 	gi.soundindex ("weapons/ammodrop.wav");
 
+	// ZeRo - Sonidos del sistema de rachas.
+
+	gi.soundindex("streak/killingspree.wav");
+    gi.soundindex("streak/rampage.wav");
+    gi.soundindex("streak/dominating.wav");
+    gi.soundindex("streak/unstopable.wav");
+    gi.soundindex("streak/godlike.wav");
+
 
 
 

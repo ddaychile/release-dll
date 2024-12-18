@@ -1338,7 +1338,7 @@ typedef struct
 	int			stat_game_lost;
 	int			stat_played_allied;
 	int			stat_played_axis;
-
+// ZeRo - Variables usadas en el sistema de rachas.
 	int			streak;
 
 

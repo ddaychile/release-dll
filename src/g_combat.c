@@ -1101,6 +1101,7 @@ void T_Damage (edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir,
 							safe_bprintf(PRINT_MEDIUM,"** %s is a lucky bastard! The helmet deflected the shot!!! **\n",targ->client->pers.netname); // ZeRo - Esto lo muestra a todos (incluso en la consola, quiero cambiar eso.)
 						else
 							safe_cprintf(targ,PRINT_HIGH,"You lucky bastard! Your helmet deflected the shot!\n");
+						damage = 0;
 						targ->client->kick_angles[0] += 3;
 						targ->client->kick_angles[1] -= 3;
 						targ->client->kick_angles[2] += 3;
