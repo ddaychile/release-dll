@@ -29,8 +29,8 @@ void AI_MoveToCampSpot(edict_t *self, usercmd_t *ucmd);
 //==========================================
 // Some CTF stuff
 //==========================================
-static gitem_t *redflag;
-static gitem_t *blueflag;
+//static gitem_t *redflag;
+//static gitem_t *blueflag;
 
 
 //==========================================
@@ -39,17 +39,17 @@ static gitem_t *blueflag;
 //==========================================
 void BOT_DMclass_Move(edict_t *self, usercmd_t *ucmd)
 {
-	int current_node_flags = 0;
+	//int current_node_flags = 0;
 	int next_node_flags = 0;
 	int	current_link_type = 0;
 	int i;
 
-	current_node_flags = nodes[self->ai->current_node].flags;
+//	current_node_flags = nodes[self->ai->current_node].flags;
 	next_node_flags = nodes[self->ai->next_node].flags;
 	if( AI_PlinkExists( self->ai->current_node, self->ai->next_node ))
 	{
 		current_link_type = AI_PlinkMoveType( self->ai->current_node, self->ai->next_node );
-		//Com_Printf("%s\n", AI_LinkString( current_link_type ));
+		//gi.dprintf("%s\n", AI_LinkString( current_link_type ));
 	}
 
 	// Platforms
@@ -189,7 +189,7 @@ void BOT_DMclass_Move(edict_t *self, usercmd_t *ucmd)
 			VectorCopy (vec3_origin,g_offset);
 
 			AngleVectors (self->client->v_angle, forward, right, NULL);
-			VectorSet(offset, 24, 8, self->viewheight-25);
+			VectorSet(offset, 24.00f, 8.0f, self->viewheight - 25.0f);//hans float
 			VectorAdd (offset, g_offset, offset);
 			P_ProjectSource (self->client, self->s.origin, offset, forward, right, start);
 			VectorScale (forward, -2, self->client->kick_origin);
@@ -255,7 +255,7 @@ void BOT_DMclass_Wander(edict_t *self, usercmd_t *ucmd)
 			self->velocity[0] = 0;
 			self->velocity[1] = 0;
 			self->velocity[2] = 0;
-			self->ai->next_move_time = level.time + 0.5;
+			self->ai->next_move_time = level.time + 0.5f;//hans float
 			return;
 		}
 	}
@@ -490,7 +490,7 @@ qboolean BOT_DMclass_FindEnemy(edict_t *self)
 				self->goalentity = NULL;
 				self->enemy = NULL;
 				AI_PickLongRangeGoal(self);
-				AI_ResetWeights(self);
+				//AI_ResetWeights(self);
 				AI_ResetNavigation(self);
 
 
@@ -621,7 +621,7 @@ qboolean BOT_DMclass_FindEnemy(edict_t *self)
 			weight = VectorLength( dist );
 
 			//modify weight based on precomputed player weights
-			weight *= (1.0 - self->ai->status.playersWeights[i]);
+			weight *= (1.0f - self->ai->status.playersWeights[i]);
 
 			//gi.dprintf ("%f\n",weight);
 
@@ -694,7 +694,7 @@ qboolean BOT_DMClass_ChangeWeapon (edict_t *ent, gitem_t *item)
 
 	// Change to this weapon
 	ent->client->newweapon = item;
-	ent->ai->changeweapon_timeout = level.time + 6.0;
+	ent->ai->changeweapon_timeout = level.time + 6.0f;//hans float
 
 	return true;
 }
@@ -716,7 +716,7 @@ void BOT_DMclass_ChooseWeapon(edict_t *self)
 	int index;
 
 
-	if (!self->enemy && self->client->resp.mos == SNIPER && self->client->pers.weapon->position != LOC_SNIPER && 
+	if (!self->enemy && self->client->resp.mos == SNIPER && self->client->pers.weapon && self->client->pers.weapon->position != LOC_SNIPER &&
 		self->ai->last_enemy_time && self->ai->last_enemy_time < level.time - 3)
 	{
 		it = FindNextPickup(self, LOC_SNIPER);
@@ -729,7 +729,7 @@ void BOT_DMclass_ChooseWeapon(edict_t *self)
 		return;
 	}
 
-	if (!self->enemy && self->client->resp.mos == FLAMER && self->client->pers.weapon->position != LOC_FLAME && 
+	if (!self->enemy && self->client->resp.mos == FLAMER && self->client->pers.weapon && self->client->pers.weapon->position != LOC_FLAME &&
 		self->ai->last_enemy_time && self->ai->last_enemy_time < level.time - 3)
 	{
 		it = FindNextPickup(self, LOC_FLAME);
@@ -742,7 +742,7 @@ void BOT_DMclass_ChooseWeapon(edict_t *self)
 		return;
 	}
 
-
+	//medibot: if no enemy & wounded, heal yourself
 
 	// if no enemy, then what are we doing here?
 	if(!self->enemy)
@@ -886,7 +886,7 @@ qboolean eng_hittable (vec3_t spot1, vec3_t spot2, edict_t *self, edict_t *enemy
 	if (trace.ent == enemy)
 		return true;
 
-	//Com_Printf("Bloqued");
+	//gi.dprintf("Bloqued");
 	return false;
 }
 //==========================================
@@ -1160,7 +1160,7 @@ void BOT_CheckFireWeapon (edict_t *self, usercmd_t *ucmd)
 
 	if (self->enemy)
 	{
-		float rnum = random()*2.25 +.75;
+		float rnum = random() * 2.25f +.75f;
 
 		if (self->enemy->client && rnum/2  > skill->value)  //aim with lots of lag
 		{

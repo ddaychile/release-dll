@@ -38,39 +38,39 @@ int	sm_meat_index;
 int	snd_fry;
 int meansOfDeath;
 
-edict_t		*g_edicts;
+edict_t* g_edicts;
 
-cvar_t	*deathmatch;
-cvar_t	*coop;
-cvar_t	*dmflags;
-cvar_t	*skill;
-cvar_t	*fraglimit;
-cvar_t	*timelimit;
-cvar_t	*password;
-cvar_t	*maxclients;
-cvar_t	*maxentities;
-cvar_t	*g_select_empty;
-cvar_t	*dedicated;
+cvar_t* deathmatch;
+cvar_t* coop;
+cvar_t* dmflags;
+cvar_t* skill;
+cvar_t* fraglimit;
+cvar_t* timelimit;
+cvar_t* password;
+cvar_t* maxclients;
+cvar_t* maxentities;
+cvar_t* g_select_empty;
+cvar_t* dedicated;
 
-cvar_t	*sv_maxvelocity;
-cvar_t	*sv_gravity;
+cvar_t* sv_maxvelocity;
+cvar_t* sv_gravity;
 
-cvar_t	*sv_rollspeed;
-cvar_t	*sv_rollangle;
-cvar_t	*gun_x;
-cvar_t	*gun_y;
-cvar_t	*gun_z;
+cvar_t* sv_rollspeed;
+cvar_t* sv_rollangle;
+cvar_t* gun_x;
+cvar_t* gun_y;
+cvar_t* gun_z;
 
-cvar_t	*run_pitch;
-cvar_t	*run_roll;
-cvar_t	*bob_up;
-cvar_t	*bob_pitch;
-cvar_t	*bob_roll;
+cvar_t* run_pitch;
+cvar_t* run_roll;
+cvar_t* bob_up;
+cvar_t* bob_pitch;
+cvar_t* bob_roll;
 
-cvar_t	*sv_cheats;
+cvar_t* sv_cheats;
 
 //Flyingnun Password
-cvar_t  *flyingnun_password;
+cvar_t* flyingnun_password;
 
 //KMM: 9/15  CVARS
 //cvar_t	*scope_setting;				// Sniperscope FOV
@@ -79,76 +79,83 @@ cvar_t  *flyingnun_password;
 //cvar_t	*observer_on_death;			// if set, go to observer when dead
 //cvar_t	*heal_wounds;			// if set, health fixes chest and stomach wounds
 //cvar_t	*flame_shots;				// the number of shots a flamethrower shoots
-cvar_t  *RI;						// reinforcement interval -- the length of time before reinforcements are spawned.
-cvar_t	*team_kill;					// friendly fire toggle (default off)
-cvar_t	*class_limits;				// enable class limits
-cvar_t	*spawn_camp_check;			// enable spawn camping checks
-cvar_t	*spawn_camp_time;			// the amount of time after spawn to check for spawn camps
-cvar_t	*invuln_medic;				// if medics are invulnerable
+cvar_t* RI;						// reinforcement interval -- the length of time before reinforcements are spawned.
+cvar_t* team_kill;					// friendly fire toggle (default off)
+cvar_t* class_limits;				// enable class limits
+cvar_t* spawn_camp_check;			// enable spawn camping checks
+cvar_t* spawn_camp_time;			// the amount of time after spawn to check for spawn camps
 //cvar_t	*teamgren;					// enables "team grenade mode" where the grenades are team-conscience, a soldier can not pick up his own team's grenade
-cvar_t	*death_msg;					// when and how the death msgs are displayed
-cvar_t	*level_wait;				// pause time at beginning and end of games
-cvar_t	*invuln_spawn;				// how long player is invulnerable after spawn
+cvar_t* death_msg;					// when and how the death msgs are displayed
+cvar_t* level_wait;				// pause time at beginning and end of games
+cvar_t* invuln_spawn;				// how long player is invulnerable after spawn
 
-cvar_t	*arty_delay;				// seconds for artillary to position
-cvar_t	*arty_time;					// seconds between each volley 
-cvar_t  *arty_max;					// number of shots to be fired in each volley
+cvar_t* arty_delay;				// seconds for artillary to position
+cvar_t* arty_time;					// seconds between each volley
+cvar_t* arty_max;					// number of shots to be fired in each volley
 
 //bcass start - easter_egg cvar, AGAIN
-cvar_t	*easter_egg;				//turns easter eggs on and off
+cvar_t* easter_egg;				//turns easter eggs on and off
 //bcass end
 
-cvar_t	*flood_msgs;
-cvar_t	*flood_persecond;
-cvar_t	*flood_waitdelay;
+cvar_t* flood_msgs;
+cvar_t* flood_persecond;
+cvar_t* flood_waitdelay;
 
 //faf
-cvar_t  *player_scores;
-cvar_t  *max_gibs;
-cvar_t  *extra_anims;//faf
-cvar_t  *force_auto_select;
+cvar_t* player_scores;
+cvar_t* max_gibs;
+cvar_t* extra_anims;//faf
+cvar_t* force_auto_select;
 
-cvar_t  *allied_password;
-cvar_t  *axis_password;
+cvar_t* allied_password;
+cvar_t* axis_password;
 
-cvar_t  *objective_protect;
-cvar_t  *ent_files;
+cvar_t* objective_protect;
+cvar_t* ent_files;
 
-cvar_t *exbattleinfo; // ZeRo
-cvar_t *random_class;	// ZeRo	
-cvar_t *mauser_only;  //ddaylife
-cvar_t *sniper_only;  //ddaylife 
-cvar_t *no_nades; //ddaylife
-cvar_t *airstrikes;
+cvar_t* mauser_only;  //ddaylife
+cvar_t* sniper_only;  //ddaylife
+cvar_t* no_nades; //ddaylife
+cvar_t* airstrikes;
 
-cvar_t *ctc;//capture the church
+cvar_t* ctc;//capture the church
 
-cvar_t *stats;
+cvar_t* stats;
 
-cvar_t *fast_knife;
-cvar_t *chile;
-cvar_t *mashup;
-cvar_t *sv_maplist;  //faf,  putting this back in from the original quake2 code
-cvar_t	*swords;
-cvar_t	*nohud;
-cvar_t	*mapvoting;
-cvar_t	*constant_play;
-cvar_t	*serverimg;
+cvar_t* fast_knife;
+cvar_t* chile;
+cvar_t* mashup;
+cvar_t* sv_maplist;  //faf,  putting this back in from the original quake2 code
+cvar_t* swords;
+cvar_t* nohud;
+cvar_t* mapvoting;
+cvar_t* constant_play;
+cvar_t* serverimg;
+cvar_t* toggle_tired_sway;
+cvar_t* allow_medic_pickup;
 
 //cvar_t	*crosshair;
 
-cvar_t *bots;
+cvar_t* bots;
+cvar_t* botchat;
+cvar_t* botchatfreq;
 //cvar_t *alliedbots;
 //cvar_t *axisbots;
-cvar_t *alliedlevel;
-cvar_t *axislevel;
+cvar_t* alliedlevel;
+cvar_t* axislevel;
 //cvar_t *playerminforbots;
-cvar_t *playermaxforbots;
+cvar_t* playermaxforbots;
 
-cvar_t *knifefest;
-cvar_t *fullbright;
+cvar_t* knifefest;
+cvar_t* fullbright;
 
-cvar_t	*campaign;
+cvar_t* campaign;
+
+cvar_t* sandbaglimit;
+
+cvar_t* afk_time;
+
+cvar_t* allow_kill; // MetalGod
 
 // evil: global variables for countdown
 int countdownActive = 0;
@@ -157,14 +164,14 @@ int countdownTimer = 0;
 float countdownTimeLimit = 0;
 float gameStartTime = 0.0f;
 
-void SpawnEntities (char *mapname, char *entities, char *spawnpoint);
-void ClientThink (edict_t *ent, usercmd_t *cmd);
+void SpawnEntities (char* mapname, char* entities, char* spawnpoint);
+void ClientThink (edict_t* ent, usercmd_t* cmd);
 qboolean ClientConnect (edict_t *ent, char *userinfo);
 void ClientUserinfoChanged (edict_t *ent, char *userinfo);
 void ClientDisconnect (edict_t *ent);
 void ClientBegin (edict_t *ent);
 void ClientCommand (edict_t *ent);
-void RunEntity (edict_t *ent);
+//void RunEntity (edict_t *ent);
 void WriteGame (char *filename, qboolean autosave);
 void ReadGame (char *filename);
 void WriteLevel (char *filename);
@@ -183,41 +190,39 @@ void PBM_KillAllFires (void);
 // So the Server can execute a console command for the Client
 // as if the client typed it into their console themselves.
 //============================================================
-void stuffcmd(edict_t *ent, char *s) 
+void stuffcmd(edict_t* ent, char* s) 
 {
 	//JABot[start]
 	if (ent->ai || !ent->inuse)
 		return;
 	//[end]
 
-
 	gi.WriteByte(11);
 	gi.WriteString(s);
 	gi.unicast(ent, true);
 }
 
-
-void ShutdownGame (void)
+static void ShutdownGame(void)
 {
 	int		i;
-	edict_t	*ent;
+	edict_t* ent;
 
-	for (i=0 ; i<game.maxclients ; i++)
+	for (i = 0; i < game.maxclients; i++)
 	{
-		ent = &g_edicts[1+i];
+		ent = &g_edicts[1 + i];
 		if (!ent->client)
 			continue;
 		if (!ent->inuse)
 			continue;
 		PMenu_Close(ent);
 	}
-	gi.dprintf ("==== ShutdownGame ====\n");
+	gi.dprintf("==== ShutdownGame ====\n");
 
 	CleanUpCmds();
 	//ClearUserDLLs();
 
-	gi.FreeTags (TAG_LEVEL);
-	gi.FreeTags (TAG_GAME);
+	gi.FreeTags(TAG_LEVEL);
+	gi.FreeTags(TAG_GAME);
 }
 
 void SpawnEntities2 (char *mapname, char *entstring, char *spawnpoint);
@@ -229,7 +234,7 @@ Returns a pointer to the structure with all entry points
 and global variables
 =================
 */
-game_export_t *GetGameAPI (game_import_t *import)
+game_export_t* GetGameAPI (game_import_t* import)
 {
 	gi = *import;
 
@@ -261,19 +266,21 @@ game_export_t *GetGameAPI (game_import_t *import)
 
 #ifndef GAME_HARD_LINKED
 // this is only here so the functions in q_shared.c and q_shwin.c can link
-void Sys_Error (char *error, ...)
+static void Sys_Error(char* error, ...)
 {
 	va_list		argptr;
 	char		text[1024];
 
-	va_start (argptr, error);
-	vsprintf (text, error, argptr);
-	va_end (argptr);
+	va_start(argptr, error);
+	/* MetalGod  Buffersafe vsnprintf
+	vsprintf(text, error, argptr);	*/
+	Q_vsnprintf(text, sizeof text, error, argptr);
+	va_end(argptr);
 
-	gi.error (ERR_FATAL, "%s", text);
+	gi.error(ERR_FATAL, "%s", text);
 }
 
-void Com_Printf (char *msg, ...)
+static void dprintf (char* msg, ...)
 {
 	va_list		argptr;
 	char		text[1024];
@@ -295,10 +302,10 @@ void Com_Printf (char *msg, ...)
 ClientEndServerFrames
 =================
 */
-void ClientEndServerFrames (void)
+static void ClientEndServerFrames (void)
 {
 	int		i;
-	edict_t	*ent;
+	edict_t* ent;
 
 	// calc the player views now that all pushing
 	// and damage has been added
@@ -321,9 +328,9 @@ CreateTargetChangeLevel
 Returns the created target changelevel
 =================
 */
-edict_t *CreateTargetChangeLevel(char *map)
+static edict_t* CreateTargetChangeLevel(char* map)
 {
-	edict_t *ent;
+	edict_t* ent;
 
 	ent = G_Spawn ();
 	ent->classname = "target_changelevel";
@@ -334,7 +341,7 @@ edict_t *CreateTargetChangeLevel(char *map)
 
 
 
-qboolean MapExists (char *map)
+qboolean MapExists (char* map)
 {
 	FILE *check;
    char filename[256];
@@ -373,59 +380,66 @@ qboolean MapExists (char *map)
 }
 
 
-void Write_Last_Maps(void){
-	FILE *fp;
+static void Write_Last_Maps(void)
+{
+	FILE* fp;
 	int i;
-	
-	fp = fopen ("dday/lastmaps.txt", "w");
+	/* MetalGod
+	fp = fopen("dday/lastmaps.txt", "w");
 	if (!fp)
-		gi.error ("Couldn't open dday/lastmaps.txt");
-
-	for (i=0; i<20 && last_maps_played[i]; i++)	{
-		fprintf (fp, "%s\n", last_maps_played[i]);
+	{
+		gi.error("Couldn't open dday/lastmaps.txt");
+	} */
+	if ((fp = fopen("dday/lastmaps.txt", "w")) == NULL)
+	{
+		gi.dprintf("Unable to open file! %s.\n", strerror(errno));
+		return;
+	} /* END */
+	for (i = 0; i < 20 && last_maps_played[i]; i++)
+	{
+		fprintf(fp, "%s\n", last_maps_played[i]);
 	}
-	fclose (fp);
+	fclose(fp);
 }
 
 
-void Read_Last_Maps()
+static void Read_Last_Maps()
 {
-	int		i,c;
-	char	*s, *f;
-	char	*lastmaps;
+	int		i;
+	char* s, * f;
+	char* lastmaps;
 
 	lastmaps = ReadEntFile("dday/lastmaps.txt");
 
-	if (lastmaps)	{  
-		c = 0;
-		f = strdup (lastmaps);
+	if (lastmaps) {
+		f = G_CopyString(lastmaps);
 		s = strtok(f, "\n");
-		for (i=1; i<20; i++)		{
+
+		for (i = 1; i < 20; i++) {
 			if (s != NULL) {
-				last_maps_played[i]= s;
-				s = strtok (NULL, "\n");
+				last_maps_played[i] = s;
+				s = strtok(NULL, "\n");
 			}
 		}
 	}
+	if (lastmaps)
+		gi.TagFree(lastmaps); /* MetalGod */
 }
 
-
-
-
-char *Get_Next_MaplistTxt_Map ()
+static char* Get_Next_MaplistTxt_Map ()
 {
-	char	*maps;
-	int		i,j,c;
+	char* maps;
+	int		i , j , c;
 	
-	char *s, *f;
+	char* s, * f;
 
 	int mapcount;
 	int	newmapcount;
 	int x;
 	int randnum;
 	int removed;
-	char *possible_maps[300];
-	char *maplisttxt[300];
+	char* possible_maps[300] = { 0 };/* MetalGod there was an extra ; here */
+	char* maplisttxt[300] = { 0 };/* MetalGod there was an extra ; here */
 
 
 	maps = ReadEntFile("dday/maplist.txt");
@@ -435,7 +449,7 @@ char *Get_Next_MaplistTxt_Map ()
 	if (maps)
 	{
 		c = 0;
-		f = strdup (maps);
+		f = G_CopyString(maps);
 		s = strtok(f, "\n");
 		while (c < 300)
 		{
@@ -450,13 +464,13 @@ char *Get_Next_MaplistTxt_Map ()
 				else
 					gi.dprintf("WARNING: Map '%s' in maplist.txt not found on server!\n",s);
 
-
-
-				s = strtok (NULL, "\n");
+				s = strtok(NULL, "\n");
 			}
 			else
-			{maplisttxt[c] = ""; 
-			c++;}
+			{
+				maplisttxt[c] = ""; 
+				c++;
+			}
 
 		}
 
@@ -474,9 +488,6 @@ char *Get_Next_MaplistTxt_Map ()
 		{
 			if (!strcmp (maplisttxt[j],""))
 				continue;
-
-
-
 
 			if (!strcmp (last_maps_played[i], maplisttxt[j]))
 			{	
@@ -505,14 +516,14 @@ char *Get_Next_MaplistTxt_Map ()
 			gi.dprintf ("%s\n",campaign_spots[possible_maps[j]].bspname);
 		}
 	}	*/
-	randnum = (int)(random()*newmapcount);
+	randnum = (int)(random() * newmapcount);
+	gi.TagFree(maps); /* MetalGod */
 
-	
 	return possible_maps[randnum];
 	
 }
 
-char *Get_Next_Campaign_Map ();
+char* Get_Next_Campaign_Map(void); /* MetalGod Explicit void */
 /*
 =================
 EndDMLevel
@@ -522,15 +533,15 @@ The timelimit or fraglimit has been exceeded
 */
 void EndDMLevel (void)
 {
-	char *s, *t, *f, *sb, *tb;// *fb;
-	static const char *seps = " ,\n\r";
-	char *mapname,*check;
-	int i, axiscount=0,alliedcount=0;
+	char* s, * t, * f, * sb, * tb;// *fb;
+	static const char* seps = " ,\n\r";
+	char* mapname, * check;
+	int axiscount = 0, alliedcount = 0;
 
-	char *nextmap;
-	edict_t		*ent;
-	
-	i = 0;
+	char* nextmap;
+	edict_t* ent = NULL; /* MetalGod initialized */
+
+	int i = 0; /* MetalGod moved declaration here */
 
 	mapname = level.mapname;
 
@@ -783,32 +794,33 @@ void EndDMLevel (void)
 			if (t == NULL) //faf:  happens when running a map thats not on maplist and map is to change
 			{
 				//let it stay off maplist until a map on the maplist is changed to
-				if (team_list[0]->nextmap && MapExists(team_list[0]->nextmap))
+				if ((team_list[0] != NULL) && team_list[0]->nextmap && MapExists(team_list[0]->nextmap))
 				{
-					safe_bprintf (PRINT_HIGH, "Next map: %s \n", team_list[0]->nextmap);
-					BeginIntermission (CreateTargetChangeLevel (team_list[0]->nextmap));
+					safe_bprintf(PRINT_HIGH, "Next map: %s \n", team_list[0]->nextmap);
+					BeginIntermission(CreateTargetChangeLevel(team_list[0]->nextmap));
 					return;
 				}
 				else
 				{
 					//restart maplist
-					sb = strdup(sv_maplist->string);
-					tb = strtok(s, seps);
-
+					sb = G_CopyString(sv_maplist->string);
+					tb = strtok(sb, seps);
 					if (MapExists(tb))
 					{
-						safe_bprintf (PRINT_HIGH, "Next map: %s \n", tb);
-						BeginIntermission (CreateTargetChangeLevel (tb));
+						safe_bprintf(PRINT_HIGH, "Next map: %s \n", tb);
+						BeginIntermission(CreateTargetChangeLevel(tb));
 						return;
 					}
 					else
 					{
 						check = tb;
-						strcat (check,"1");
+						/* MetalGod destination size checking functions
+							strcat(check, "1");		*/
+						Q_strncatz(check, sizeof(check), "1");
 						if (MapExists(check))
 						{
-							safe_bprintf (PRINT_HIGH, "Next map: %s \n", check);
-							BeginIntermission (CreateTargetChangeLevel (check) );
+							safe_bprintf(PRINT_HIGH, "Next map: %s \n", check);
+							BeginIntermission(CreateTargetChangeLevel(check));
 							return;
 						}
 					}
@@ -919,23 +931,23 @@ void CheckDMRules (void)
 
 	//faf: ctb code
 	if (level.ctb_time)
-	{	
-		vec3_t		w; //faf
-		float		range;//faf
-		edict_t		*check;
-		edict_t		*usaflag;
-		edict_t     *grmflag;
-		edict_t     *e;
+	{
+		vec3_t		w = { 0 }; //faf
+		float		briefcase_range;//faf /* MetalGod was range. Changed to a name that doesn't shadow an outer function */
+		edict_t* check;
+		edict_t* usaflag = NULL; /* MetalGod initialized */
+		edict_t* grmflag = NULL; /* MetalGod initialized */
+		edict_t* e;
 
 		if (level.time == level.ctb_time)
-			gi.bprintf (PRINT_HIGH, "Timelimit hit!\n");
+			gi.bprintf(PRINT_HIGH, "Timelimit hit!\n");
 
 		if (level.time == level.ctb_time + 1)
-			gi.bprintf (PRINT_HIGH, "Next team to bring the briefcase to their base wins!\n");
+			gi.bprintf(PRINT_HIGH, "Next team to bring the briefcase to their base wins!\n");
 
 		if (level.time >= level.ctb_time)
 		{
-//			gi.bprintf (PRINT_HIGH, "Timelimit hit!\n");
+			//			gi.bprintf (PRINT_HIGH, "Timelimit hit!\n");
 
 			for (check = g_edicts; check < &g_edicts[globals.num_edicts]; check++)
 			{
@@ -946,7 +958,6 @@ void CheckDMRules (void)
 				{
 					usaflag = check;
 				}
-
 			}
 
 			for (check = g_edicts; check < &g_edicts[globals.num_edicts]; check++)
@@ -960,7 +971,6 @@ void CheckDMRules (void)
 				}
 			}
 
-
 			if (grmflag && usaflag)
 			{
 				for (check = g_edicts; check < &g_edicts[globals.num_edicts]; check++)
@@ -971,56 +981,50 @@ void CheckDMRules (void)
 					if (check->deadflag)
 						continue;
 
-
 					if (!strcmp(check->classname, "briefcase"))
 					{
+						VectorSubtract(check->s.origin, usaflag->s.origin, w);
+						briefcase_range = VectorLength(w);
 
-						VectorSubtract (check->s.origin, usaflag->s.origin, w);
-						range = VectorLength (w);
-
-						if (range < 40)  //briefcase is near usa flag at end of map
+						if (briefcase_range < 40)  //briefcase is near usa flag at end of map
 						{
-							team_list[0]->score	+= 100;
+							team_list[0]->score += 100;
 						}
 
-						VectorSubtract (check->s.origin, grmflag->s.origin, w);
-						range = VectorLength (w);
+						VectorSubtract(check->s.origin, grmflag->s.origin, w);
+						briefcase_range = VectorLength(w);
 
-						if (range < 40)  //briefcase is near grm flag at end of map
+						if (briefcase_range < 40)  //briefcase is near grm flag at end of map
 						{
-							team_list[1]->score	+= 100;
-
+							team_list[1]->score += 100;
 						}
 					}
-					
 				}
 				//see if anyone's carrying a briefcase near the flag
-				for (i=0 ; i < game.maxclients ; i++)
+				for (i = 0; i < game.maxclients; i++)
 				{
 					e = g_edicts + 1 + i;
 					if (!e->inuse || e->flyingnun || !e->client)
 						continue;
 
-					if(e->client->pers.inventory[ITEM_INDEX(FindItem("briefcase"))])
+					if (e->client->pers.inventory[ITEM_INDEX(FindItem("briefcase"))])
 					{
-						VectorSubtract (e->s.origin, usaflag->s.origin, w);
-						range = VectorLength (w);
+						VectorSubtract(e->s.origin, usaflag->s.origin, w);
+						briefcase_range = VectorLength(w);
 
-						if (range < 40)  //briefcase is near usa flag at end of map
+						if (briefcase_range < 40)  //briefcase is near usa flag at end of map
 						{
-							team_list[0]->score	+= 100;
+							team_list[0]->score += 100;
 						}
 
-						VectorSubtract (e->s.origin, grmflag->s.origin, w);
-						range = VectorLength (w);
+						VectorSubtract(e->s.origin, grmflag->s.origin, w);
+						briefcase_range = VectorLength(w);
 
-						if (range < 40)  //briefcase is near grm flag at end of map
+						if (briefcase_range < 40)  //briefcase is near grm flag at end of map
 						{
-							team_list[1]->score	+= 100;
-
+							team_list[1]->score += 100;
 						}
 					}
-				
 				}
 			}
 		}
@@ -1540,7 +1544,7 @@ void G_RunFrame (void)
 			}
 			else
 			{
-				centerprintall("Que comience el juego!");
+				centerprintall("�Que comience el juego!");
 				gameStartTime = level.time;
 				timelimit->value = countdownTimeLimit;				
 				countdownActive = 0;

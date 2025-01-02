@@ -2772,13 +2772,7 @@ void ClientEndServerFrame (edict_t *ent)
 	// This was absolutely 100% borrowed from AQ2. 
 	if (ent->solid == SOLID_TRIGGER)
 	{       
-		edict_t *overlap;
-
-		if (ent->client &&
-			ent->client->resp.team_on &&
-			ent->client->resp.mos == MEDIC &&
-			invuln_medic->value == 1)
-			return; // unsafe, but will do for now
+		edict_t* overlap;
 
 		if ((overlap = FindOverlap(ent, NULL)) == NULL)
 		{

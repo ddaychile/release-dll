@@ -53,23 +53,17 @@ Returns true if the inflictor can directly damage the target.  Used for
 explosions and melee attacks.
 ============
 */
-qboolean CanDamage (edict_t *targ, edict_t *inflictor)
+qboolean CanDamage (edict_t* targ, edict_t* inflictor)
 {
 	vec3_t	dest;
 	trace_t	trace;
 
-	if (targ->client &&
-		targ->client->resp.team_on &&
-		targ->client->resp.mos == MEDIC &&
-	    invuln_medic->value == 1)
-	   return false;
-
 // bmodels need special checking because their origin is 0,0,0
 	if (targ->movetype == MOVETYPE_PUSH)
 	{
-		VectorAdd (targ->absmin, targ->absmax, dest);
-		VectorScale (dest, 0.5, dest);
-		trace = gi.trace (inflictor->s.origin, vec3_origin, vec3_origin, dest, inflictor, MASK_SOLID);
+		VectorAdd(targ->absmin, targ->absmax, dest);
+		VectorScale(dest, 0.5, dest);
+		trace = gi.trace(inflictor->s.origin, vec3_origin, vec3_origin, dest, inflictor, MASK_SOLID);
 		if (trace.fraction == 1.0)
 			return true;
 		if (trace.ent == targ)
@@ -125,7 +119,7 @@ qboolean CanDamage (edict_t *targ, edict_t *inflictor)
 Killed
 ============
 */
-void Killed (edict_t *targ, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point)
+void Killed (edict_t* targ, edict_t* inflictor, edict_t* attacker, int damage, vec3_t point)
 {
 	if (targ->health < -999)
 		targ->health = -999;
@@ -296,7 +290,7 @@ void Killed (edict_t *targ, edict_t *inflictor, edict_t *attacker, int damage, v
 			targ->client->forcespawn = (level.framenum + FORCE_RESPAWN);
 	}
 
-	targ->die_time=0;
+	targ->die_time = 0;
 	targ->die (targ, inflictor, attacker, damage, point);
 }
 
@@ -345,7 +339,7 @@ dflags		these flags are used to control how T_Damage works
 
 
 
-void M_ReactToDamage (edict_t *targ, edict_t *attacker)
+void M_ReactToDamage (edict_t* targ, edict_t* attacker)
 {
 	if (!(attacker->client) && !(attacker->svflags & SVF_MONSTER))
 		return;
@@ -411,7 +405,7 @@ void M_ReactToDamage (edict_t *targ, edict_t *attacker)
 	}
 }
 
-qboolean CheckTeamDamage (edict_t *targ, edict_t *attacker)
+qboolean CheckTeamDamage (edict_t* targ, edict_t* attacker)
 {
 		//FIXME make the next line real and uncomment this block
 		// if ((ability to damage a teammate == OFF) && (targ's team == attacker's team))
@@ -664,8 +658,8 @@ int Damage_Loc(edict_t *targ, vec3_t point, edict_t *attacker)
 
 //void Drop_Shot (edict_t *ent, gitem_t *item);
 
-void Use_Weapon (edict_t *ent, gitem_t *inv);
-void Drop_Shot (edict_t *ent, gitem_t *item)
+void Use_Weapon (edict_t* ent, gitem_t* inv);
+void Drop_Shot (edict_t* ent, gitem_t* item)
 {
 	int		index;
 
@@ -698,7 +692,7 @@ void Drop_Shot (edict_t *ent, gitem_t *item)
 
 
 //not using this
-void Drop_Flamed (edict_t *ent)
+void Drop_Flamed (edict_t* ent)
 {
 	int		index;
 	gitem_t *item;
@@ -752,11 +746,10 @@ void Drop_Flamed (edict_t *ent)
 
 
 
-void T_Damage (edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir, vec3_t point, vec3_t normal, int damage, int knockback, int dflags, int mod)
+void T_Damage (edict_t* targ, edict_t* inflictor, edict_t* attacker, vec3_t dir, vec3_t point, vec3_t normal, int damage, int knockback, int dflags, int mod)
 {
-	gclient_t	*client;
+	gclient_t* client;
 	int			take,
-
 				save,
 //				asave,
 //	int			psave;
@@ -774,7 +767,7 @@ void T_Damage (edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir,
 		vec3_t  blood_orig;
 
 		int d;
-		edict_t *check_ent;
+		edict_t* check_ent, exbattleinfo;
 
 		qboolean sniper;
 
@@ -902,7 +895,7 @@ void T_Damage (edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir,
 			for (i = 0; i <9; i ++)
 			{
 
-				edict_t *fire;
+				edict_t* fire;
 
 				fire = G_Spawn();
 				fire->s.modelindex = MD2_FIRE;
@@ -1006,86 +999,89 @@ void T_Damage (edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir,
 	if ((mod == MOD_LMG || mod == MOD_SHOTGUN2 || mod == MOD_SUBMG) && result == HEAD_WOUND && targ->health > 30 ) // ZeRo - Se agrega condicion de hp maximo para que si sea headshot.
 			result = CHEST_WOUND;
 			
-	switch(result)
-	{		
-		case LEG_WOUND:
-			damage*=1.15;
-			//if(targ->client) safe_cprintf(targ,PRINT_HIGH,"You've been hit in the leg!\n");
-			wound_location |= LEG_WOUND;
+	switch (result)
+	{
+	case LEG_WOUND:
+		damage *= 1.15;
+		//if(targ->client) safe_cprintf(targ,PRINT_HIGH,"You've been hit in the leg!\n");
+		wound_location |= LEG_WOUND;
 
-			if (targ->client)
-				targ->client->damage_div=1.7;
+		if (targ->client)
+			targ->client->damage_div = 1.7;
 
-			gi.sound (targ, CHAN_BODY, gi.soundindex ("misc/hitleg.wav"), 1, ATTN_NORM, 0);
-			
-			break;
+		gi.sound(targ, CHAN_BODY, gi.soundindex("misc/hitleg.wav"), 1, ATTN_NORM, 0);
 
-		case STOMACH_WOUND:
-			damage*=1.5;//0.75
-			//if(targ->client) safe_cprintf(targ,PRINT_HIGH,"You've been hit in the stomach!\n");
-			wound_location |=STOMACH_WOUND;
-			if(!targ->die_time)
-				die_time=level.time+5;
-			else
-				die_time-=20;
-			//targ->enemy=attacker;
+		break;
 
-			
-			if (targ->client)
-				targ->client->damage_div=1.4;
+	case STOMACH_WOUND:
+		damage *= 1.5;//0.75
+		//if(targ->client) safe_cprintf(targ,PRINT_HIGH,"You've been hit in the stomach!\n");
+		wound_location |= STOMACH_WOUND;
+		if (!targ->die_time)
+			die_time = level.time + 5;
+		else
+			die_time -= 20;
+		//targ->enemy=attacker;
 
-			gi.sound (targ, CHAN_BODY, gi.soundindex ("misc/hittorso.wav"), 1, ATTN_NORM, 0);
-			break;
 
-		case CHEST_WOUND:
+		if (targ->client)
+			targ->client->damage_div = 1.4;
 
-			
-//bcass start - random dropping weapon
-			srand(rand());
-			randnum=rand()%100;
+		gi.sound(targ, CHAN_BODY, gi.soundindex("misc/hittorso.wav"), 1, ATTN_NORM, 0);
+		break;
 
-			// wheaty: Don't let drop shot affect Morphine/Flamethrower/Fists/Binocs
-			if(!targ->ai &&
-				randnum > DROP_SHOT && IsValidPlayer(targ) && 
-				!(targ->client->newweapon) && //faf:  if dropping/changing weap, dont hit gun
-				targ->client->pers.weapon &&
-				targ->client->pers.weapon->position != LOC_GRENADES &&//faf
-				targ->client->pers.weapon->classname &&
-				(targ->client->pers.weapon->classnameb == WEAPON_FISTS && 
-				targ->client->pers.weapon->classnameb == WEAPON_MORPHINE && 
+	case CHEST_WOUND:
+
+
+		//bcass start - random dropping weapon
+		srand(rand());
+		randnum = rand() % 100;
+
+		// wheaty: Don't let drop shot affect Morphine/Flamethrower/Fists/Binocs
+		if (!targ->ai &&
+			randnum > DROP_SHOT && IsValidPlayer(targ) &&
+			!(targ->client->newweapon) && //faf:  if dropping/changing weap, dont hit gun
+			targ->client->pers.weapon &&
+			targ->client->pers.weapon->position != LOC_GRENADES &&//faf
+			targ->client->pers.weapon->classname &&
+			(targ->client->pers.weapon->classnameb == WEAPON_FISTS &&
+				targ->client->pers.weapon->classnameb == WEAPON_MORPHINE &&
 				targ->client->pers.weapon->classnameb == WEAPON_FLAMETHROWER &&
 				targ->client->pers.weapon->classnameb == WEAPON_BINOCULARS))
-				{
-					Drop_Shot (targ, targ->client->pers.weapon);
-					damage*=0;//faf
-				}
-//bcass end
+		{
+			Drop_Shot(targ, targ->client->pers.weapon);
+			damage *= 0;//faf
+		}
+		//bcass end
 
-			else//faf:  dont do damage if dropping weapon
+		else//faf:  dont do damage if dropping weapon
+		{
+			damage *= 2;//1.1;
+			//if(targ->client) safe_cprintf(targ,PRINT_HIGH,"You've been hit in the chest!\n");
+			wound_location |= CHEST_WOUND;
+
+			if (!targ->die_time)
+				die_time = level.time + 5;
+
+			else
+				die_time -= 45;
+
+
+			if (targ->client)
 			{
-				damage*=2;//1.1;
-				//if(targ->client) safe_cprintf(targ,PRINT_HIGH,"You've been hit in the chest!\n");
-				wound_location |=CHEST_WOUND;
-
-				if(!targ->die_time)
-					die_time=level.time+5;
-				
-				else
-					die_time-=45;
-
-
-				if (targ->client)
-				{
-					targ->client->damage_div=1.3;
-				}
-				
-				gi.sound (targ, CHAN_BODY, gi.soundindex ("misc/hittorso.wav"), 1, ATTN_NORM, 0);
-
-				
+				targ->client->damage_div = 1.3;
 			}
 
+			gi.sound(targ, CHAN_BODY, gi.soundindex("misc/hittorso.wav"), 1, ATTN_NORM, 0);
 
-			break;
+
+		}
+
+
+		break;
+
+		// Definición de la variable
+		edict_t* exbattleinfo = NULL;
 
 		case HEAD_WOUND:
 			if(targ->client)
@@ -1094,14 +1090,13 @@ void T_Damage (edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir,
 				{
 					srand(rand());
 					randnum=rand()%100;
-					if(randnum > HELMET_SAVE)
+					if (randnum > HELMET_SAVE)
 					{
-						gi.sound (targ, CHAN_BODY, gi.soundindex ("misc/hithelm.wav"), 1, ATTN_NORM, 0);
-						if (exbattleinfo->value >= 1)
-							safe_bprintf(PRINT_MEDIUM,"** %s is a lucky bastard! The helmet deflected the shot!!! **\n",targ->client->pers.netname); // ZeRo - Esto lo muestra a todos (incluso en la consola, quiero cambiar eso.)
+						gi.sound(targ, CHAN_BODY, gi.soundindex("misc/hithelm.wav"), 1, ATTN_NORM, 0);
+						if (exbattleinfo >= 1)
+							safe_cprintf(PRINT_MEDIUM,"** %s is a lucky bastard! The helmet deflected the shot!!! **\n",targ->client->pers.netname); // ZeRo - Esto lo muestra a todos (incluso en la consola, quiero cambiar eso.)
 						else
 							safe_cprintf(targ,PRINT_HIGH,"You lucky bastard! Your helmet deflected the shot!\n");
-						damage = 0;
 						targ->client->kick_angles[0] += 3;
 						targ->client->kick_angles[1] -= 3;
 						targ->client->kick_angles[2] += 3;
@@ -1188,12 +1183,6 @@ void T_Damage (edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir,
 		targ->client		&&
 		attacker->client)
 	{
-		if (targ->client->resp.mos == MEDIC && invuln_medic->value == 1)
-		{
-			wound_location	= 0;
-			die_time		= 0;
-			damage			= 0;
-		}
 
 		if (OnSameTeam (targ, attacker))
 		{
@@ -1411,7 +1400,7 @@ T_RadiusDamage
 void T_RadiusDamage (edict_t *inflictor, edict_t *attacker, float damage, edict_t *ignore, float radius, int mod)
 {
 	float	points;
-	edict_t	*ent = NULL;
+	edict_t* ent = NULL;
 	vec3_t	v;
 	vec3_t	dir;
 	float knockb;
@@ -1463,10 +1452,10 @@ void T_RadiusDamage (edict_t *inflictor, edict_t *attacker, float damage, edict_
 	return;
 }
 
-void Remove_Gib (edict_t *ent);
+void Remove_Gib (edict_t* ent);
 
 
-void BloodSprayThink (edict_t *self)
+void BloodSprayThink (edict_t* self)
 {
 	//Wheaty: Borrowed from AQ  
 	

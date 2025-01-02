@@ -136,7 +136,7 @@ field_t fields[] = {
 	{"minpitch", STOFS(minpitch), F_FLOAT, FFL_SPAWNTEMP},
 	{"maxpitch", STOFS(maxpitch), F_FLOAT, FFL_SPAWNTEMP},
 	{"nextmap", STOFS(nextmap), F_LSTRING, FFL_SPAWNTEMP},
-//added by kmm
+	//added by kmm
 	{"dll",FOFS(pathtarget),F_LSTRING},
 	{"obj_name",FOFS(obj_name),F_LSTRING},
 	{"obj_area",FOFS(obj_area),F_FLOAT},
@@ -270,7 +270,6 @@ void InitGame (void)
 	class_limits		=	gi.cvar("class_limits",			"1",  CVAR_SERVERINFO | CVAR_LATCH);
 	spawn_camp_check	=	gi.cvar("spawn_camp_check",		"1",  0);//CVAR_SERVERINFO);
 	spawn_camp_time		=	gi.cvar("spawn_camp_time",		"2",  0);//CVAR_SERVERINFO);
-	invuln_medic		=	gi.cvar("invuln_medic",			"0",  0);//CVAR_SERVERINFO | CVAR_LATCH);
 //	teamgren			=	gi.cvar("teamgren",				"1",  CVAR_SERVERINFO | CVAR_LATCH);
 	death_msg			=	gi.cvar("death_msg",			"1",  CVAR_SERVERINFO);
 	level_wait			=	gi.cvar("level_wait",			"20",  CVAR_SERVERINFO);
@@ -367,6 +366,8 @@ void InitGame (void)
 //	crosshair	= gi.cvar ("crosshair", "0", CVAR_USERINFO); 
 
 	bots = gi.cvar ("bots", "0", CVAR_SERVERINFO);// | CVAR_LATCH);
+	botchat = gi.cvar("botchat", "1", 0);
+	botchatfreq = gi.cvar("botchatfreq", "10", 0);
 //	alliedbots = gi.cvar ("alliedbots", "0", CVAR_LATCH);
 //	axisbots = gi.cvar ("axisbots", "0", CVAR_LATCH);
 	alliedlevel = gi.cvar ("alliedlevel", "5", 0);//CVAR_LATCH);
@@ -611,6 +612,7 @@ A single player death will automatically restore from the
 last save position.
 ============
 */
+/*
 void WriteGame (char *filename, qboolean autosave)
 {
 	FILE	*f;
@@ -667,7 +669,7 @@ void ReadGame (char *filename)
 
 	fclose (f);
 }
-
+*/
 //==========================================================
 
 
@@ -779,6 +781,7 @@ WriteLevel
 
 =================
 */
+/*
 void WriteLevel (char *filename)
 {
 	int		i;
@@ -815,7 +818,7 @@ void WriteLevel (char *filename)
 
 	fclose (f);
 }
-
+*/
 
 /*
 =================
@@ -833,6 +836,7 @@ calling ReadLevel.
 No clients are connected yet.
 =================
 */
+/*
 void ReadLevel (char *filename)
 {
 	int		entnum;
@@ -919,5 +923,22 @@ void ReadLevel (char *filename)
 			if (strcmp(ent->classname, "target_crosslevel_target") == 0)
 				ent->nextthink = level.time + ent->delay;
 	}
+}
+*/
+
+void WriteGame(char* filename, qboolean autosave)
+{
+}
+
+void ReadGame(char* filename)
+{
+}
+
+void WriteLevel(char* filename)
+{
+}
+
+void ReadLevel(char* filename)
+{
 }
 

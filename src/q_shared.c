@@ -26,10 +26,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #include "q_shared.h"
+#include <ctype.h>
 
 #define DEG2RAD( a ) ( a * M_PI ) / 180.0F
 
-vec3_t vec3_origin = {0,0,0};
+vec3_t vec3_origin = { 0,0,0 };
 
 //============================================================================
 
@@ -315,7 +316,7 @@ float	anglemod(float a)
 
 
 // this is the slow, general version
-int BoxOnPlaneSide2 (vec3_t emins, vec3_t emaxs, struct cplane_s *p)
+int BoxOnPlaneSide2 (vec3_t emins, vec3_t emaxs, struct cplane_s* p)
 {
 	int		i;
 	float	dist1, dist2;
@@ -354,7 +355,7 @@ Returns 1, 2, or 1 + 2
 ==================
 */
 #if !id386 || defined __linux__ || defined(AMIGA)
-int BoxOnPlaneSide (vec3_t emins, vec3_t emaxs, struct cplane_s *p)
+int BoxOnPlaneSide (vec3_t emins, vec3_t emaxs, struct cplane_s* p)
 {
 	float	dist1, dist2;
 	int		sides;
@@ -765,7 +766,9 @@ void CrossProduct (vec3_t v1, vec3_t v2, vec3_t cross)
 	cross[2] = v1[0]*v2[1] - v1[1]*v2[0];
 }
 
+/* /* MetalGod already defined in corcrt_math.h
 double sqrt(double x);
+*/
 
 vec_t VectorLength(vec3_t v)
 {
@@ -773,8 +776,8 @@ vec_t VectorLength(vec3_t v)
 	float	length;
 	
 	length = 0;
-	for (i=0 ; i< 3 ; i++)
-		length += v[i]*v[i];
+	for (i = 0 ; i < 3 ; i++)
+		length += v[i] * v[i];
 	length = sqrt (length);		// FIXME
 
 	return length;
@@ -797,8 +800,8 @@ void VectorScale (vec3_t in, vec_t scale, vec3_t out)
 
 int Q_log2(int val)
 {
-	int answer=0;
-	while (val>>=1)
+	int answer = 0;
+	while (val >>= 1)
 		answer++;
 	return answer;
 }
@@ -812,9 +815,9 @@ int Q_log2(int val)
 COM_SkipPath
 ============
 */
-char *COM_SkipPath (char *pathname)
+char* COM_SkipPath (char* pathname)
 {
-	char	*last;
+	char* last;
 	
 	last = pathname;
 	while (*pathname)
@@ -831,7 +834,7 @@ char *COM_SkipPath (char *pathname)
 COM_StripExtension
 ============
 */
-void COM_StripExtension (char *in, char *out)
+void COM_StripExtension (char* in, char* out)
 {
 	while (*in && *in != '.')
 		*out++ = *in++;
@@ -843,7 +846,7 @@ void COM_StripExtension (char *in, char *out)
 COM_FileExtension
 ============
 */
-char *COM_FileExtension (char *in)
+char* COM_FileExtension (char* in)
 {
 	static char exten[8];
 	int		i;
@@ -853,7 +856,7 @@ char *COM_FileExtension (char *in)
 	if (!*in)
 		return "";
 	in++;
-	for (i=0 ; i<7 && *in ; i++,in++)
+	for (i = 0 ; i < 7 && *in ; i++, in++)
 		exten[i] = *in;
 	exten[i] = 0;
 	return exten;
@@ -864,9 +867,9 @@ char *COM_FileExtension (char *in)
 COM_FileBase
 ============
 */
-void COM_FileBase (char *in, char *out)
+void COM_FileBase (char* in, char* out)
 {
-	char *s, *s2;
+	char* s, * s2;
 	
 	s = in + strlen(in) - 1;
 	
@@ -876,13 +879,13 @@ void COM_FileBase (char *in, char *out)
 	for (s2 = s ; s2 != in && *s2 != '/' ; s2--)
 	;
 	
-	if (s-s2 < 2)
+	if (s - s2 < 2)
 		out[0] = 0;
 	else
 	{
 		s--;
-		strncpy (out,s2+1, s-s2);
-		out[s-s2] = 0;
+		strncpy (out, s2 + 1, s - s2);
+		out[s - s2] = 0;
 	}
 }
 
@@ -893,17 +896,17 @@ COM_FilePath
 Returns the path up to, but not including the last /
 ============
 */
-void COM_FilePath (char *in, char *out)
+void COM_FilePath (char* in, char* out)
 {
-	char *s;
+	char* s;
 	
 	s = in + strlen(in) - 1;
 	
-	while (s != in && *s != '/')
+	while ( s != in && *s != '/')
 		s--;
 
-	strncpy (out,in, s-in);
-	out[s-in] = 0;
+	strncpy (out, in, s - in);
+	out[s - in] = 0;
 }
 
 
@@ -914,7 +917,7 @@ COM_DefaultExtension
 */
 void COM_DefaultExtension (char *path, char *extension)
 {
-	char    *src;
+	char* src;
 //
 // if path doesn't have a .EXT, append extension
 // (extension should include the .)
@@ -1055,108 +1058,120 @@ varargs versions of all text functions.
 FIXME: make this buffer size safe someday
 ============
 */
-char	*va(char *format, ...)
+char* va(char* format, ...)
 {
 	va_list		argptr;
 	static char		string[1024];
-	
-	va_start (argptr, format);
-	vsprintf (string, format,argptr);
-	va_end (argptr);
 
-	return string;	
+	va_start(argptr, format);
+	/* MetalGod use vsnprintf
+	vsprintf(string, format, argptr); */
+	vsnprintf(string, sizeof string, format, argptr);
+	va_end(argptr);
+
+	return string;
 }
 
-
+/* MetalGod Fix COM_Parse buffer overflow. TY QW
 char	com_token[MAX_TOKEN_CHARS];
-
+*/
+static char     com_token[4][MAX_TOKEN_CHARS];
+static int      com_tokidx;
 /*
 ==============
 COM_Parse
-
-Parse a token out of a string
+Parse a token out of a string.
+Handles C and C++ comments.
 ==============
 */
-char *COM_Parse (char **data_p)
+char* COM_Parse(const char** data_p)
 {
 	int		c;
 	int		len;
-	char	*data;
+	const char* data;
+	char* s = com_token[com_tokidx++ & 3];
 
 	data = *data_p;
 	len = 0;
-	com_token[0] = 0;
-	
+	s[0] = 0;
+
 	if (!data)
 	{
 		*data_p = NULL;
-		return "";
+		return s;
 	}
-		
-// skip whitespace
+
+	// skip whitespace
 skipwhite:
-	while ( (c = *data) <= ' ')
+	while ((c = *data) <= ' ')
 	{
 		if (c == 0)
 		{
 			*data_p = NULL;
-			return "";
+			return s;
 		}
 		data++;
 	}
-	
-// skip // comments
-	if (c=='/' && data[1] == '/')
-	{
+
+	// skip // comments
+	if (c == '/' && data[1] == '/') {
+		data += 2;
 		while (*data && *data != '\n')
 			data++;
 		goto skipwhite;
 	}
 
-// handle quoted strings specially
+	// skip /* */ comments
+	if (c == '/' && data[1] == '*')
+	{
+		data += 2;
+		while (*data) {
+			if (data[0] == '*' && data[1] == '/')
+			{
+				data += 2;
+				break;
+			}
+			data++;
+		}
+		goto skipwhite;
+	}
+
+	// handle quoted strings specially
 	if (c == '\"')
 	{
 		data++;
 		while (1)
 		{
 			c = *data++;
-			if (c=='\"' || !c)
+
+			if (c == '\"' || !c)
 			{
-				com_token[len] = 0;
-				*data_p = data;
-				return com_token;
+				goto finish;
 			}
-			if (len < MAX_TOKEN_CHARS)
-			{
-				com_token[len] = c;
-				len++;
+
+			if (len < MAX_TOKEN_CHARS - 1) {
+				s[len++] = c;
 			}
 		}
 	}
 
-// parse a regular word
-	do
-	{
-		if (len < MAX_TOKEN_CHARS)
+	// parse a regular word
+	do {
+		if (len < MAX_TOKEN_CHARS - 1)
 		{
-			com_token[len] = c;
-			len++;
+			s[len++] = c;
 		}
 		data++;
 		c = *data;
-	} while (c>32);
+	} while (c > 32);
 
-	if (len == MAX_TOKEN_CHARS)
-	{
-//		Com_Printf ("Token exceeded %i chars, discarded.\n", MAX_TOKEN_CHARS);
-		len = 0;
-	}
-	com_token[len] = 0;
-
+finish:
+	s[len] = 0;
 	*data_p = data;
-	return com_token;
+	return s;
 }
-
+/* MetalGod END */
+/*
 
 /*
 ===============
@@ -1184,63 +1199,143 @@ void Com_PageInMemory (byte *buffer, int size)
 ============================================================================
 */
 
-// FIXME: replace all Q_stricmp with Q_strcasecmp
-int Q_stricmp (char *s1, char *s2)
+/* MetalGod START */
+
+// fast "C" macros
+#define Q_isupper(c)    ((c) >= 'A' && (c) <= 'Z')
+#define Q_islower(c)    ((c) >= 'a' && (c) <= 'z')
+#define Q_isdigit(c)    ((c) >= '0' && (c) <= '9')
+#define Q_isalpha(c)    (Q_isupper(c) || Q_islower(c))
+#define Q_isalnum(c)    (Q_isalpha(c) || Q_isdigit(c))
+#define Q_isprint(c)    ((c) >= 32 && (c) < 127)
+#define Q_isgraph(c)    ((c) > 32 && (c) < 127)
+#define Q_isspace(c)    (c == ' ' || c == '\f' || c == '\n' || \
+                         c == '\r' || c == '\t' || c == '\v')
+
+	static inline int Q_tolower(int c)
 {
-#if defined(WIN32)
-	return _stricmp (s1, s2);
-#else
-	return strcasecmp (s1, s2);
-#endif
+	if (Q_isupper(c)) {
+		c += ('a' - 'A');
+	}
+	return c;
 }
 
-
-int Q_strncasecmp (char *s1, char *s2, int n)
-{
-	int		c1, c2;
-	
-	do
+/** Case independent string compare.
+ If s1 is contained within s2 then return 0, they are "equal".
+ else return the lexicographic difference between them.
+*/
+	int Q_stricmp(const char* s1, const char* s2)
 	{
-		c1 = *s1++;
-		c2 = *s2++;
+		const unsigned char
+			* uc1 = (const unsigned char*)s1,
+			* uc2 = (const unsigned char*)s2;
 
-		if (!n--)
-			return 0;		// strings are equal until end point
-		
-		if (c1 != c2)
-		{
-			if (c1 >= 'a' && c1 <= 'z')
-				c1 -= ('a' - 'A');
-			if (c2 >= 'a' && c2 <= 'z')
-				c2 -= ('a' - 'A');
-			if (c1 != c2)
-				return -1;		// strings not equal
-		}
-	} while (c1);
-	
-	return 0;		// strings are equal
-}
+		while (Q_tolower(*uc1) == Q_tolower(*uc2++))
+			if (*uc1++ == '\0')
+				return (0);
+		return (Q_tolower(*uc1) - Q_tolower(*--uc2));
+	}
 
-int Q_strcasecmp (char *s1, char *s2)
+int Q_strnicmp(const char* s1, const char* s2, size_t count)
 {
-	return Q_strncasecmp (s1, s2, 99999);
+	if (count == 0)
+		return 0;
+	else
+	{
+		while (count-- != 0 && Q_tolower(*s1) == Q_tolower(*s2))
+		{
+			if (count == 0 || *s1 == '\0' || *s2 == '\0')
+				break;
+			s1++;
+			s2++;
+		}
+
+		return Q_tolower(*(unsigned char*)s1) - Q_tolower(*(unsigned char*)s2);
+	}
+}
+void		debug_printf(char* fmt, ...);
+size_t Q_strncpyz(char* dst, size_t dstSize, const char* src)
+{
+	char* d = dst;
+	const char* s = src;
+	size_t        decSize = dstSize;
+
+	if (!dst || !src || dstSize < 1) {
+		debug_printf("Bad arguments passed to %s\n", __func__);
+		return 0;
+	}
+
+	while (--decSize && *s)
+		*d++ = *s++;
+	*d = 0;
+
+	if (decSize == 0)    // Unsufficent room in dst, return count + length of remaining src
+		return (s - src - 1 + strlen(s));
+	else
+		return (s - src - 1);    // returned count excludes NULL terminator
 }
 
+size_t Q_strncatz(char* dst, size_t dstSize, const char* src)
+{
+	char* d = dst;
+	const char* s = src;
+	size_t        decSize = dstSize;
+	size_t        dLen;
 
+	if (!dst || !src || dstSize < 1) {
+		debug_printf("Bad arguments passed to %s\n", __func__);
+		return 0;
+	}
 
-void Com_sprintf (char *dest, int size, char *fmt, ...)
+	while (--decSize && *d)
+		d++;
+	dLen = d - dst;
+
+	if (decSize == 0)
+		return (dLen + strlen(s));
+
+	if (decSize > 0) {
+		while (--decSize && *s)
+			*d++ = *s++;
+
+		*d = 0;
+	}
+
+	return (dLen + (s - src));    // returned count excludes NULL terminator
+}
+
+static char	bigbuffer[0x10000];  //QW// For Com_sprintf
+
+/*
+ Safer, uses large buffer
+ The big buffer allows us to safely dump
+ its contents to the log if the resulting format string
+ exceeds the size expected by the calling function.
+ This way we can see if this was a bug or possibly
+ malicious input.
+*/
+void Com_sprintf(char* dest, int size, char* fmt, ...)
 {
 	int		len;
 	va_list		argptr;
-	char	bigbuffer[0x10000];
 
-	va_start (argptr,fmt);
-	len = vsprintf (bigbuffer,fmt,argptr);
-	va_end (argptr);
-	if (len >= size)
-		Com_Printf ("Com_sprintf: overflow of %i in %i\n", len, size);
-	strncpy (dest, bigbuffer, size-1);
+	va_start(argptr, fmt);
+	len = vsnprintf(bigbuffer, sizeof bigbuffer, fmt, argptr);
+	va_end(argptr);
+	if (len < size)
+		Q_strncpyz(dest, (size_t)size - 1, bigbuffer);
+	else
+	{
+		printf("ERROR! %s: destination buffer overflow of len %i, size %i\n"
+		"Input was: %s\n", __func__, len, size, bigbuffer);
+	}
 }
+
+/* MetalGod END */
+
+/*
+
+/**
 
 /*
 =====================================================================
@@ -1258,7 +1353,7 @@ Searches the string for the given
 key and returns the associated value, or an empty string.
 ===============
 */
-char *Info_ValueForKey (char *s, char *key)
+char* Info_ValueForKey (char* s, char* key)
 {
 	char	pkey[512];
 	static	char value[2][512];	// use two buffers so compares
@@ -1309,7 +1404,7 @@ void Info_RemoveKey (char *s, char *key)
 
 	if (strstr (key, "\\"))
 	{
-//		Com_Printf ("Can't use a key with a \\\n");
+//		gi.dprintf ("Can't use a key with a \\\n");
 		return;
 	}
 
@@ -1358,53 +1453,53 @@ Some characters are illegal in info strings because they
 can mess up the server's parsing
 ==================
 */
-qboolean Info_Validate (char *s)
+qboolean Info_Validate(char* s)
 {
-	if (strstr (s, "\""))
+	if (strstr(s, "\""))
 		return false;
-	if (strstr (s, ";"))
+	if (strstr(s, ";"))
 		return false;
 	return true;
 }
 
-void Info_SetValueForKey (char *s, char *key, char *value)
+void Info_SetValueForKey(char* s, char* key, char* value)
 {
-	char	newi[MAX_INFO_STRING], *v;
+	char	newi[MAX_INFO_STRING], * v;
 	int		c;
-	int		maxsize = MAX_INFO_STRING;
+	size_t		maxsize = MAX_INFO_STRING; /* MetalGod was int. Avoids signed/unsigned comparison.*/
 
-	if (strstr (key, "\\") || strstr (value, "\\") )
+	if (strstr(key, "\\") || strstr(value, "\\"))
 	{
-		Com_Printf ("Can't use keys or values with a \\\n");
+		printf("Can't use keys or values with a \\\n");
 		return;
 	}
 
-	if (strstr (key, ";") )
+	if (strstr(key, ";"))
 	{
-		Com_Printf ("Can't use keys or values with a semicolon\n");
+		printf("Can't use keys or values with a semicolon\n");
 		return;
 	}
 
-	if (strstr (key, "\"") || strstr (value, "\"") )
+	if (strstr(key, "\"") || strstr(value, "\""))
 	{
-		Com_Printf ("Can't use keys or values with a \"\n");
+		printf("Can't use keys or values with a \"\n");
 		return;
 	}
 
-	if (strlen(key) > MAX_INFO_KEY-1 || strlen(value) > MAX_INFO_KEY-1)
+	if (strlen(key) > MAX_INFO_KEY - 1 || strlen(value) > MAX_INFO_KEY - 1)
 	{
-		Com_Printf ("Keys and values must be < 64 characters.\n");
+		printf("Keys and values must be < 64 characters.\n");
 		return;
 	}
-	Info_RemoveKey (s, key);
+	Info_RemoveKey(s, key);
 	if (!value || !strlen(value))
 		return;
 
-	Com_sprintf (newi, sizeof(newi), "\\%s\\%s", key, value);
+	Com_sprintf(newi, sizeof(newi), "\\%s\\%s", key, value);
 
 	if (strlen(newi) + strlen(s) > maxsize)
 	{
-		Com_Printf ("Info string length exceeded\n");
+		printf("Info string length exceeded\n");
 		return;
 	}
 
@@ -1422,5 +1517,3 @@ void Info_SetValueForKey (char *s, char *key, char *value)
 }
 
 //====================================================================
-
-

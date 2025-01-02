@@ -83,9 +83,9 @@ int AI_AddNode( vec3_t origin, int flagsmask )
 	nodes[nav.num_nodes].flags = flagsmask;
 	nodes[nav.num_nodes].flags |= AI_FlagsForNode( nodes[nav.num_nodes].origin, player.ent );
 
-	//Com_Printf("Dropped Node\n");
+	//gi.dprintf("Dropped Node\n");
 	//if( sv_cheats->value )
-		Com_Printf("Dropped Node\n");
+	gi.dprintf("Dropped Node\n");
 
 	nav.num_nodes++;
 	return nav.num_nodes-1; // return the node added
@@ -112,10 +112,10 @@ void AI_UpdateNodeEdge( int from, int to )
 		link = AI_FindLinkType( from, to );
 
 
-	//Com_Printf("Link: %d -> %d. ", from, to);
-	//Com_Printf("%s\n", AI_LinkString(link) );
+	//gi.dprintf("Link: %d -> %d. ", from, to);
+	//gi.dprintf("%s\n", AI_LinkString(link) );
 	//if( sv_cheats->value )
-		Com_Printf("Link: %d -> %d. %s\n", from, to, AI_LinkString(link) );
+	gi.dprintf("Link: %d -> %d. %s\n", from, to, AI_LinkString(link) );
 }
 
 
@@ -483,7 +483,7 @@ void AITools_InitEditnodes( void )
 		nav.loaded = 0;//false;
 	}
 	
-	Com_Printf("EDITNODES: on\n");
+	gi.dprintf("EDITNODES: on\n");
 }
 
 void AITools_InitMakenodes( void )
@@ -491,7 +491,7 @@ void AITools_InitMakenodes( void )
 	if(nav.loaded)
 		AITools_EraseNodes();
 
-	Com_Printf("EDITNODES: on\n");
+	gi.dprintf("EDITNODES: on\n");
 }
 
 
@@ -548,22 +548,22 @@ void AITools_SaveNodes( void )
 	int	jumplinks;
 
 	if( !nav.num_nodes ) {
-		Com_Printf("CGame AITools: No nodes to save\n");
+		gi.dprintf("CGame AITools: No nodes to save\n");
 		return;
 	}
 
 	//find links
 	newlinks = AI_LinkCloseNodes();
-	Com_Printf ("       : Added %i new links\n", newlinks);
+	gi.dprintf("       : Added %i new links\n", newlinks);
 
 	//find jump links
 	jumplinks = AI_LinkCloseNodes_JumpPass(0);
-	Com_Printf ("       : Added %i new jump links\n", jumplinks);
+	gi.dprintf("       : Added %i new jump links\n", jumplinks);
 
 	if( !AI_SavePLKFile( level.mapname ) )
-		Com_Printf ("       : Failed: Couldn't create the nodes file\n");
+		gi.dprintf("       : Failed: Couldn't create the nodes file\n");
 	else
-		Com_Printf ("       : Nodes files saved\n");
+		gi.dprintf("       : Nodes files saved\n");
 
 	//restart navigation
 	AITools_EraseNodes();

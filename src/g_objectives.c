@@ -161,24 +161,25 @@ void SP_objective_area(edict_t *self) {
 objective_touch
 ========================
 */
-void objective_touch (edict_t *self, edict_t *other, cplane_t *plane, csurface_t *surf) {
-
+void objective_touch(edict_t* self, edict_t* other, cplane_t* plane, csurface_t* surf) {
 	int otherteam;
 	//edict_t *entC = NULL;
+	if (!self)
+		return;
 
-	if (!IsValidPlayer(other) || (other->client->resp.mos == MEDIC && invuln_medic->value == 1) )  
+	if (!IsValidPlayer(other))
 		return;
 
 	//with this type, will only be recapped by obj_perm_owner when they respawn
-	if (self->style%3 == 2 && self->obj_perm_owner && self->obj_perm_owner%2 == other->client->resp.team_on->index &&
-		other->client->respawn_time < level.time -.5)
+	if (self->style % 3 == 2 && self->obj_perm_owner && self->obj_perm_owner % 2 == other->client->resp.team_on->index &&
+		other->client->respawn_time < level.time - .5)
 		return;
 
 	//gi.dprintf("touch %i:%i (%i)\n", level.framenum, self->obj_count, (level.framenum - self->obj_count));
 
-	if (other->client->resp.team_on->index != self->obj_owner) 
+	if (other->client->resp.team_on->index != self->obj_owner)
 	{
-		if (self->style%5 == 3)//hill fix
+		if (self->style % 5 == 3)//hill fix
 		{
 			if ((level.framenum - self->obj_count) <= 100) //team recaps after 10 seconds even if other team still in area
 				return;
@@ -188,64 +189,70 @@ void objective_touch (edict_t *self, edict_t *other, cplane_t *plane, csurface_t
 
 		if (self->obj_perm_owner)
 		{
-//			if (team_list[self->obj_owner])
-//				team_list[self->obj_owner]->score -= self->dmg;
+			//			if (team_list[self->obj_owner])
+			//				team_list[self->obj_owner]->score -= self->dmg;
 
 			self->obj_owner = other->client->resp.team_on->index;
-			if (self->obj_perm_owner%2 != other->client->resp.team_on->index)
+			if (self->obj_perm_owner % 2 != other->client->resp.team_on->index)
+			{
 				if (team_list[self->obj_owner])
 				{
 					team_list[self->obj_owner]->score += self->health;
 				}
+			}
 		}
 		else
 		{
 			if (team_list[self->obj_owner])
+			{
 				team_list[self->obj_owner]->score -= self->dmg;
 
-			self->obj_owner = other->client->resp.team_on->index;
-			team_list[self->obj_owner]->score += self->health;
-
+				self->obj_owner = other->client->resp.team_on->index;
+				team_list[self->obj_owner]->score += self->health;
+			}
 		}
-		
+
 		otherteam = (self->obj_owner);
+
+		/* MetalGod sanity check */
+		if (NULL == team_list[otherteam])
+			return;
+		/* MetalGod */
+
 		if (!team_list[otherteam]->need_points ||
 			(!team_list[otherteam]->kills_and_points && team_list[otherteam]->score < team_list[otherteam]->need_points) ||
-			(team_list[otherteam]->kills_and_points && 
+			(team_list[otherteam]->kills_and_points &&
 				team_list[otherteam]->kills < team_list[otherteam]->need_kills))
 			gi.sound(self, CHAN_NO_PHS_ADD, gi.soundindex(va("%s/objectives/touch_cap.wav", team_list[self->obj_owner]->teamid)), 1, 0, 0);
 
 		if (dedicated->value)
-			safe_cprintf(NULL, PRINT_HIGH, "%s taken by %s [%s]\n", 
-				self->message, 
+			safe_cprintf(NULL, PRINT_HIGH, "%s taken by %s [%s]\n",
+				self->message,
 				other->client->pers.netname,
 				team_list[self->obj_owner]->teamname);
 
 		centerprintall("%s taken by:\n\n%s\n%s",
-				self->message, 
-				other->client->pers.netname,
-				team_list[self->obj_owner]->teamname);
-		
+			self->message,
+			other->client->pers.netname,
+			team_list[self->obj_owner]->teamname);
+
 		self->obj_count = level.framenum; // reset the touch count
 
-		G_UseTargets (self, other); //faf
+		G_UseTargets(self, other); //faf
 
 		if (self->delay == -1)
 			self->touch = NULL;
-		
-	} 
+	}
 	else  // own team touched it
 	{
 		//gi.dprintf("%s deadflag: %i\n", other->client->pers.netname, other->deadflag);
 
-		if (self->style%5==3)return; //HILL FIX
+		if (self->style % 5 == 3)return; //HILL FIX
 
 		if (other->deadflag == DEAD_NO)
 			self->obj_count = level.framenum; // update the last time team touched it
 	}
-
 }
-
 
 
 
@@ -375,8 +382,6 @@ void timed_objective_touch (edict_t *self, edict_t *other, cplane_t *plane, csur
 
 	//edict_t *entC = NULL;
 
-	if (!IsValidPlayer(other) || (other->client->resp.mos == MEDIC && invuln_medic->value == 1) )  
-		return;
 
 //	gi.dprintf("touch %i:%i (%i)\n", level.framenum, self->obj_count, (level.framenum - self->obj_count));
 

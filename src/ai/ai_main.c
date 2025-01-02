@@ -893,6 +893,7 @@ void AI_PickShortRangeGoal(edict_t *self)
 
 
 
+
 	//jalfixme (what's goalentity doing here?)
 	if(best_weight)
 	{
@@ -927,6 +928,43 @@ void AI_CategorizePosition (edict_t *ent)
 	ent->is_step = stepping;
 }
 
+void ParseBotChat(char* text, edict_t* attacker)
+{
+	static char buf[10240], infobuf[10240];/* MetalGod No need to be unsigned */
+	char* p, * pbuf;
+
+	p = text;
+	pbuf = buf;
+	*pbuf = 0;
+
+	while (*p != 0)
+	{
+		if (((ptrdiff_t)pbuf - (ptrdiff_t)buf) > 150)
+		{
+			break;
+		}
+		if (*p == '#')
+		{
+			switch (*(p + 1))
+			{
+			case 'K':
+				Com_sprintf(infobuf, sizeof(infobuf), "%s", attacker->client->pers.netname);
+				//infobuf = attacker->client->pers.netname;
+
+				strcpy(pbuf, infobuf);
+				pbuf = SeekBufEnd(pbuf);
+				p += 2;
+				continue;
+			}
+		}
+		*pbuf++ = *p++;
+	}
+
+	*pbuf = 0;
+
+	strncpy(text, buf, 150);
+	text[150] = 0; // in case it's 150
+}
 
 
 void ShowSpot (vec3_t orig, qboolean blah)
@@ -1029,21 +1067,15 @@ void AI_Think (edict_t *self)
 
 //prevent telefrag spawn
 	if (self->solid == SOLID_TRIGGER)
-	{       
-		edict_t *overlap;
-
-		if (self->client &&
-			self->client->resp.team_on &&
-			self->client->resp.mos == MEDIC &&
-			invuln_medic->value == 1)
-			return; // unsafe, but will do for now
+	{
+		edict_t* overlap;
 
 		if ((overlap = FindOverlap(self, NULL)) == NULL)
 		{
-			self->solid = SOLID_BBOX;	
+			self->solid = SOLID_BBOX;
 			gi.linkentity(self);
 		}
-		else    
+		else
 		{
 			do
 			{
@@ -1053,14 +1085,9 @@ void AI_Think (edict_t *self)
 					gi.linkentity(overlap);
 				}
 				overlap = FindOverlap(self, overlap);
-
 			} while (overlap != NULL);
 		}
 	}
-
-
-
-
 
 	if (self->ai->teammatedodgetime &&
 		self->ai->teammatedodgetime< level.time - 1.5)

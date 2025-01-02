@@ -36,6 +36,8 @@ void initialize_random_seed() {  // Necesario para el modo random_class - ZeRo
     srand(time(NULL));
 }
 
+cvar_t* random_class = NULL;//hans inicializa random_class
+
 //fills a gun with bullets
 void Load_Weapon (edict_t *ent, gitem_t	*item)
 {
@@ -141,21 +143,14 @@ void Give_Class_Weapon(edict_t *ent)
 	}
 
 	//give everyone a knife & fists & helmet
-	// UNLESS invuln_medic
-	if (client->resp.mos == MEDIC && invuln_medic->value == 1)
-	{
-		item = FindItem("Morphine");
-		client->pers.inventory[ITEM_INDEX(item)] = 1;
-	}
-	else
-	{
-		item = FindItem("Helmet");
-		client->pers.inventory[ITEM_INDEX(item)] = 1;
-		item = FindItem("Fists");
-		client->pers.inventory[ITEM_INDEX(item)] = 1;
-		item = FindItem("Knife");
-		client->pers.inventory[ITEM_INDEX(item)] = 1;
-	}
+
+	item = FindItem("Helmet");
+	client->pers.inventory[ITEM_INDEX(item)] = 1;
+	item = FindItem("Fists");
+	client->pers.inventory[ITEM_INDEX(item)] = 1;
+	item = FindItem("Knife");
+	client->pers.inventory[ITEM_INDEX(item)] = 1;
+
 	// faf rifle-only code  //ddaylife 
 	if ((mauser_only->value == 1) && !(client->resp.mos == MEDIC))
 	{

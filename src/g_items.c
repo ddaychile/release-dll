@@ -145,32 +145,42 @@ gitem_t *FindTeamItem (char *dllname, int position)  //faf:  added for team dll 
 }
 //======================================================================
 
-void DoRespawn (edict_t *ent)
+void DoRespawn(edict_t* ent)
 {
+	/* MetalGod sanity check */
+	if (!ent)
+	{
+		return;
+	}
+
 	if (ent->team)
 	{
-		edict_t	*master;
+		edict_t* master;
 		int	count;
 		int choice;
 
-		master = ent->teammaster;
+		if (ent->teammaster != NULL)/* MetalGod sanity check */
+		{
+			master = ent->teammaster;
 
-		for (count = 0, ent = master; ent; ent = ent->chain, count++)
-			;
+			for (count = 0, ent = master; ent; ent = ent->chain, count++)
+				;
 
-		choice = rand() % count;
+			choice = rand() % count;
 
-		for (count = 0, ent = master; count < choice; ent = ent->chain, count++)
-			;
+			for (count = 0, ent = master; count < choice; ent = ent->chain, count++)
+				;
+		}
 	}
 
 	ent->svflags &= ~SVF_NOCLIENT;
 	ent->solid = SOLID_TRIGGER;
-	gi.linkentity (ent);
+	gi.linkentity(ent);
 
 	// send an effect
 	ent->s.event = EV_ITEM_RESPAWN;
 }
+
 
 void SetRespawn (edict_t *ent, float delay)
 {
@@ -1086,7 +1096,7 @@ void PrecacheItem (gitem_t *it)
 	char	*s, *start;
 	char	data[MAX_QPATH];
 	int		len;
-	gitem_t	*ammo;
+	gitem_t* ammo;
 
 	if (!it)
 		return;
@@ -1121,8 +1131,11 @@ void PrecacheItem (gitem_t *it)
 
 		len = s-start;
 		if (len >= MAX_QPATH || len < 5)
-			gi.error ("PrecacheItem: %s has bad precache string", it->classname);
-		memcpy (data, start, len);
+		{
+			gi.error("PrecacheItem: %s has bad precache string", it->classname);
+			return;
+		}
+		memcpy(data, start, len);
 		data[len] = 0;
 		if (*s)
 			s++;
@@ -1592,6 +1605,8 @@ gitem_t	itemlist[MAX_ITEMS] =
 
 /*QUAKED item_health (.3 .3 1) (-16 -16 -16) (16 16 16)
 */
+
+
 void SP_item_health (edict_t *self)
 {
 	if ( deathmatch->value && ((int)dmflags->value & DF_NO_HEALTH) )
@@ -1711,23 +1726,23 @@ void SetItemNames (void)
 
 //These are simply the old calls to SpawnItem with the entity filled in.
 
-void SP_item_armor_body(edict_t *self)
+void SP_item_armor_body(edict_t* self)
 
 {
 //    SpawnItem(self,FindItemByClassname("item_armor_body"));
 }
 
-void SP_item_armor_combat(edict_t *self)
+void SP_item_armor_combat(edict_t* self)
 {
 //    SpawnItem(self,FindItemByClassname("item_armor_combat"));
 }
 
-void SP_item_armor_jacket(edict_t *self)
+void SP_item_armor_jacket(edict_t* self)
 {
 //    SpawnItem(self,FindItemByClassname("item_armor_jacket"));
 }
 
-void SP_item_armor_shard(edict_t *self)
+void SP_item_armor_shard(edict_t* self)
 {
 //    SpawnItem(self,FindItemByClassname("item_armor_shard"));
 }
@@ -1737,13 +1752,13 @@ void SP_item_armor_shard(edict_t *self)
 
 
 
-void SP_item_ammo_grenades(edict_t *self)
+void SP_item_ammo_grenades(edict_t* self)
 {
     SpawnItem(self,FindItemByClassname("ammo_grenades"));
 }
 
 		
-void sandbag_die (edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point)
+void sandbag_die (edict_t* self, edict_t* inflictor, edict_t* attacker, int damage, vec3_t point)
 {
 	vec3_t org;
 
@@ -1778,7 +1793,7 @@ void sandbag_die (edict_t *self, edict_t *inflictor, edict_t *attacker, int dama
 
 }
 
-void sandbag_touch (edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *surf)
+void sandbag_touch (edict_t* ent, edict_t* other, cplane_t* plane, csurface_t* surf)
 {
 	if (surf && (surf->flags & SURF_SKY))
 	{
@@ -1822,7 +1837,7 @@ void sandbag_think (edict_t *ent)
 	
 }
 
-void Weapon_Sandbag_Fire (edict_t *ent)
+void Weapon_Sandbag_Fire (edict_t* ent)
 
 {
 	edict_t	*sandbag;
@@ -1932,7 +1947,7 @@ void Weapon_Sandbag_Fire (edict_t *ent)
 
 
 
-void sandbag_prev_think (edict_t *ent)
+void sandbag_prev_think (edict_t* ent)
 {
 	if (!ent->owner || !ent->owner->client ||
 		!ent->owner->client->pers.weapon ||
@@ -1953,7 +1968,7 @@ void sandbag_prev_think (edict_t *ent)
 
 }
 
-void Weapon_Sandbag (edict_t *ent)
+void Weapon_Sandbag (edict_t* ent)
 {
 	static int      pause_frames[]  = {0};//{19, 32, 0};
     int				fire_frames[] = {7};

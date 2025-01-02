@@ -1199,34 +1199,35 @@ Use an inventory item
 ==================
 */
 
-void Cmd_Use_f (edict_t *ent)
+void Cmd_Use_f(edict_t * ent)
 {
 	int			index;
-	gitem_t		*it;
-	char		*s;
+	gitem_t* it;
+	char* s;
 
 	s = gi.args();
-	it = FindItem (s);
+	it = FindItem(s);
 
+	/* MetalGod sanity check */
+	if (!ent)
+		return;
 
 	if (ent->client->chasetarget)
 	{
-		if(Q_stricmp(s,"weapon")==0) 
+		if (Q_stricmp(s, "weapon") == 0)
 			Cmd_Scope_f(ent);
 	}
 
 	if (ent->client->limbo_mode || ent->deadflag)
 		return;
-	if ( !IsValidPlayer(ent) )
+	if (!IsValidPlayer(ent))
 		return;
-
-
 
 	if (Q_stricmp(s, "gibmachine") == 0)
 	{
-	if(easter_egg->value==0)
-		return;
-		
+		if (easter_egg->value == 0)
+			return;
+
 		if (ent->client->gibmachine == flame_normal)
 		{
 			safe_cprintf(ent, PRINT_HIGH, "You've got the gib machine!.\n");
@@ -1237,40 +1238,39 @@ void Cmd_Use_f (edict_t *ent)
 			safe_cprintf(ent, PRINT_HIGH, "Goodbye gib machine!.\n");
 			ent->client->gibmachine = flame_normal;
 		}
-	return;
+		return;
 	}
-
 
 	if (!it)
 	{
-//////////////
-/// NEW USE SYSTEM
-//////////////
-		if(Q_stricmp(s,"weapon")==0) 
+		//////////////
+		/// NEW USE SYSTEM
+		//////////////
+		if (Q_stricmp(s, "weapon") == 0)
 		{
-			/*if (Cmd_Scope_f(ent) == false)
+			if (Cmd_Scope_f(ent) == false)
 				ent->client->scopetry = true;
 			else
-				ent->client->scopetry = false;*/
-			Cmd_Scope_f(ent);
+				ent->client->scopetry = false;
+
 			return;
 		}
-		else if (Q_stricmp(s,"weapon1")==0) 
+		else if (Q_stricmp(s, "weapon1") == 0)
 		{
-			if (it = FindItem(ent->client->resp.team_on->mos[ent->client->resp.mos]->weapon1))
+			if ((it = FindItem(ent->client->resp.team_on->mos[ent->client->resp.mos]->weapon1)) != NULL) /* MetalGod != NULL*/
 				strcpy(s, ent->client->resp.team_on->mos[ent->client->resp.mos]->weapon1);
 			else
 				it = ent->client->pers.weapon;
 		}
-		else if (Q_stricmp(s,"weapon2")==0) 
+		else if (Q_stricmp(s, "weapon2") == 0)
 		{
-			if (it = FindItem(ent->client->resp.team_on->mos[ent->client->resp.mos]->weapon2))
+			if ((it = FindItem(ent->client->resp.team_on->mos[ent->client->resp.mos]->weapon2)) != NULL) /* MetalGod != NULL*/
 				strcpy(s, ent->client->resp.team_on->mos[ent->client->resp.mos]->weapon2);
 			else
 				it = ent->client->pers.weapon;
 		}
 		/*
-		else if (Q_stricmp(s,"grenades")==0) 
+		else if (Q_stricmp(s,"grenades")==0)
 		{
 			if (it = FindItem(ent->client->resp.team_on->mos[ent->client->resp.mos]->grenades))
 				strcpy(s, ent->client->resp.team_on->mos[ent->client->resp.mos]->grenades);
@@ -1278,101 +1278,108 @@ void Cmd_Use_f (edict_t *ent)
 				it = ent->client->pers.weapon;
 		}
 		*/
-		else if (Q_stricmp(s,"special")==0) 
+		else if (Q_stricmp(s, "special") == 0)
 		{
-			if (it = FindItem(ent->client->resp.team_on->mos[ent->client->resp.mos]->special))
+			if ((it = FindItem(ent->client->resp.team_on->mos[ent->client->resp.mos]->special)) != NULL) /* MetalGod != NULL*/
 				strcpy(s, ent->client->resp.team_on->mos[ent->client->resp.mos]->special);
 			else
 				it = ent->client->pers.weapon;
 		}
-		else if (Q_stricmp(s,"grenades")==0) 
+		else if (Q_stricmp(s, "grenades") == 0)
 		{
 			it = FindNextPickup(ent, LOC_GRENADES);
 			strcpy(s, it->pickup_name);
 		}
-		else if (Q_stricmp(s,"melee")==0) 
+		else if (Q_stricmp(s, "melee") == 0)
 		{
 			it = FindNextPickup(ent, LOC_KNIFE);
 			strcpy(s, it->pickup_name);
 		}
-		else if (Q_stricmp(s,"pickup")==0) 
+		else if (Q_stricmp(s, "pickup") == 0)
 		{
 			it = FindNextPickup(ent, LOC_NONE);
 			strcpy(s, it->pickup_name);
-		}	
-		
+		}
+
 		//faf
-		else if (Q_stricmp(s,"sniper")==0) 
+		else if (Q_stricmp(s, "sniper") == 0)
 		{
 			it = FindNextPickup(ent, LOC_SNIPER);
 			strcpy(s, it->pickup_name);
-		}					
-		
-		else if (Q_stricmp(s,"pistol")==0) 
+		}
+
+		else if (Q_stricmp(s, "pistol") == 0)
 		{
 			it = FindNextPickup(ent, LOC_PISTOL);
 			strcpy(s, it->pickup_name);
-		}	
-		
-		else if (Q_stricmp(s,"rifle")==0) 
+		}
+
+		else if (Q_stricmp(s, "rifle") == 0)
 		{
 			it = FindNextPickup(ent, LOC_RIFLE);
 			strcpy(s, it->pickup_name);
-		}	
+		}
 
-		else if (Q_stricmp(s,"smg")==0) 
+		else if (Q_stricmp(s, "smg") == 0)
 		{
 			it = FindNextPickup(ent, LOC_SUBMACHINEGUN2);
 			strcpy(s, it->pickup_name);
 			it = FindNextPickup(ent, LOC_SUBMACHINEGUN);
 			strcpy(s, it->pickup_name);
-		}	
-		
-		else if (Q_stricmp(s,"lmg")==0) 
+		}
+
+		else if (Q_stricmp(s, "lmg") == 0)
 		{
 			it = FindNextPickup(ent, LOC_L_MACHINEGUN);
 			strcpy(s, it->pickup_name);
-		}	
-		
-		else if (Q_stricmp(s,"hmg")==0) 
+		}
+
+		else if (Q_stricmp(s, "hmg") == 0)
 		{
 			it = FindNextPickup(ent, LOC_H_MACHINEGUN);
 			strcpy(s, it->pickup_name);
-		}	
-		else if (Q_stricmp(s,"rocket")==0) 
+		}
+		else if (Q_stricmp(s, "rocket") == 0)
 		{
 			it = FindNextPickup(ent, LOC_ROCKET);
 			strcpy(s, it->pickup_name);
-		}	
-		else if (Q_stricmp(s,"flamer")==0)
+		}
+		else if (Q_stricmp(s, "flamer") == 0)
 		{
 			it = FindNextPickup(ent, LOC_FLAME);
 			strcpy(s, it->pickup_name);
 		}
 		//end faf
 
-
-		else 
+		else
 		{
-			safe_cprintf (ent, PRINT_HIGH, "Unknown item: %s\n", s);
+			safe_cprintf(ent, PRINT_HIGH, "Unknown item: %s\n", s);
 			return;
 		}
-				
 	}
-	if (!it || (it && !it->use))
+	/* MetalGod changed & moved this up here to avoid possible attempt to print it->pickup_name of a NULL ptr */
+	if (!it)
 	{
-		safe_cprintf (ent, PRINT_HIGH, "Item %s is not usable.\n", it->pickup_name);
+		safe_cprintf(ent, PRINT_HIGH, "unknown item: %s\n", s);
+		return;
+	}
+	if (!it->use) /* MetalGod moved !it, and it would always be true */
+	{
+		safe_cprintf(ent, PRINT_HIGH, "Item %s is not usable.\n", it->pickup_name);
 		return;
 	}
 	index = ITEM_INDEX(it);
 	if (!ent->client->pers.inventory[index])
 	{
-//		safe_cprintf (ent, PRINT_HIGH, "Out of item: %s\n", s);
+		//		safe_cprintf (ent, PRINT_HIGH, "Out of item: %s\n", s);
 		return;
 	}
 
-	it->use (ent, it);
+	it->use(ent, it);
 }
+
+//bcass start - was here
+/*
 
 //bcass start - was here
 /*
@@ -1567,19 +1574,17 @@ void Cmd_Drop_f (edict_t *ent)
 Cmd_Inven_f
 =================
 */
-void Cmd_Inven_f (edict_t *ent)
+void Cmd_Inven_f(edict_t* ent)
 {
 	int			i;
-	gclient_t	*cl;
+	gclient_t* cl;
 
 	//JABot[start]
 	if (ent->ai || !ent->inuse)
 		return;
 	//[end]
 
-
 	cl = ent->client;
-
 
 	if (ent->client->menu) {
 		PMenu_Close(ent);
@@ -1593,27 +1598,24 @@ void Cmd_Inven_f (edict_t *ent)
 	}
 	cl->layout_type = SHOW_INVENTORY;
 
-
-	gi.WriteByte (svc_inventory);
-	for (i=0 ; i<MAX_ITEMS ; i++)
+	gi.WriteByte(svc_inventory);
+	for (i = 0; i < MAX_ITEMS; i++)
 	{
-		gi.WriteShort (cl->pers.inventory[i]);
+		gi.WriteShort(cl->pers.inventory[i]);
 	}
-	gi.unicast (ent, true);
+	gi.unicast(ent, true);
 }
 
-
-void Cmd_Objectives (edict_t *ent)
+void Cmd_Objectives(edict_t* ent)
 {
-	int			i,j,y;
-	gclient_t	*cl;
+	int			i, j, y;
+	gclient_t* cl;
 	char	string[1024];
 	char	entry[1024];
 	char	entryb[1024];
 	int	stringlength;
-	char  *bp;
-	char  *objective_name;
-
+	char* bp;
+	char* objective_name = NULL; /* MetalGod initialized */
 
 	//JABot[start]
 	if (ent->ai || !ent->inuse)
@@ -1621,7 +1623,6 @@ void Cmd_Objectives (edict_t *ent)
 	//[end]
 
 	cl = ent->client;
-
 
 	if (!ent->client->resp.team_on)
 		return;
@@ -1631,36 +1632,31 @@ void Cmd_Objectives (edict_t *ent)
 		return;
 	}
 
-
-	if (cl->layout_type != 	SHOW_OBJECTIVES_TEMP)
+	if (cl->layout_type != SHOW_OBJECTIVES_TEMP)
 		cl->layout_type = SHOW_OBJECTIVES;
-
-
 
 	string[0] = 0;
 
 	// send the layout
 //	Com_sprintf (string, sizeof(string),
 //		"xv 32 yv 8 picn scorehead ");
-	Com_sprintf (string, sizeof(entry),	"xr -200 160 yt 120  string \" Objectives\" xr -200 160 yt 130  string \" ----------\" ");
-
-
+	Com_sprintf(string, sizeof(entry), "xr -200 160 yt 120  string \" Objectives\" xr -200 160 yt 130  string \" ----------\" ");
 
 	stringlength = strlen(string);
 
-	y=2;
-	for (i=0 ; i<globals.num_edicts ; i++)
+	y = 2;
+	for (i = 0; i < globals.num_edicts; i++)
 	{
-		edict_t *e;
+		edict_t* e;
 		e = &g_edicts[i];
 
-//		if (!e->inuse)
-//			continue;
+		//		if (!e->inuse)
+		//			continue;
 		if (!e->classnameb)
 			continue;
-		if (!(e->classnameb == OBJECTIVE_TOUCH  || e->classnameb == FUNC_EXPLOSIVE_OBJECTIVE || e->classnameb == FUNC_TRAIN || e->classnameb == OBJECTIVE_VIP))
+		if (!(e->classnameb == OBJECTIVE_TOUCH || e->classnameb == FUNC_EXPLOSIVE_OBJECTIVE || e->classnameb == FUNC_TRAIN || e->classnameb == OBJECTIVE_VIP))
 			continue;
-	
+
 		if (e->classnameb == FUNC_TRAIN &&
 			!e->obj_gain)
 			continue;
@@ -1677,24 +1673,27 @@ void Cmd_Objectives (edict_t *ent)
 		//put ! next to own objectives that can't be recapped
 		if (ent->client->resp.team_on &&
 			e->obj_perm_owner &&
-			e->obj_perm_owner%2 == ent->client->resp.team_on->index)
-		{ bp ="!";}
+			e->obj_perm_owner % 2 == ent->client->resp.team_on->index)
+		{
+			bp = "!";
+		}
 		else
-		{ bp = " ";}
+		{
+			bp = " ";
+		}
 
 		if (ent->client->resp.team_on &&
 			e->obj_owner == ent->client->resp.team_on->index)
-			Com_sprintf (entry, sizeof(entry),	"xr -200 yt %i string2 \" %-22.22s\" ",120+(y*10),objective_name);
+			Com_sprintf(entry, sizeof(entry), "xr -200 yt %i string2 \" %-22.22s\" ", 120 + (y * 10), objective_name);
 		else
-		Com_sprintf (entry, sizeof(entry),	"xr -200 yt %i string \"%s%-22.22s\" ",120+(y*10),  bp, objective_name);
+			Com_sprintf(entry, sizeof(entry), "xr -200 yt %i string \"%s%-22.22s\" ", 120 + (y * 10), bp, objective_name);
 
 		j = strlen(entry);
 		if (stringlength + j > 1024)
 			break;
-		strcpy (string + stringlength, entry);
-		stringlength += j;	
+		strcpy(string + stringlength, entry);
+		stringlength += j;
 		y++;
-				
 	}
 
 	if (team_list[ent->client->resp.team_on->index]->kills_and_points &&
@@ -1702,29 +1701,26 @@ void Cmd_Objectives (edict_t *ent)
 	{
 		if (strlen(string) < 1000)
 		{
-			Com_sprintf (entryb, sizeof(entryb),	"xr -200 yt %i string \" %i Kills\" ",120+(y*10),team_list[ent->client->resp.team_on->index]->need_kills);
-			strcpy (string + strlen(string), entryb);
-
+			Com_sprintf(entryb, sizeof(entryb), "xr -200 yt %i string \" %i Kills\" ", 120 + (y * 10), team_list[ent->client->resp.team_on->index]->need_kills);
+			strcpy(string + strlen(string), entryb);
 		}
 		y++;
 	}
 	//gi.dprintf("%s\n",string);
 
-	if (y==2)// no objectives
+	if (y == 2)// no objectives
 	{
 		cl->layout_type = SHOW_NONE;
 		return;
 	}
 
-	gi.WriteByte (svc_layout);
-	gi.WriteString (string);
-	gi.unicast (ent, true);
+	gi.WriteByte(svc_layout);
+	gi.WriteString(string);
+	gi.unicast(ent, true);
 }
 
-
-
 //not necessary
-void Cmd_Objectives_ToggleX (edict_t *ent)
+void Cmd_Objectives_ToggleX(edict_t* ent)
 {
 	if (ent->client->layout_type == SHOW_OBJECTIVES || ent->client->layout_type == SHOW_OBJECTIVES_TEMP)
 	{
@@ -1734,7 +1730,7 @@ void Cmd_Objectives_ToggleX (edict_t *ent)
 	else
 	{
 		ent->client->layout_type = SHOW_OBJECTIVES;
-		Cmd_Objectives (ent);
+		Cmd_Objectives(ent);
 	}
 }
 /*
@@ -2994,7 +2990,7 @@ qboolean Cmd_Reload (edict_t *ent)
 	int mags_left;
 
 	gitem_t *ammo_item;
-	int		ammo_index, *ammo_amount;
+	int		ammo_index, * ammo_amount = NULL;//Hans ammon_amount inicializado
 
 	if (!ent ||
 		!ent->client ||
@@ -3051,7 +3047,7 @@ qboolean Cmd_Reload (edict_t *ent)
 		return true;
 
 	// rezmoth - bug here crashes for what reason?
-	if (*ammo_amount && 
+	if (ammo_amount && 
 		ent->client->p_rnd && //faf
 		*ent->client->p_rnd == ammo_item->quantity) {
 			safe_cprintf(ent, PRINT_HIGH, "You still have a full magazine left!\n");
@@ -3218,30 +3214,23 @@ void Cmd_Shout_f(edict_t *ent)
 	gi.sound (ent, CHAN_VOICE, gi.soundindex(soundfile), 1, ATTN_NORM, 0);
 }
 
-void Cmd_AutoPickUp_f (edict_t *ent) {
-
+void Cmd_AutoPickUp_f(edict_t* ent) {
 	if (!ent->client->resp.AlreadySpawned)
 		return;
-
-	if (ent->client->resp.mos == MEDIC && invuln_medic->value == 1)
-	{
-		safe_cprintf(ent, PRINT_HIGH, "Invulnerable medics can't pick up weapons!\n");
-		ent->client->resp.autopickup = false;
-		return;
-	}
 
 	if (!ent->client->resp.autopickup) {
 		if (nohud->value)
 			safe_cprintf(ent, PRINT_HIGH, "Auto Item pickup enabled.\n");
 		ent->client->resp.autopickup = true;
-	} else {
+	}
+	else {
 		if (nohud->value)
 			safe_cprintf(ent, PRINT_HIGH, "Auto Item pickup disabled.\n");
 		ent->client->resp.autopickup = false;
 	}
 }
 
-void Cmd_PlayerID_f (edict_t *ent) {
+void Cmd_PlayerID_f (edict_t* ent) {
 //	if (!ent->client->resp.AlreadySpawned)
 //		return;
 
@@ -3255,7 +3244,7 @@ void Cmd_PlayerID_f (edict_t *ent) {
 
 }
 
-void Cmd_Medic_Call_f (edict_t *ent) {
+void Cmd_Medic_Call_f (edict_t* ent) {
 
 	//gi.sound (ent, CHAN_VOICE, gi.soundindex("shout/medic.wav"), 1, ATTN_NORM, 0);
 
@@ -3263,10 +3252,10 @@ void Cmd_Medic_Call_f (edict_t *ent) {
 		ent->client->medic_call = (level.framenum + MEDIC_CALL_TIME);
 }
 
-void Cmd_MOTD (edict_t *ent)
+void Cmd_MOTD (edict_t* ent)
 {
 	//ala MOTD
-	FILE *motd_file;
+	FILE* motd_file;
 	char motd[1000];
 	char line[100];
 
@@ -3316,7 +3305,7 @@ ClientCommand
   Note that we are just keeping a list of all the commands from each structure
   together. 
   */
-void InsertCmds(g_cmds_t *cmds, int numCmds, char *src)
+void InsertCmds(g_cmds_t* cmds, int numCmds, char* src)
 {
     struct cmd_list_t **ptr;
     struct cmd_list_t *tmp;
@@ -3404,7 +3393,7 @@ void Cmd_ShowTimeLeft_f(edict_t* ent)
 	}
 	else
 	{
-		gi.cprintf(ent, PRINT_HIGH, "No hay un limite de tiempo configurado para esta partida.\n");
+		gi.cprintf(ent, PRINT_HIGH, "No hay un l�mite de tiempo configurado para esta partida.\n");
 	}
 }
 

@@ -1461,8 +1461,8 @@ void Shrapnel_Touch (edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *
 
 
 	if (!other->client || 
-		other->client->grenade || // they already have a grenade
-		(invuln_medic->value == 1 && other->client->resp.mos == MEDIC) ) //||
+		other->client->grenade) // they already have a grenade
+
 		//(teamgren->value == 1 && other->client->resp.team_on->index == ent->obj_owner &&
 		//(ent->owner != other))
 		return;	

@@ -60,7 +60,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #endif
 
 typedef unsigned char 		byte;
-typedef enum {false, true}      qboolean;
+typedef enum { false, true }      qboolean;
 
 
 #ifndef NULL
@@ -225,8 +225,10 @@ void COM_FileBase (char *in, char *out);
 void COM_FilePath (char *in, char *out);
 void COM_DefaultExtension (char *path, char *extension);
 
-char *COM_Parse (char **data_p);
-// data is an in/out parm, returns a parsed out token
+void COM_DefaultExtension(char* path, char* extension);
+/* MetalGod MetalGod Fix COM_Parse buffer overflow. TY QW
+char* COM_Parse(char** data_p);
+*/
 
 void Com_sprintf (char *dest, int size, char *fmt, ...);
 
@@ -235,9 +237,9 @@ void Com_PageInMemory (byte *buffer, int size);
 //=============================================
 
 // portable case insensitive compare
-int Q_stricmp (char *s1, char *s2);
-int Q_strcasecmp (char *s1, char *s2);
-int Q_strncasecmp (char *s1, char *s2, int n);
+int Q_stricmp(const char* s1, const char* s2); /* MetalGod Const*/
+int Q_strcasecmp(char* s1, char* s2);
+int Q_strncasecmp(char* s1, char* s2, int n);
 
 //=============================================
 
@@ -302,7 +304,7 @@ void	Sys_FindClose (void);
 
 // this is only here so the functions in q_shared.c and q_shwin.c can link
 void Sys_Error (char *error, ...);
-void Com_Printf (char *msg, ...);
+void dprintf (char *msg, ...);
 
 
 /*

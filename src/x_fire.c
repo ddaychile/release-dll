@@ -279,9 +279,6 @@ qboolean PBM_Inflammable (edict_t *ent)
 	/* Bio-suit offers partial immunity to fire. */
                 if ((ent->client->enviro_framenum > level.framenum) && (random() < 0.8))
                         return true;
-
-				if (ent->client->resp.mos == MEDIC && invuln_medic->value == 1)
-						return true;
 	}
 
 /* The entity is flammable. */

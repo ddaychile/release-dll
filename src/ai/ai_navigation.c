@@ -190,7 +190,7 @@ qboolean AI_FollowPath( edict_t *self )
 
 					//if(AIDevel.debugChased && bot_showlrgoal->integer)
 					//	G_PrintMsg (AIDevel.chaseguy, PRINT_HIGH, "%s: BotRoam Time Out set up for node %i\n", self->ai->pers.netname, nav.broams[i].node);
-					//Com_Printf( "%s: BotRoam Time Out set up for node %i\n", self->ai->pers.netname, nav.broams[i].node);
+					//gi.dprintf( "%s: BotRoam Time Out set up for node %i\n", self->ai->pers.netname, nav.broams[i].node);
 					self->ai->status.broam_timeouts[i] = level.time + 15.0;
 					break;
 				}

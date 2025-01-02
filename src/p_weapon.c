@@ -2211,44 +2211,42 @@ void Weapon_Antidote(edict_t *ent)
 	Weapon_Generic(ent,3,8,48,52,48,48,0,0,0,pause_frames,fire_frames,Weapon_Antidote_Use);
 }
 
-void Weapon_Morphine_Use(edict_t *ent)
+void Weapon_Morphine_Use(edict_t* ent)
 {
-//bcass start - medic sound thing
+	//bcass start - medic sound thing
 	int			randnum;
-//bcass end
-	edict_t		*target;
+	//bcass end
+	edict_t* target;
 	qboolean	full_recovery;	// pbowens: healing rewards
 
 	ent->client->ps.gunframe++;
 
 	if (ent->client->aim)
 		target = ent;
-	else 
+	else
 	{
-		if (!(target=ApplyFirstAid(ent)))
+		if ((target = ApplyFirstAid(ent)) == NULL) /* MetalGod if NULL*/
 			return;
 
 		if (!target->client)
 			return;
 	}
-	
+
 	if (target->burnout > level.time) // they are on fire
 		return;
 
 	if (target->waterlevel == 3) // they are under water
 		return;
 
-	target->wound_location	= 0;
-	target->die_time		= 0;
+	target->wound_location = 0;
+	target->die_time = 0;
 
 	if (target->health < HEALTH_MAX && target->health > 0) {
-
 		// pbowens: do the new medic thang
 		if (target == ent)
 		{
-			ent->health += (7 + crandom()); // just increment self 7+r health points	
+			ent->health += (7 + crandom()); // just increment self 7+r health points
 
-			
 			if (ent->ai && ent->health >= 100)
 			{
 				ent->ai->reached_obj_time = 0;
@@ -2260,28 +2258,26 @@ void Weapon_Morphine_Use(edict_t *ent)
 				ent->goalentity = NULL;
 				ent->enemy = NULL;
 				AI_PickLongRangeGoal(ent);
-				AI_ResetWeights(ent);
+				/* MetalGod Function Prototype for a function that no longer exists.
+				AI_ResetWeights(ent); */
 				AI_ResetNavigation(ent);
 			}
-
-
-
 		}
-		else 
+		else
 		{
 			full_recovery = ((HEALTH_MAX - target->health) >= HEALTH_INCREMENT) ? true : false;
 			target->health += (full_recovery) ? (HEALTH_MAX - target->health) : HEALTH_INCREMENT;
 
-			if (full_recovery && target != ent && invuln_medic->value == 0 && team_kill->value == 0 && target->wound_location ) {
+			if (full_recovery && target != ent && team_kill->value == 0 && target->wound_location) {
 				safe_cprintf(target, PRINT_HIGH, "You have been fully recovered by %s.\n", ent->client->pers.netname);
-				safe_centerprintf(ent, "You have fully recovered %s.\n", target->client->pers.netname );
+				safe_centerprintf(ent, "You have fully recovered %s.\n", target->client->pers.netname);
 
 				// give medic 1 'frag' for scoreboard sorting and deduct 1 kill from other team
 				ent->client->resp.score++;
 
 				if (target->client->resp.team_on == ent->client->resp.team_on)
 					team_list[(ent->client->resp.team_on->index) ? 0 : 1]->kills--;
-			} 
+			}
 			else
 			{
 				safe_cprintf(target, PRINT_HIGH, "You were patched up by %s.\n", ent->client->pers.netname);
@@ -2301,38 +2297,37 @@ void Weapon_Morphine_Use(edict_t *ent)
 					ent->movetarget = NULL;
 					ent->goalentity = NULL;
 					ent->enemy = NULL;
-					AI_ResetWeights(ent);
+					/* MetalGod Function Prototype for a function that no longer exists.
+					AI_ResetWeights(ent);  */
 					AI_ResetNavigation(ent);
 					AI_PickLongRangeGoal(ent);
-
 				}
-
 			}
 		}
 
-//bcass start - medic sound thing
+		//bcass start - medic sound thing
 		srand(rand());
-		randnum=rand()%100;
-		
+		randnum = rand() % 100;
+
 		//let the fun begin defining sounds
-		if(randnum > MEDIC1 && randnum < MEDIC2)
+		if (randnum > MEDIC1 && randnum < MEDIC2)
 		{
-			gi.sound (target, CHAN_WEAPON, gi.soundindex ("items/morphine1.wav"), 1.0, ATTN_NORM, 0);
+			gi.sound(target, CHAN_WEAPON, gi.soundindex("items/morphine1.wav"), 1.0, ATTN_NORM, 0);
 		}
 		else if (randnum > MEDIC2 && randnum < MEDIC3)
 		{
-			gi.sound (target, CHAN_WEAPON, gi.soundindex ("items/morphine2.wav"), 1.0, ATTN_NORM, 0);
+			gi.sound(target, CHAN_WEAPON, gi.soundindex("items/morphine2.wav"), 1.0, ATTN_NORM, 0);
 		}
 		else if (randnum > MEDIC3 && randnum < MEDICH)
 		{
-			gi.sound (target, CHAN_WEAPON, gi.soundindex ("items/morphine3.wav"), 1.0, ATTN_NORM, 0);
+			gi.sound(target, CHAN_WEAPON, gi.soundindex("items/morphine3.wav"), 1.0, ATTN_NORM, 0);
 		}
 		else
 		{
-			gi.sound (target, CHAN_WEAPON, gi.soundindex ("items/l_health.wav"), 1.0, ATTN_NORM, 0);
+			gi.sound(target, CHAN_WEAPON, gi.soundindex("items/l_health.wav"), 1.0, ATTN_NORM, 0);
 		}
-//bcass end		
-//			gi.sound (ent, CHAN_WEAPON, gi.soundindex ("items/l_health.wav"), 1.0, ATTN_NORM, 0);
+		//bcass end
+		//			gi.sound (ent, CHAN_WEAPON, gi.soundindex ("items/l_health.wav"), 1.0, ATTN_NORM, 0);
 
 		if (target->health > HEALTH_MAX)
 			target->health = HEALTH_MAX;
@@ -2341,68 +2336,66 @@ void Weapon_Morphine_Use(edict_t *ent)
 		if (target->client &&
 			target->health == HEALTH_MAX)
 			target->client->last_wound_inflictor = NULL;
-		
 
-//		ClientSetMaxSpeed(target, true);
+		//		ClientSetMaxSpeed(target, true);
 		WeighPlayer(ent);
 	}
 }
 
 
-void Weapon_Morphine(edict_t *ent)
+void Weapon_Morphine(edict_t* ent)
 {
-	static int		pause_frames[] = {0};//{19,32,0};
-	static int		fire_frames[2];
+	static int		pause_frames[] = { 0 };//{19,32,0};
+	static int		fire_frames[3];/* MetalGod this needed to be 3, not 2 or the end of the array would be overrun */
 
-	fire_frames[0] = (ent->client->aim)?53:4;
-	fire_frames[1] = (ent->client->aim)?53:5;
-	fire_frames[2] = (ent->client->aim)?53:6;
+	fire_frames[0] = (ent->client->aim) ? 53 : 4;
+	fire_frames[1] = (ent->client->aim) ? 53 : 5;
+	fire_frames[2] = (ent->client->aim) ? 53 : 6;
 
 	ent->client->crosshair = true;
 
 	Weapon_Generic(ent,
-		3,  10, 45, 
-		45, 45, 49, 
-		52, 55, 66, 
-		pause_frames,fire_frames,Weapon_Morphine_Use);
+		3, 10, 45,
+		45, 45, 49,
+		52, 55, 66,
+		pause_frames, fire_frames, Weapon_Morphine_Use);
 }
 
 //6 minutes for bandage
 #define BANDAGE_TIME 360
-void Weapon_Bandage_Use(edict_t *ent)
+void Weapon_Bandage_Use(edict_t* ent)
 {
-	edict_t *target;
+	edict_t* target;
 	ent->client->ps.gunframe++;
-	if(!(target=ApplyFirstAid(ent)))return;
-	if(target->wound_location & (CHEST_WOUND|STOMACH_WOUND))
+	if ((target = ApplyFirstAid(ent)) == NULL) /* MetalGod if NULL */
+		return;
+
+	if (target->wound_location & (CHEST_WOUND | STOMACH_WOUND))
 	{
-		if(target->die_time) target->die_time+=(BANDAGE_TIME);
-		else target->die_time=BANDAGE_TIME+level.time;
-		target->wound_location= target->wound_location & ~(CHEST_WOUND|STOMACH_WOUND);
+		if (target->die_time) target->die_time += (BANDAGE_TIME);
+		else target->die_time = BANDAGE_TIME + level.time;
+		target->wound_location = target->wound_location & ~(CHEST_WOUND | STOMACH_WOUND);
 		ent->client->pers.inventory[ITEM_INDEX(FindItem("Bandage"))]--;
 		WeighPlayer(target);
 	}
-	else 
+	else
 	{
-
 		ent->client->pers.inventory[ITEM_INDEX(FindItem("Bandage"))]--;
 		target->client->pers.inventory[ITEM_INDEX(FindItem("Bandage"))]++;
 	}
 	//Find the other entity, check for leg wound, set arty_strike_time(?) to wear off,
 	//remove wound modifier from speed multiplyer,
-	//then check in client_think where die time is for arty_strike_time, then remultiply the 
+	//then check in client_think where die time is for arty_strike_time, then remultiply the
 	//speed modifier.
 	return;
-
 }
 
-
-void Weapon_Bandage(edict_t *ent)
+void Weapon_Bandage(edict_t* ent)
 {
 	static int		pause_frames[] = {19,32,0};
 	static int		fire_frames[] = {6};
 
-	Weapon_Generic(ent,3,8,48,52,48,48,0,0,0,pause_frames,fire_frames,Weapon_Bandage_Use);
+	Weapon_Generic(ent, 3, 8, 48, 52, 48, 48, 0, 0, 0, pause_frames, fire_frames, Weapon_Bandage_Use);
 }
 
 
@@ -2416,7 +2409,7 @@ Flamethrower
 ======================================================================
 */
 
-void weapon_flame_fire (edict_t *ent)
+void weapon_flame_fire (edict_t* ent)
 {
 	vec3_t	forward, right;
 	vec3_t	start;

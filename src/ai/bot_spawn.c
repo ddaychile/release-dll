@@ -472,7 +472,7 @@ return false;
 	ent->client->ps.pmove.pm_flags = PMF_TIME_TELEPORT;
 	ent->client->ps.pmove.pm_time = 14;
 
-	Com_Printf ( "%s joined the %s team.\n",
+	gi.dprintf ( "%s joined the %s team.\n",
 		ent->client->pers.netname, CTFTeamName(ent->client->resp.ctf_team));
 
 	return true;*/
@@ -572,7 +572,7 @@ void BOT_DMClass_JoinGame (edict_t *ent, char *team_name)
 	int randnum = rand()%5;
 
 	if ( !BOT_JoinCTFTeam(ent, team_name) )
-		Com_Printf ( "%s joined the game.\n",
+		gi.dprintf ( "%s joined the game.\n",
 		ent->client->pers.netname);
 
 	ent->think = AI_Think;
@@ -708,19 +708,19 @@ void BOT_SpawnBot (int team, char *name, char *skin, char *userinfo)
 	if (!nobotwarn && (nav.loaded == -1))
 	{
 		nobotwarn = true;
-		Com_Printf("No .nav file for this map, can't load bots!\n");
+		gi.dprintf("No .nav file for this map, can't load bots!\n");
 		return;
 	}
 	if (!nobotwarn && total_camp_spots == 0)
 	{
 		nobotwarn = true;
-		Com_Printf("No .cmp file for this map, can't load bots!\n");
+		gi.dprintf("No .cmp file for this map, can't load bots!\n");
 		return;
 	}
 	
 	//	if( !nav.loaded ) {
 	if (nav.loaded == -1 || total_camp_spots == 0){
-		//Com_Printf("Can't spawn bots without a valid navigation file\n");
+		//gi.dprintf("Can't spawn bots without a valid navigation file\n");
 		return;
 	}
 	

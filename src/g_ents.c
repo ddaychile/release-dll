@@ -36,8 +36,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define NO_MISSION 99
 
-void multi_trigger (edict_t *ent);
-void InitTrigger (edict_t *self);
+void multi_trigger (edict_t* ent);
+void InitTrigger (edict_t* self);
 int Last_Team_Winner=99;
 //char map_tree[MAX_TEAMS][MAX_QPATH];
 
@@ -58,6 +58,7 @@ int Last_Team_Winner=99;
 
 
 /////////////////////
+
 void trigger_enough_troops_use (edict_t *self, edict_t *other, edict_t *activator)
 {
 	int i;
@@ -76,10 +77,10 @@ void trigger_enough_troops_use (edict_t *self, edict_t *other, edict_t *activato
 	}
 	
 
-	if( (activator->client->resp.team_on->mission != self->health) && (self->health != NO_MISSION) )
+	if ((activator->client->resp.team_on->mission != self->health) && (self->health != NO_MISSION))
 	{
-		team_list[self->obj_owner]->time_to_win=0;
-		self->obj_owner=activator->client->resp.team_on->index;
+		team_list[self->obj_owner]->time_to_win = 0;
+		self->obj_owner = activator->client->resp.team_on->index;
 		gi.dprintf("TRIGGER return code 3\n");
 		return;				// if not for this mission get out of here...
 	}
@@ -155,23 +156,23 @@ void SP_info_Mission_Results(edict_t *ent)
 //The following functions keep track of who owns the entity
 /////////////////////////////////////////////////////////////////////////////////
 //dmg is points for owning objtive
-void target_objective_use(edict_t *self, edict_t *other, edict_t *activator)
+void target_objective_use(edict_t* self, edict_t* other, edict_t* activator)
 {
-	if(self->obj_owner==activator->client->resp.team_on->index)
+	if (self->obj_owner == activator->client->resp.team_on->index)
 		return; // if team already in possesion, continue
 
-	if(team_list[self->obj_owner]!=NULL)
-		team_list[self->obj_owner]->score-=self->dmg;
+	if (team_list[self->obj_owner] == NULL)/* MetalGod check to see if it's NULL, before doing anything else or risk dereferencing */
+		return;
 
-	safe_bprintf(PRINT_HIGH, "%s has captured an objective point for team %s!\n",
-		activator->client->pers.netname,
-		team_list[self->obj_owner]->teamname);
+	team_list[self->obj_owner]->score -= self->dmg;
 
-	self->obj_owner=activator->client->resp.team_on->index;
-	team_list[self->obj_owner]->score+=self->dmg;
+	safe_bprintf(PRINT_HIGH, "%s has captured an objective point for team %s!\n", activator->client->pers.netname, team_list[self->obj_owner]->teamname);
+
+	self->obj_owner = activator->client->resp.team_on->index;
+	team_list[self->obj_owner]->score += self->dmg;
 }
 
-void SP_target_objective(edict_t *ent)
+void SP_target_objective(edict_t* ent)
 {
 	ent->wait=-1;
 	ent->use=target_objective_use;
@@ -230,10 +231,10 @@ void reinforcement_think1(edict_t *ent)
 	}
 }*/
 
-void bot_spawn(edict_t *ent)
+void bot_spawn(edict_t* ent)
 {}
 
-void SP_info_reinforcement_start(edict_t *ent)
+void SP_info_reinforcement_start(edict_t* ent)
 {
 //	ent->think= reinforcement_think;
 //	ent->nextthink = level.time+((ent->delay)?ent->delay : RI->value);
@@ -241,7 +242,7 @@ void SP_info_reinforcement_start(edict_t *ent)
 	ent->spawnpoint = true;
 } 
 
-void SP_info_reinforcement_startx(edict_t *ent)
+void SP_info_reinforcement_startx(edict_t* ent)
 {
 //	ent->think= reinforcement_think;
 //	ent->nextthink = level.time+((ent->delay)?ent->delay : RI->value);
@@ -261,7 +262,7 @@ void SP_info_reinforcement_startx(edict_t *ent)
 } 
 
 
-gitem_t *InsertItem(gitem_t *it,spawn_t *spawnInfo);
+gitem_t* InsertItem(gitem_t* it,spawn_t* spawnInfo);
 
 gitem_t usaitems[MAX_TEAM_ITEMS];
 spawn_t sp_usa[MAX_TEAM_ITEMS];
@@ -303,249 +304,328 @@ spawn_t sp_usm[MAX_TEAM_ITEMS];
 SMos_t USM_MOS_List[NUM_CLASSES];
 void USM_UserPrecache(void);
 
-int InitTeam (char *team, int i) // Faltaba definir como int a InitTeam. El compilador lo hace por defecto pero tira un warning feo >:( - ZeRo
+void InitTeam(char* team, int i) /* MetalGod missing type specifier - added void */
 {
 	int j;
 
 	if (!strcmp(team, "usa"))
-	{	for(j=0;usaitems[j].classname;j++)
-		{	usaitems[j].mag_index=i;
-			InsertItem(&usaitems[j],&sp_usa[j]);
+	{
+		for (j = 0; usaitems[j].classname; j++)
+		{
+			usaitems[j].mag_index = i;
+			InsertItem(&usaitems[j], &sp_usa[j]);
 		}
-		InitMOS_List(team_list[i],USA_MOS_List);
+		InitMOS_List(team_list[i], USA_MOS_List);
 		USA_UserPrecache();
 		usa_index = i;
 	}
 	else if (!strcmp(team, "grm"))
-	{	for(j=0;grmitems[j].classname;j++)
-		{	grmitems[j].mag_index=i;
-			InsertItem(&grmitems[j],&sp_grm[j]);
+	{
+		for (j = 0; grmitems[j].classname; j++)
+		{
+			grmitems[j].mag_index = i;
+			InsertItem(&grmitems[j], &sp_grm[j]);
 		}
-		InitMOS_List(team_list[i],GRM_MOS_List);
+		InitMOS_List(team_list[i], GRM_MOS_List);
 		GRM_UserPrecache();
 		grm_index = i;
-
-	}	
+	}
 	else if (!strcmp(team, "rus"))
-	{	for(j=0;rusitems[j].classname;j++)
-		{	rusitems[j].mag_index=i;
-			InsertItem(&rusitems[j],&sp_rus[j]);
+	{
+		for (j = 0; rusitems[j].classname; j++)
+		{
+			rusitems[j].mag_index = i;
+			InsertItem(&rusitems[j], &sp_rus[j]);
 		}
-		InitMOS_List(team_list[i],RUS_MOS_List);
+		InitMOS_List(team_list[i], RUS_MOS_List);
 		RUS_UserPrecache();
 		rus_index = i;
-
 	}
 	else if (!strcmp(team, "gbr"))
-	{	for(j=0;gbritems[j].classname;j++)
-		{	gbritems[j].mag_index=i;
-			InsertItem(&gbritems[j],&sp_gbr[j]);
+	{
+		for (j = 0; gbritems[j].classname; j++)
+		{
+			gbritems[j].mag_index = i;
+			InsertItem(&gbritems[j], &sp_gbr[j]);
 		}
-		InitMOS_List(team_list[i],GBR_MOS_List);
+		InitMOS_List(team_list[i], GBR_MOS_List);
 		GBR_UserPrecache();
 		gbr_index = i;
-
 	}
 	else if (!strcmp(team, "pol"))
-	{	for(j=0;politems[j].classname;j++)
-		{	politems[j].mag_index=i;
-			InsertItem(&politems[j],&sp_pol[j]);
+	{
+		for (j = 0; politems[j].classname; j++)
+		{
+			politems[j].mag_index = i;
+			InsertItem(&politems[j], &sp_pol[j]);
 		}
-		InitMOS_List(team_list[i],POL_MOS_List);
+		InitMOS_List(team_list[i], POL_MOS_List);
 		POL_UserPrecache();
 		pol_index = i;
-
 	}
 	else if (!strcmp(team, "ita"))
-	{	for(j=0;itaitems[j].classname;j++)
-		{	itaitems[j].mag_index=i;
-			InsertItem(&itaitems[j],&sp_ita[j]);
+	{
+		for (j = 0; itaitems[j].classname; j++)
+		{
+			itaitems[j].mag_index = i;
+			InsertItem(&itaitems[j], &sp_ita[j]);
 		}
-		InitMOS_List(team_list[i],ITA_MOS_List);
+		InitMOS_List(team_list[i], ITA_MOS_List);
 		ITA_UserPrecache();
 		ita_index = i;
-
 	}
 	else if (!strcmp(team, "jpn"))
-	{	for(j=0;jpnitems[j].classname;j++)
-		{	jpnitems[j].mag_index=i;
-			InsertItem(&jpnitems[j],&sp_jpn[j]);
+	{
+		for (j = 0; jpnitems[j].classname; j++)
+		{
+			jpnitems[j].mag_index = i;
+			InsertItem(&jpnitems[j], &sp_jpn[j]);
 		}
-		InitMOS_List(team_list[i],JPN_MOS_List);
+		InitMOS_List(team_list[i], JPN_MOS_List);
 		JPN_UserPrecache();
 		jpn_index = i;
-
 	}
 	else if (!strcmp(team, "usm"))
-	{	for(j=0;usmitems[j].classname;j++)
-		{	usmitems[j].mag_index=i;
-			InsertItem(&usmitems[j],&sp_usm[j]);
+	{
+		for (j = 0; usmitems[j].classname; j++)
+		{
+			usmitems[j].mag_index = i;
+			InsertItem(&usmitems[j], &sp_usm[j]);
 		}
-		InitMOS_List(team_list[i],USM_MOS_List);
+		InitMOS_List(team_list[i], USM_MOS_List);
 		USM_UserPrecache();
 		usm_index = i;
-
 	}
-	else if (i==0)
-	{	for(j=0;usaitems[j].classname;j++)
-		{	usaitems[j].mag_index=i;
-			InsertItem(&usaitems[j],&sp_usa[j]);
+	else if (i == 0)
+	{
+		for (j = 0; usaitems[j].classname; j++)
+		{
+			usaitems[j].mag_index = i;
+			InsertItem(&usaitems[j], &sp_usa[j]);
 		}
-		InitMOS_List(team_list[i],USA_MOS_List);
+		InitMOS_List(team_list[i], USA_MOS_List);
 		USA_UserPrecache();
 		usa_index = i;
 	}
-	else if (i==1)
-	{	for(j=0;grmitems[j].classname;j++)
-		{	grmitems[j].mag_index=i;
-			InsertItem(&grmitems[j],&sp_grm[j]);
+	else if (i == 1)
+	{
+		for (j = 0; grmitems[j].classname; j++)
+		{
+			grmitems[j].mag_index = i;
+			InsertItem(&grmitems[j], &sp_grm[j]);
 		}
-		InitMOS_List(team_list[i],GRM_MOS_List);
+		InitMOS_List(team_list[i], GRM_MOS_List);
 		GRM_UserPrecache();
 		grm_index = i;
-
-	}	
+	}
 
 	if (team_list[0] && team_list[1])
-		SetItemNames ();
-
-
+		SetItemNames();
 }
 
-
-void SP_info_team_start(edict_t *ent)
+void LoadBotChat(int teamnum, char* teamid)
 {
-	int i,k;
-	
-	i=ent->obj_owner;
-	
+	char* tempchat;
+	char* s, * f;
+	int c;
+	char	filename[MAX_QPATH] = "";
+
+	c = 0;
+	sprintf(filename, "dday/botchat/%s-sorry.txt", teamid);
+	tempchat = ReadEntFile(filename);
+	if (!tempchat) tempchat = ReadEntFile("dday/botchat/usa-sorry.txt");
+	if (tempchat) {
+		f = strdup(tempchat);
+		s = strtok(f, "\n");
+		Com_sprintf(botchat_sorry[teamnum][c], sizeof(botchat_sorry[teamnum][c]), "%s", s);
+		while (s != NULL) {
+			s = strtok(NULL, "\n");
+			c++;
+			Com_sprintf(botchat_sorry[teamnum][c], sizeof(botchat_sorry[teamnum][c]), "%s", s);
+		}
+		botchat_sorry_count[teamnum] = c;
+	}
+
+	c = 0;
+	sprintf(filename, "dday/botchat/%s-killed.txt", teamid);
+	tempchat = ReadEntFile(filename);
+	if (!tempchat) tempchat = ReadEntFile("dday/botchat/usa-killed.txt");
+	if (tempchat) {
+		f = strdup(tempchat);
+		s = strtok(f, "\n");
+		Com_sprintf(botchat_killed[teamnum][c], sizeof(botchat_killed[teamnum][c]), "%s", s);
+		while (s != NULL) {
+			s = strtok(NULL, "\n");
+			c++;
+			Com_sprintf(botchat_killed[teamnum][c], sizeof(botchat_killed[teamnum][c]), "%s", s);
+		}
+		botchat_killed_count[teamnum] = c;
+	}
+
+	c = 0;
+	sprintf(filename, "dday/botchat/%s-forgive.txt", teamid);
+	tempchat = ReadEntFile(filename);
+	if (!tempchat) tempchat = ReadEntFile("dday/botchat/usa-forgive.txt");
+	if (tempchat) {
+		f = strdup(tempchat);
+		s = strtok(f, "\n");
+		Com_sprintf(botchat_forgive[teamnum][c], sizeof(botchat_forgive[teamnum][c]), "%s", s);
+		while (s != NULL) {
+			s = strtok(NULL, "\n");
+			c++;
+			Com_sprintf(botchat_forgive[teamnum][c], sizeof(botchat_forgive[teamnum][c]), "%s", s);
+		}
+		botchat_forgive_count[teamnum] = c;
+	}
+
+	c = 0;
+	sprintf(filename, "dday/botchat/%s-self.txt", teamid);
+	tempchat = ReadEntFile(filename);
+	if (!tempchat) tempchat = ReadEntFile("dday/botchat/usa-self.txt");
+	if (tempchat) {
+		f = strdup(tempchat);
+		s = strtok(f, "\n");
+		Com_sprintf(botchat_self[teamnum][c], sizeof(botchat_self[teamnum][c]), "%s", s);
+		while (s != NULL) {
+			s = strtok(NULL, "\n");
+			c++;
+			Com_sprintf(botchat_self[teamnum][c], sizeof(botchat_self[teamnum][c]), "%s", s);
+		}
+		botchat_self_count[teamnum] = c;
+	}
+	/*
+		c=0;
+		sprintf(filename, "dday/botchat/%s-random.txt", teamid);
+		tempchat = ReadEntFile(filename);
+		if (!tempchat) tempchat = ReadEntFile("dday/botchat/usa-random.txt");
+		if (tempchat)	{
+			f = strdup (tempchat);
+			s = strtok(f, "\n");
+			Com_sprintf (botchat_random[teamnum][c], sizeof(botchat_random[teamnum][c]), "%s", s);
+			while (s!= NULL)		{
+				s = strtok (NULL, "\n");
+				c++;
+				Com_sprintf (botchat_random[teamnum][c], sizeof(botchat_random[teamnum][c]), "%s", s);		}
+			botchat_random_count[teamnum] = c;
+		}*/
+}
+
+void SP_info_team_start(edict_t* ent)
+{
+	int i, k;
+	char* temp_var; /* MetalGod to avoid calculation in sizeof! */
+	i = ent->obj_owner;
 
 	//mapper set fullbright to 1 in info_team_start
 	if (ent->groundentity_linkcount == true)
 		level.fullbright = true;
-	
+
 	if (ent->teleport_time)
 		level.fog = ent->teleport_time;
-
-
 
 	//fix for mappers who use capital letters for teamid
 	for (k = 0; ent->pathtarget[k]; k++)
 		ent->pathtarget[k] = tolower(ent->pathtarget[k]);
 
-
-
-	team_list[i]=gi.TagMalloc(sizeof(TeamS_t),TAG_LEVEL);
-	team_list[i]->teamname=gi.TagMalloc(sizeof(ent->message + 2),TAG_LEVEL);
+	team_list[i] = gi.TagMalloc(sizeof(TeamS_t), TAG_LEVEL);
+	temp_var = ent->message + 2;
+	team_list[i]->teamname = gi.TagMalloc(sizeof(temp_var), TAG_LEVEL);
 	//strcpy(team_list[i]->teamname,ent->message);
-
-
-
 
 	if (mashup->value)
 	{
-	/*buggy pol rifle and probably other stuff	char *team;
-		int r;
-		r = (int)(random() *8);
-		team = NULL;
-		while (!team)
-		{
+		/*buggy pol rifle and probably other stuff	char *team;
+			int r;
 			r = (int)(random() *8);
-			switch (r)
+			team = NULL;
+			while (!team)
 			{
-			case 1: team = "grm"; break;
-			case 2: team = "rus"; break;
-			case 3: team = "gbr"; break;
-			case 4: team = "pol"; break;
-			case 5: team = "ita"; break;
-			case 6: team = "jpn"; break;
-			case 7: team = "usm"; break;
-			default: team = "usa"; break;
-			}
-			if (team_list[(i+1)%2] && !strcmp(team_list[(i+1)%2]->teamid, team))
-				team = NULL;
-		}
-		strcpy (ent->pathtarget, team);
-		strcpy (ent->message, team);*/
-		int r;
-		char *team;
-		r = (int)(random() *5);
-		if (i==0)
-		{
-			switch (r)
-			{
-				r = (int)(random() *4);
-				case 0: team = "rus"; break;
-				case 1: team = "gbr"; break;
-				case 2: team = "pol"; break;
-				case 3: team = "usm"; break;
+				r = (int)(random() *8);
+				switch (r)
+				{
+				case 1: team = "grm"; break;
+				case 2: team = "rus"; break;
+				case 3: team = "gbr"; break;
+				case 4: team = "pol"; break;
+				case 5: team = "ita"; break;
+				case 6: team = "jpn"; break;
+				case 7: team = "usm"; break;
 				default: team = "usa"; break;
+				}
+				if (team_list[(i+1)%2] && !strcmp(team_list[(i+1)%2]->teamid, team))
+					team = NULL;
+			}
+			strcpy (ent->pathtarget, team);
+			strcpy (ent->message, team);*/
+		int r;
+		char* team;
+		/*r = (int)(random() * 5); MetalGod put this where it's used and use an appropriate choice for sides */
+		if (i == 0)
+		{
+			r = (int)(random() * 5);/* MetalGod */
+			switch (r)
+			{
+				/* MetalGod this does nothing but make the following code in the switch unreachable
+				r = (int)(random() * 4); */
+			case 0: team = "rus"; break;
+			case 1: team = "gbr"; break;
+			case 2: team = "pol"; break;
+			case 3: team = "usm"; break;
+			default: team = "usa"; break;
 			}
 		}
 		else
 		{
+			r = (int)(random() * 3); /* MetalGod +*/
 			switch (r)
 			{
-				r = (int)(random() *2);
-				case 0: team = "grm"; break;
-				case 1: team = "ita"; break;
-				default: team = "jpn"; break;
+				/* MetalGod this does nothing but make the following code in the switch unreachable
+				r = (int)(random() * 2);
+				*/
+			case 0: team = "grm"; break;
+			case 1: team = "ita"; break;
+			default: team = "jpn"; break;
 			}
 		}
-		strcpy (ent->pathtarget, team);
-		strcpy (ent->message, team);
-
+		strcpy(ent->pathtarget, team);
+		strcpy(ent->message, team);
 	}
-
 
 	team_list[i]->teamname = ent->message;
 	//long team names were causing crashes
-	if (strlen(ent->message) > 12) ent->message[12] =0;
+	if (strlen(ent->message) > 12) ent->message[12] = 0;
 
-
-
-
-
-//	if (strlen(ent->message) > 12) team_list[i]->teamname = team_list[i]->teamid;
-//	team_list[i]->playermodel = gi.TagMalloc( 64, TAG_LEVEL );
-	strcpy (team_list[i]->teamid , ent->pathtarget);
-	strcpy (team_list[i]->playermodel , ent->pathtarget);
-
-
+	//	if (strlen(ent->message) > 12) team_list[i]->teamname = team_list[i]->teamid;
+	//	team_list[i]->playermodel = gi.TagMalloc( 64, TAG_LEVEL );
+	strcpy(team_list[i]->teamid, ent->pathtarget);
+	strcpy(team_list[i]->playermodel, ent->pathtarget);
 
 	if (ent->style == 2)
 		team_list[i]->kills_and_points = true;
 
-
-
-
-
-	if (!stricmp(team_list[i]->teamid, "usm"))  
+	if (!stricmp(team_list[i]->teamid, "usm"))
 	{
-		strcpy (team_list[i]->teamid , "usa");
-		strcpy (team_list[i]->playermodel , "usa");
+		strcpy(team_list[i]->teamid, "usa");
+		strcpy(team_list[i]->playermodel, "usa");
 	}
 
+	team_list[i]->nextmap = gi.TagMalloc(64, TAG_LEVEL);
 
-	team_list[i]->nextmap = gi.TagMalloc( 64, TAG_LEVEL );
-
-	team_list[i]->kills=0;
-	team_list[i]->losses=0;
-	team_list[i]->index=i;
-	team_list[i]->score=0;
+	team_list[i]->kills = 0;
+	team_list[i]->losses = 0;
+	team_list[i]->index = i;
+	team_list[i]->score = 0;
 
 	if (ent->map)
 		team_list[i]->nextmap = ent->map;
 	else
 		team_list[i]->nextmap = level.mapname;
 
-
 	//make it so if allies win dday5 it goes to dday1
-	if (!stricmp(level.mapname, "dday5"))  
+	if (!stricmp(level.mapname, "dday5"))
 	{
 		team_list[0]->nextmap = "dday1";
 	}
-
 
 	//faf:  servers can turn off campaign mode
 /*	if (campaign_mode->value != 1)
@@ -561,32 +641,26 @@ void SP_info_team_start(edict_t *ent)
 		}
 
 		//so we dont get stuck
-
 	}*/
-
 
 	//faf: custom skins for map
 	if (ent->deathtarget)
 		team_list[i]->skin = ent->deathtarget;
 
-
-
-
-	
-	if(ent->count!=99 || Last_Team_Winner==99 )
+	if (ent->count != 99 || Last_Team_Winner == 99)
 	{
-		if(ent->count==TEAM_OFFENCE) team_list[i]->mission=TEAM_OFFENCE;
-		else if(ent->count==TEAM_DEFENCE) team_list[i]->mission=TEAM_DEFENCE;
-		else team_list[i]->mission=TEAM_PATROL;
+		if (ent->count == TEAM_OFFENCE) team_list[i]->mission = TEAM_OFFENCE;
+		else if (ent->count == TEAM_DEFENCE) team_list[i]->mission = TEAM_DEFENCE;
+		else team_list[i]->mission = TEAM_PATROL;
 	}
 	else
 	{
-		if(Last_Team_Winner==i) team_list[i]->mission=TEAM_OFFENCE;
-		else team_list[i]->mission=TEAM_DEFENCE;
+		if (Last_Team_Winner == i) team_list[i]->mission = TEAM_OFFENCE;
+		else team_list[i]->mission = TEAM_DEFENCE;
 	}
 
-//	if (ent->delay)
-		team_list[i]->time_to_win = 0; //ent->delay;
+	//	if (ent->delay)
+	team_list[i]->time_to_win = 0; //ent->delay;
 
 	if (ent->health)
 		team_list[i]->need_points = ent->health;
@@ -605,23 +679,22 @@ void SP_info_team_start(edict_t *ent)
 		team_list[i]->delay = 0;
 
 	// now is the time to hook up the mos .dll files...
-	   
+
 //    InitializeUserDLLs(LoadUserDLLs(ent, i),i);
 
+	InitTeam(ent->pathtarget, i);
 
-	InitTeam(ent->pathtarget,i);
-
-	if (campaign->string 
+	if (campaign->string
 		&& ent->obj_owner == 1)//so it doesn't get run twice
 		SetupCampaign(false);
 
-//	InitMOS_List(team_list[i]);
+	//	InitMOS_List(team_list[i]);
 
-	G_FreeEdict (ent);	//clean up entity now that it's not needed.
+	LoadBotChat(i, team_list[i]->teamid);
 
+	G_FreeEdict(ent);	//clean up entity now that it's not needed.
 }
-
-
-void SP_info_Max_MOS(edict_t *ent)
+/*	 MetalGod unused
+void SP_info_Max_MOS(edict_t* ent)
 {
-}
+} */

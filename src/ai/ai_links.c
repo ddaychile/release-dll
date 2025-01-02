@@ -80,7 +80,7 @@ qboolean AI_VisibleOrigins (vec3_t spot1, vec3_t spot2)
 	trace = gi.trace( spot1, vec3_origin, vec3_origin, spot2, LINKS_PASSENT, MASK_NODESOLID );
 	if (trace.fraction == 1.0 && !trace.startsolid)
 		return true;
-	//Com_Printf("Bloqued");
+	//gi.dprintf("Bloqued");
 	return false;
 }
 
@@ -701,7 +701,7 @@ int AI_LadderLink_FindUpperNode( int node )
 	}
 
 //	if( candidate != -1 )
-//		Com_Printf( "LADDER: FOUND upper node in ladder\n");
+//		gi.dprintf( "LADDER: FOUND upper node in ladder\n");
 
 	return candidate;
 }
@@ -748,7 +748,7 @@ int AI_LadderLink_FindLowerNode( int node )
 	}
 
 //	if( candidate != -1 )
-//		Com_Printf( "LADDER: FOUND lower node in ladder\n");
+//		gi.dprintf( "LADDER: FOUND lower node in ladder\n");
 
 	return candidate;
 }

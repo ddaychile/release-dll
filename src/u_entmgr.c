@@ -58,7 +58,7 @@ extern spawn_t spawns[];
 //data is performed. You must maintain a copy of the data in your dll! 
 //You also have to pass in a spawn_t struct that tells how to spawn your
 //item.
-gitem_t *InsertItem(gitem_t *it, spawn_t *spawnInfo)
+gitem_t* InsertItem(gitem_t* it, spawn_t* spawnInfo)
 {
     int i, inc_items;
     gitem_t *spot;
@@ -67,8 +67,8 @@ gitem_t *InsertItem(gitem_t *it, spawn_t *spawnInfo)
     inc_items = 0;
     spot = NULL;
       //first, we want to find a place for the item.
-    for(i=1;i<game.num_items && !spot;i++)
-        if(itemlist[i].classname && !Q_stricmp(itemlist[i].classname,EMPTY_NAME))
+    for(i = 1; i < game.num_items && !spot; i++)
+        if (itemlist[i].classname && !Q_stricmp(itemlist[i].classname, EMPTY_NAME))
             spot = &itemlist[i];
 
 
@@ -87,7 +87,7 @@ gitem_t *InsertItem(gitem_t *it, spawn_t *spawnInfo)
           //the spawn function befrore we can insert item
         spspot = NULL;
 
-        for(s=spawns, i=0; i<MAX_EDICTS && s->name;i++,s++)
+        for(s=spawns, i=0; i<MAX_EDICTS && s->name; i++, s++)
             if(s->name && !Q_stricmp(s->name,EMPTY_NAME))
                 spspot = s;
 

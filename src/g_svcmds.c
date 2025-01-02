@@ -593,7 +593,7 @@ void SVCmd_KillPlayer_f()
 	edict_t* player = &g_edicts[player_id];
 	if (!player->inuse || !player->client)
 	{
-		gi.cprintf(NULL, PRINT_HIGH, "El jugador con ID %d no está en juego o no es valido.\n", player_id);
+		gi.cprintf(NULL, PRINT_HIGH, "El jugador con ID %d no está en juego o no es v�lido.\n", player_id);
 		return;
 	}
 
