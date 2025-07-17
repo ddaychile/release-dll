@@ -302,7 +302,7 @@ void InitGame (void)
 
 
 
-	gi.cvar ("dll_version", "Dday 5.041 Chile",  CVAR_SERVERINFO | CVAR_LATCH); //faf
+	gi.cvar ("dll_version", "Dday 5.040  Chile",  CVAR_SERVERINFO | CVAR_LATCH); //faf
 
 	gi.cvar ("website", "http://www.DdayDev.com",  CVAR_SERVERINFO | CVAR_LATCH); //faf
 

@@ -535,6 +535,17 @@ if (ent->client->pers.weapon->position == LOC_GRENADES)
 ent->client->weaponstate == WEAPON_LOWER)
 return false;
 
+	//faf:  crosshair cheat prevention measures
+//	if (!ent->client->aim)
+//	{
+		ent->client->crosshair_offset_x = random() * 4 - 2;
+		ent->client->crosshair_offset_y = random() * 4 - 2;
+	//	gi.dprintf ("%f\n", ent->client->crosshair_offset_x);
+
+
+//	}
+//	else
+//		ent->client->crosshair_offset = 0;
 
 	if (//ent->client->pers.weapon->position == LOC_H_MACHINEGUN || //no hmg or engineer cuz tracers/rockets need more work
 		ent->client->pers.weapon->position == LOC_ROCKET ||

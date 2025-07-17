@@ -415,7 +415,7 @@ void Weapon_Generic (edict_t *ent,
 				ent->client->sniper_loaded[ent->client->resp.team_on->index] = true;
 		}
 
-		ent->client->sniper_loaded[ent->client->resp.team_on->index] = true; // carga de bala en el arma sola (Esta linea fea no existe en el codigo original - ZeRo)
+//		ent->client->sniper_loaded[ent->client->resp.team_on->index] = true; // carga de bala en el arma sola (Esta linea fea no existe en el codigo original - ZeRo)
 
 		if (ent->client->ps.gunframe == FRAME_ACTIVATE_LAST)
 		{

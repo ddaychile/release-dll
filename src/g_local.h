@@ -1911,9 +1911,9 @@ int ita_index;
 int jpn_index;
 int usm_index;
 
-#define SMG_SPREAD 20 // valor era 30 hans
-#define PISTOL_SPREAD 10 // valor era 40 hans
-#define LMG_SPREAD 10 // Valor para test era 20 (Original 80)- ZeRo
+#define SMG_SPREAD 30 // valor era 40 hans
+#define PISTOL_SPREAD 40 // valor era 50 hans
+#define LMG_SPREAD 20 // Valor para test (Original 80)- ZeRo
 #define HMG_SPREAD 10 // Valor para test (Original 100)- ZeRo
 
 
