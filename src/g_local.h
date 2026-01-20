@@ -1331,8 +1331,6 @@ typedef struct
 	int		stat_bot_kills;
 	int		stat_bot_deaths;
 
-	char		stat_chat[150];
-
 	char		*ip;
 
 	// --- FIX: Añadir el campo afk_check_time aquí ---
