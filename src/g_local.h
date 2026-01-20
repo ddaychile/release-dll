@@ -1331,9 +1331,9 @@ typedef struct
 
 	char		*ip;
 
-	int			afk_check_time; //AFK Time
+	int			afk_check_time; // hans: AFK borrowed from InFerYEs
 
-	vec3_t		last_angles; // Si es necesario para mantener la compatibilidad con el uso en InitClientPersistant
+	vec3_t		last_angles; // view angles from last check
 
 } client_persistant_t;
 
