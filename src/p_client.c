@@ -1469,7 +1469,7 @@ void InitClientPersistant (gclient_t *client)
 	client->pers.stat_bot_deaths = bot_deaths_save;
 	client->pers.ip = ip_save;
 
-	Com_sprintf(client->pers.stat_chat, sizeof(client->pers.stat_chat), "%s", stat_chat);
+	//Com_sprintf(client->pers.stat_chat, sizeof(client->pers.stat_chat), "%s", stat_chat);
 
 	client->pers.afk_check_time = afk_check_time;
 	VectorCopy(last_angles, client->pers.last_angles);

@@ -2580,10 +2580,10 @@ void Cmd_Say_f (edict_t *ent, qboolean team, qboolean arg0, qboolean saved)
 		}
 
 		//save a random chat message for stats page
-		if ((!saved && (strlen(p) > 9 && rand() % 25 == 1)) || ((!strcmp(ent->client->pers.stat_chat, "") && rand() % 3 == 1)))
+	/*/	if ((!saved && (strlen(p) > 9 && rand() % 25 == 1)) || ((!strcmp(ent->client->pers.stat_chat, "") && rand() % 3 == 1)))
 		{
 			Com_sprintf(ent->client->pers.stat_chat, sizeof(ent->client->pers.stat_chat), "%s", p);
-		}
+		}*/
 	}
 
 	if (ent->flyingnun || ent->deadflag || ent->health < 1)
