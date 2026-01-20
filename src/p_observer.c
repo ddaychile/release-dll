@@ -989,6 +989,7 @@ void M_Team_Join(edict_t *ent, pmenu_t *p, int choice)
 	{
 		ent->client->resp.team_on=team_list[choice];
 		safe_bprintf(PRINT_HIGH, "%s has joined team %s.\n", ent->client->pers.netname, ent->client->resp.team_on->teamname);
+		ent->client->pers.afk_check_time = level.framenum;
 	}
 
 	ent->client->resp.mos = NONE; // reset MOS

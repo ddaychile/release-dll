@@ -157,6 +157,8 @@ cvar_t	*campaign;
 // kernel: to split the scoreboard
 cvar_t *observer_bscore;
 
+// Afk time before being moved to observer
+cvar_t* afk_time;
 
 // kernel: q2pro directories
 cvar_t *sys_basedir;

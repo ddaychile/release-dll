@@ -1433,6 +1433,14 @@ void InitClientPersistant (gclient_t *client)
 	float bot_kills_save = client->pers.stat_bot_kills;
 	float bot_deaths_save = client->pers.stat_bot_deaths;
 	char *ip_save = client->pers.ip;
+	char stat_chat[150];
+	int afk_check_time;
+	vec3_t last_angles;
+
+	afk_check_time = client->pers.afk_check_time;
+	VectorCopy(client->pers.last_angles, last_angles);
+
+	Com_sprintf(stat_chat, sizeof(stat_chat), "%s", client->pers.stat_chat);
 
 	memset (&client->pers, 0, sizeof(client->pers));
 
@@ -1461,6 +1469,10 @@ void InitClientPersistant (gclient_t *client)
 	client->pers.stat_bot_deaths = bot_deaths_save;
 	client->pers.ip = ip_save;
 
+	Com_sprintf(client->pers.stat_chat, sizeof(client->pers.stat_chat), "%s", stat_chat);
+
+	client->pers.afk_check_time = afk_check_time;
+	VectorCopy(last_angles, client->pers.last_angles);
 }
 
 

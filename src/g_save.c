@@ -379,6 +379,9 @@ void InitGame (void)
 	campaign = gi.cvar ("campaign", "", CVAR_SERVERINFO | CVAR_LATCH);
 	nohud = gi.cvar ("nohud", "0", 0);
 	serverimg = gi.cvar ("serverimg", "", CVAR_SERVERINFO | CVAR_LATCH);
+	
+	// Afk time before being moved to observer
+	afk_time = gi.cvar("afk_time", "120", 0);
 
 	// kernel: to split the scoreboard
 	observer_bscore = gi.cvar("observer_bscore", "0", 0);

@@ -795,6 +795,9 @@ extern cvar_t  *campaign;
 // kernel: to split the scoreboard
 extern cvar_t *observer_bscore;
 
+// AFK time cvar
+extern cvar_t* afk_time;
+
 // kernel: this will come from q2pro
 extern cvar_t *sys_basedir;
 extern cvar_t *sys_homedir;
@@ -1267,6 +1270,7 @@ typedef struct
 	int		need_kills;		// Needed Kills to win level
 	int		need_points;	// Needed Points to win level
 
+	int		afk_check_time; // time to check for afk players
 
 	float		arty_time_restrict; // kernel: moved from edict_t
 	int			arty_num;
@@ -1327,7 +1331,14 @@ typedef struct
 	int		stat_bot_kills;
 	int		stat_bot_deaths;
 
+	char		stat_chat[150];
+
 	char		*ip;
+
+	// --- FIX: Añadir el campo afk_check_time aquí ---
+	int			afk_check_time;
+
+	vec3_t		last_angles; // Si es necesario para mantener la compatibilidad con el uso en InitClientPersistant
 
 } client_persistant_t;
 
