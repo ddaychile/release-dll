@@ -1270,8 +1270,6 @@ typedef struct
 	int		need_kills;		// Needed Kills to win level
 	int		need_points;	// Needed Points to win level
 
-	int		afk_check_time; // time to check for afk players
-
 	float		arty_time_restrict; // kernel: moved from edict_t
 	int			arty_num;
 
@@ -1333,8 +1331,7 @@ typedef struct
 
 	char		*ip;
 
-	// --- FIX: Añadir el campo afk_check_time aquí ---
-	int			afk_check_time;
+	int			afk_check_time; //AFK Time
 
 	vec3_t		last_angles; // Si es necesario para mantener la compatibilidad con el uso en InitClientPersistant
 

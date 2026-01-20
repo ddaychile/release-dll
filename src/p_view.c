@@ -3217,7 +3217,4 @@ if (ent->client->turret)
 			Cmd_FlyingNunMode_f(ent);
 		}
 	}
-
-	if (ent->oldwaterlevel != ent->waterlevel || ent->oldstance != ent->stanceflags)
-		WeighPlayer(ent);
 }
