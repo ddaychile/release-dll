@@ -1742,7 +1742,6 @@ void G_SetStats (edict_t *ent)
 	else
 		ent->client->ps.stats[STAT_CROSSHAIR] = 0;
 
-
 	//
 	// SNIPER CROSSHAIR
 	//
@@ -1752,9 +1751,7 @@ void G_SetStats (edict_t *ent)
 		ent->client->ps.stats[STAT_CROSSHAIR] = gi.imageindex ("scope_usa");
 	else if (ent->client->resp.mos == OFFICER && ent->client->pers.weapon && ent->client->aim && ent->client->pers.weapon->classnameb == WEAPON_BINOCULARS)
 		ent->client->ps.stats[STAT_CROSSHAIR] = gi.imageindex ("scope_usa");
-	else
-		ent->client->ps.stats[STAT_CROSSHAIR] = 0;
-	
+
 	if (ent->client->chasetarget && ent->client->chasetarget->client->aim && ent->client->aim)
 		ent->client->ps.stats[STAT_CROSSHAIR] = ent->client->chasetarget->client->ps.stats[STAT_CROSSHAIR];
 
