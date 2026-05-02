@@ -1271,18 +1271,20 @@ void T_Damage (edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir,
 				targ->wound_location |= wound_location;
 				targ->die_time       += die_time;
 
-				//Wheaty: Spray Blood
-				if (result && result == HEAD_WOUND)
-				{
-					if (!saved)
-						SprayBlood(targ, blood_orig, dir, damage, mod);
-				}
-				else
-				{
+			// Spray blood effect when hitting a player
+			// Headshots use 'saved' flag to control spray intensity
+			// Body shots always spray full blood effect
+			if (result && result == HEAD_WOUND)
+			{
+				if (!saved)
 					SprayBlood(targ, blood_orig, dir, damage, mod);
-				}
+			}
+			else
+			{
+				SprayBlood(targ, blood_orig, dir, damage, mod);
+			}
 
-			} 
+		} 
 			else 
 			{
 				damage = 0;
@@ -1293,17 +1295,19 @@ void T_Damage (edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir,
 			targ->wound_location |= wound_location;
 			targ->die_time       -= die_time;
 
-			//Wheaty: Spray Blood
-			if (result == HEAD_WOUND)
-			{
-				if (!saved)
-					SprayBlood(targ, blood_orig, dir, damage, mod);
-			}
-			else
-			{
+		// Spray blood effect when hitting a player
+		// Headshots use 'saved' flag to control spray intensity
+		// Body shots always spray full blood effect
+		if (result == HEAD_WOUND)
+		{
+			if (!saved)
 				SprayBlood(targ, blood_orig, dir, damage, mod);
-			}
 		}
+		else
+		{
+			SprayBlood(targ, blood_orig, dir, damage, mod);
+		}
+	}
 
 		WeighPlayer(targ);
 	}
@@ -1376,7 +1380,11 @@ void T_Damage (edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir,
 	if (take)
 	{
 		if ((targ->svflags & SVF_MONSTER) || (client))
-		{}//faf			SpawnDamage (TE_BLOOD, point, normal, take);
+		{
+			// Show blood particles for players (alive or dead bodies)
+			// Previously commented out, restored for better visual feedback
+			SpawnDamage (TE_BLOOD, point, normal, take);
+		}
 		else
 			SpawnDamage (te_sparks, point, normal, take);
 
