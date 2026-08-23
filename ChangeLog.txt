@@ -1,3 +1,10 @@
+Versión 5.068
+-------------
+
+- Añade cvar "blood_effects" para activar o desactivar los efectos de
+  sangre (spray y sangrado por cuchillo). Por defecto activada (1).
+  Permite desactivar los efectos de sangre sin modificar el código.
+
 Versión 5.067
 -------------
 

@@ -750,6 +750,8 @@ extern	cvar_t	*flood_waitdelay;
 //faf
 extern  cvar_t  *player_scores;
 extern  cvar_t  *max_gibs;
+// Hans: cvar to enable/disable blood spray effects
+extern  cvar_t  *blood_effects;
 extern  cvar_t  *extra_anims;
 extern  cvar_t  *force_auto_select;
 
