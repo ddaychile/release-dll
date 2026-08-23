@@ -1,6 +1,21 @@
 Versión 5.068
 -------------
 
+- Corrige Shrapnel_Dud() de g_weapon.c para que limpie el estado de la
+  granada fallida (client->grenade y client->grenade_index) al detonar.
+  Esto evita que grenade_index quede sin resetear, lo que impedía soltar
+  items (Cmd_Drop_f) y permitía el cambio automático de arma mientras se
+  sostenía una granada viva atrapada.
+
+- Corrige el bloqueo de vista con el rifle de francotirador al disparar
+  dos veces en menos de 2 segundos o al cambiar de arma rápido: el tope
+  de cadencia (fast_sniper) de Weapon_Sniper_Fire() de g_weapon.c dejaba
+  el arma atascada en estado WEAPON_FIRING con la mira ampliada,
+  bloqueando el cambio de arma durante todo el cooldown. Ahora el arma
+  baja la mira y queda lista (READY). Además, ChangeWeapon() de
+  p_weapon.c limpia heldfire y latched_buttons al cambiar de arma, para
+  que el arma nueva no herede el estado semi-automático del gatillo.
+
 - Añade cvar "blood_effects" para activar o desactivar los efectos de
   sangre (spray y sangrado por cuchillo). Por defecto activada (1).
   Permite desactivar los efectos de sangre sin modificar el código.

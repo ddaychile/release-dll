@@ -483,6 +483,14 @@ void ChangeWeapon (edict_t *ent)
 	ent->client->newweapon = NULL;
 	ent->client->machinegun_shots = 0;
 
+	//Hans: do not carry the semi-auto trigger state of the previous
+	//     weapon into the newly equipped one. A latched ATTACK or a
+	//     held fire flag inherited from a rifle/sniper made the new
+	//     weapon fire on its own or swallow the first trigger press
+	//     when switching weapons fast.
+	ent->client->heldfire = false;
+	ent->client->latched_buttons &= ~BUTTON_ATTACK;
+
 	check_unscope(ent);//faf
 
 	ent->client->ps.fov = STANDARD_FOV;

@@ -1379,10 +1379,33 @@ void Shrapnel_Explode (edict_t *ent)
 // pbowens: new dud.. muahaha
 void Shrapnel_Dud (edict_t *ent)
 {
+	int i;
+	edict_t *checkent;
+
 	if (!ent->owner || !ent->owner->client)
 		return;
 
 	safe_centerprintf(ent->owner, "Your grenade did not go off!\n");
+
+	//Hans: fixed - the dud grenade never cleared the state it left on the
+	//      players carrying it. client->grenade_index was only set when a
+	//      grenade was primed as a dud (weapon_grenade_prime) and was never
+	//      reset after the dud went off, leaving the player unable to drop
+	//      items (Cmd_Drop_f) and allowing the weapon to auto-switch away
+	//      while holding a live caught grenade. client->grenade also kept
+	//      pointing to the freed edict. Now both fields are cleared for every
+	//      player carrying the dud before the edict is freed below.
+	for (i = 0; i < maxclients->value; i++)
+	{
+		checkent = g_edicts + 1 + i;
+		if (!checkent->inuse || !checkent->client)
+			continue;
+		if (checkent->client->grenade == ent)
+		{
+			checkent->client->grenade = NULL;
+			checkent->client->grenade_index = 0;
+		}
+	}
 
 //	if (ent == ent->owner->client->grenade)
 //		ent->owner->client->pers.inventory[ent->owner->client->grenade_index]--;
@@ -3723,6 +3746,17 @@ void Weapon_Sniper_Fire (edict_t *ent)
 	//faf:  keep them from firing too fast
 	if (!fast_sniper->value && level.time < ent->client->last_fire_time + 1.78F)
 	{
+		//Hans: do not leave the rifle stuck in WEAPON_FIRING and
+		//     scoped when the cooldown rejects a shot. A stuck
+		//     FIRING state blocks weapon switching (Weapon_Generic
+		//     defers newweapon while firing) and this early return
+		//     skipped the auto-unscope below, leaving the zoomed
+		//     view locked for the whole cooldown. Unscope instead.
+		ent->client->aim = false;
+		check_unscope(ent);//faf
+		ent->client->ps.fov = STANDARD_FOV;
+		ent->client->crosshair = false;
+		ent->client->weaponstate = WEAPON_LOWER;
 		ent->client->ps.gunframe = 9;//first idle frame
 		return;//faf
 	}
