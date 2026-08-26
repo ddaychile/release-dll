@@ -3000,23 +3000,35 @@ void ClientEndServerFrame (edict_t *ent)
 				else 
 					ent->client->ps.fov = STANDARD_FOV;
 
-				if ((ent->client->chasetarget->client->aim && ent->client->aim == 3) || ent->client->aim == 2)
-				{
-					ent->client->ps.gunindex = ent->client->chasetarget->client->ps.gunindex;
-					ent->client->ps.gunframe = ent->client->chasetarget->client->ps.gunframe;
-					VectorCopy (ent->client->chasetarget->client->ps.gunangles,ent->client->ps.gunangles);
-				}
-
-
-
-
-		//		VectorCopy (ent->client->chasetarget->velocity,ent->velocity);
-		//		ent->client->ps.gunindex = ent->client->chasetarget->client->ps.gunindex;
-		//		ent->client->ps.gunframe = ent->client->chasetarget->client->ps.gunframe;
-
-
-
+			if ((ent->client->chasetarget->client->aim && ent->client->aim == 3) || ent->client->aim == 2)
+			{
+				ent->client->ps.gunindex = ent->client->chasetarget->client->ps.gunindex;
+				ent->client->ps.gunframe = ent->client->chasetarget->client->ps.gunframe;
+				VectorCopy (ent->client->chasetarget->client->ps.gunangles,ent->client->ps.gunangles);
 			}
+
+			//Hans: Copy chasetarget's HUD stats to observer
+			//This allows the observer to see the exact same HUD as the player they are following,
+			//including health, ammo rounds, spare magazines, weapon icon, stamina bar,
+			//crosshair/scope, frag count, and team scoreboard stats.
+			ent->client->ps.stats[STAT_HEALTH_ICON] = ent->client->chasetarget->client->ps.stats[STAT_HEALTH_ICON];
+			ent->client->ps.stats[STAT_HEALTH] = ent->client->chasetarget->client->ps.stats[STAT_HEALTH];
+			ent->client->ps.stats[STAT_ROUNDS_ICON] = ent->client->chasetarget->client->ps.stats[STAT_ROUNDS_ICON];
+			ent->client->ps.stats[STAT_ROUNDS] = ent->client->chasetarget->client->ps.stats[STAT_ROUNDS];
+			ent->client->ps.stats[STAT_MAGS_ICON] = ent->client->chasetarget->client->ps.stats[STAT_MAGS_ICON];
+			ent->client->ps.stats[STAT_MAGS] = ent->client->chasetarget->client->ps.stats[STAT_MAGS];
+			ent->client->ps.stats[STAT_SELECTED_ICON] = ent->client->chasetarget->client->ps.stats[STAT_SELECTED_ICON];
+			ent->client->ps.stats[STAT_STAMINA_CUR] = ent->client->chasetarget->client->ps.stats[STAT_STAMINA_CUR];
+			ent->client->ps.stats[STAT_FRAGS] = ent->client->chasetarget->client->ps.stats[STAT_FRAGS];
+			ent->client->ps.stats[STAT_CROSSHAIR] = ent->client->chasetarget->client->ps.stats[STAT_CROSSHAIR];
+			ent->client->ps.stats[STAT_TEAM0_ICON] = ent->client->chasetarget->client->ps.stats[STAT_TEAM0_ICON];
+			ent->client->ps.stats[STAT_TEAM0_KILLS] = ent->client->chasetarget->client->ps.stats[STAT_TEAM0_KILLS];
+			ent->client->ps.stats[STAT_TEAM0_POINTS] = ent->client->chasetarget->client->ps.stats[STAT_TEAM0_POINTS];
+			ent->client->ps.stats[STAT_TEAM1_ICON] = ent->client->chasetarget->client->ps.stats[STAT_TEAM1_ICON];
+			ent->client->ps.stats[STAT_TEAM1_KILLS] = ent->client->chasetarget->client->ps.stats[STAT_TEAM1_KILLS];
+			ent->client->ps.stats[STAT_TEAM1_POINTS] = ent->client->chasetarget->client->ps.stats[STAT_TEAM1_POINTS];
+
+		}
 		}
 		else
 		{
