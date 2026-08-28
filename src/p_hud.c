@@ -31,6 +31,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 // evil: global variables for countdown
 extern float gameStartTime;
+extern qboolean disable_mapvoting;
 
 void SplittedScoreboardMessage (edict_t *ent);
 void SplittedScoreboardMessage2 (edict_t *ent);
@@ -165,6 +166,16 @@ void BeginIntermission (edict_t *targ)
 
 	level.intermissiontime = level.time;
 	level.changemap = targ->map;
+
+	// Start map voting with the intermission, when voting is enabled.
+	if (mapvoting->value && !disable_mapvoting &&
+		!((int)dmflags->value & DF_SAME_LEVEL))
+	{
+		if (Setup_Map_Vote())
+			level.map_vote_time = level.time;
+		else
+			level.map_vote_time = -1;
+	}
 
 
 	if (stats->value)
@@ -1659,7 +1670,7 @@ void G_SetStats (edict_t *ent)
 	else if (level.map_vote_time > 0)
 	{
 		ent->client->ps.stats[STAT_TIMER_ICON] = gi.imageindex ("i_dday");
-		ent->client->ps.stats[STAT_TIMER] = ((int)(15 + level.map_vote_time - level.time));
+		ent->client->ps.stats[STAT_TIMER] = ((int)(10 + level.map_vote_time - level.time));
 
 	}
 

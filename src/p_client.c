@@ -2342,6 +2342,7 @@ void respawn (edict_t *self)
 		self->client->ps.pmove.pm_time = 14;
 
 		self->client->respawn_time = level.time;
+		self->client->deathcam_fade_time = level.time + 0.3;
 
 //		if(observer_on_death->value)
 //		{
@@ -3314,27 +3315,34 @@ void SetWaterLevel (edict_t *ent)
 
 void Count_Votes (void)
 {
-	int i;
-	int highestvotecount = 0;
-	int highmap = 0;
-	
-	for (i =0; i<5; i++)
+	int i, winner_count = 0;
+	int highestvotecount = -1;
+	int winners[4];
+
+	for (i = 0; i < 4; i++)
 	{
+		if (!votemaps[i])
+			continue;
+
 		if (mapvotes[i] > highestvotecount)
 		{
 			highestvotecount = mapvotes[i];
-			highmap = i;
+			winner_count = 0;
 		}
+
+		if (mapvotes[i] == highestvotecount)
+			winners[winner_count++] = i;
 	}
 
-	level.changemap = votemaps[highmap];
+	if (winner_count > 0)
+		level.changemap = votemaps[winners[rand() % winner_count]];
 }
 
 qboolean Setup_Map_Vote (void)
 {
 
 	char	*maps;
-	int		i,j,k,c;
+	int		i,j,c;
 	
 	char *s, *f;
 
@@ -3347,9 +3355,6 @@ qboolean Setup_Map_Vote (void)
 	char *maplisttxt[300];
 	qboolean gotmap;
 	int count = 0;
-
-	qboolean changefirstmap;
-
 
 	maps = ReadEntFile("votemaps.txt");
 
@@ -3394,7 +3399,7 @@ qboolean Setup_Map_Vote (void)
 
 	removed = 0;
 	//remove most recently played maps
-	for (i = 0; i<20 && removed != mapcount-4 && last_maps_played[i]; i++) //for last_maps_played
+	for (i = 0; i < 20 && mapcount > 4 && removed < mapcount - 4 && last_maps_played[i]; i++) //for last_maps_played
 	{
 		for (j=0; j < mapcount; j++)
 		{
@@ -3418,9 +3423,22 @@ qboolean Setup_Map_Vote (void)
 	{
 		if (!strcmp (maplisttxt[x],""))
 			continue;
+
+		for (j = 0; j < newmapcount; j++)
+			if (!strcmp (possible_maps[j], maplisttxt[x]))
+				break;
+		if (j < newmapcount)
+			continue;
+
 		possible_maps[newmapcount] = maplisttxt[x];
 
 		newmapcount++;
+	}
+
+	if (newmapcount == 0)
+	{
+		gi.dprintf ("MapVote: no valid maps available\n");
+		return false;
 	}
 
 /*	for (j = 0; j<50; j++)	{
@@ -3429,37 +3447,12 @@ qboolean Setup_Map_Vote (void)
 		}
 	}	*/
 
-	changefirstmap = false;
 	for (i = 0; i < 4; i++)
 	{
-		if (i == 0 && level.nextmap[0] && !mapvoting_avoid_nextmap->value)
+		if (i >= newmapcount)
 		{
-			//if nextmap is same as current map or one played recently, list that last instead of 4th
-			if (!strcmp(level.nextmap, level.mapname))
-			{
-				changefirstmap = true;
-				//votemaps[0] = level.nextmap;
-				//continue;
-			}
-			for (k = 0; k<20 && last_maps_played[k]; k++)
-			{
-				if (!strcmp (last_maps_played[k], level.nextmap))
-				{	
-					changefirstmap = true;
-					//votemaps[0] = votemaps[3];
-					//votemaps[3] = level.nextmap;
-				}
-			}
-			if (!changefirstmap)
-			{
-				votemaps[0] = level.nextmap;
-				continue;
-			}
-		} 
-
-		if (i == 3 && changefirstmap)
-		{
-			votemaps[3] = level.nextmap;
+			votemaps[i] = NULL;
+			mapvotes[i] = 0;
 			continue;
 		}
 
@@ -3473,7 +3466,7 @@ qboolean Setup_Map_Vote (void)
 			randnum = (int)(random()*newmapcount);
 			for (j = 0; j < i; j++)
 			{
-				if (!strcmp (possible_maps[randnum], votemaps[j]))
+				if (votemaps[j] && !strcmp (possible_maps[randnum], votemaps[j]))
 					gotmap = false;
 			}
 		}
@@ -3622,14 +3615,6 @@ void ClientThink (edict_t *ent, usercmd_t *ucmd)
 			if (level.time > level.intermissiontime + 3.0
 				&& (constant_play->value || (ucmd->buttons & BUTTON_ANY)) )
 			{
-				if (!level.map_vote_time)
-				{
-					if (Setup_Map_Vote())
-						level.map_vote_time = level.time;
-					else
-						level.map_vote_time = -1;
-				}
-
 				if (level.map_vote_time != -1 && !ent->client->vote_started)
 				{
 					MapVote(ent);
@@ -3640,7 +3625,7 @@ void ClientThink (edict_t *ent, usercmd_t *ucmd)
 			{
 				int num_clients = HumanPlayerCount();
 
-				if (level.time > level.map_vote_time + 15)
+				if (level.time > level.map_vote_time + 10)
 				{
 					Count_Votes ();
 					level.exitintermission = true;
@@ -4385,7 +4370,6 @@ any other entities in the world.
 void ClientBeginServerFrame (edict_t *ent)
 {
 	gclient_t	*client;
-	int			buttonMask;
 	int delay;
 
 	edict_t *chase;
@@ -4529,33 +4513,14 @@ void ClientBeginServerFrame (edict_t *ent)
 
 	if (ent->deadflag)
 	{
-		// wait for any button just going down
+		// Enter the death camera after the death delay.  respawn() places
+		// the player in the same movable limbo view used on map entry.
 		if ( level.time > client->respawn_time)
 		{
-			// kernel: in deathmatch and coop, wait for attack button
-			if (deathmatch->value || coop->value)
-				buttonMask = BUTTON_ATTACK;
-			else
-				buttonMask = -1;
-
-			//gi.dprintf("%i : %i (%i)\n", level.framenum, client->forcespawn, client->limbo_mode);
-			if ( ( client->latched_buttons & buttonMask ) ||
-				 ( deathmatch->value && ((int)dmflags->value & DF_FORCE_RESPAWN) ) ||
-				 ( client->forcespawn <= level.framenum && client->limbo_mode == false && client->resp.changeteam == false) )
+			if (client->limbo_mode == false && client->resp.changeteam == false)
 			{
-				if (ent->client->resp.changeteam || ent->ai)
-				{
-					if (ent->client->forcespawn < level.framenum)
-					{
-						respawn(ent);
-						client->latched_buttons = 0;
-					}
-				}
-				else
-				{
-					respawn(ent);
-					client->latched_buttons = 0;
-				}
+				respawn(ent);
+				client->latched_buttons = 0;
 			}
 		}
 		return;

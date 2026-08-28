@@ -1650,6 +1650,7 @@ struct gclient_s
 	int			anim_end2;//faf:  for alternate models
 
 	float       enter_spawn_time;//faf
+	float       deathcam_fade_time;
 	int			spawn_kill_time;//faf
 
 	float		spawn_safe_time;
