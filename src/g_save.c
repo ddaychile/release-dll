@@ -333,6 +333,8 @@ void InitGame (void)
 	player_scores   = gi.cvar ("player_scores",  "1", 0);//faf
 
 	max_gibs		= gi.cvar  ("max_gibs",   "20", 0);//faf
+	// Hans: cvar to enable/disable blood spray effects (1=on, 0=off)
+	blood_effects = gi.cvar("blood_effects", "1", CVAR_LATCH);
 	extra_anims		= gi.cvar  ("extra_anims", "0", 1);//faf
 	force_auto_select	= gi.cvar  ("force_auto_select", "0", 0);//faf
 

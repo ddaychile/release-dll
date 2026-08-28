@@ -1381,9 +1381,8 @@ void T_Damage (edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir,
 	{
 		if ((targ->svflags & SVF_MONSTER) || (client))
 		{
-			// Show blood particles for players (alive or dead bodies)
-			// Previously commented out, restored for better visual feedback
-			SpawnDamage (TE_BLOOD, point, normal, take);
+			if (blood_effects->value)
+				SpawnDamage (TE_BLOOD, point, normal, take);
 		}
 		else
 			SpawnDamage (te_sparks, point, normal, take);
@@ -1568,6 +1567,10 @@ void SprayKnifeBlood(edict_t *self, vec3_t point, vec3_t angle, int damage, int 
 
 	vec3_t direction;
 
+	// Hans: check if blood effects are disabled
+	if (!blood_effects->value)
+		return;
+
 	//faf
 	if (level.gib_count > max_gibs->value)
 		return;
@@ -1621,6 +1624,10 @@ void SprayBlood(edict_t *self, vec3_t point, vec3_t angle, int damage, int mod)
 	edict_t *blood;
 	int		speed;
 
+
+	// Hans: check if blood effects are disabled
+	if (!blood_effects->value)
+		return;
 
 	//faf
 	if (level.gib_count > max_gibs->value)
