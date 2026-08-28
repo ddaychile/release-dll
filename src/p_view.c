@@ -920,7 +920,9 @@ void SV_CalcBlend (edict_t *ent)
 		SV_AddBlend (0.0, 0.0, 0.0, 1.0, ent->client->ps.blend);
 	}
 	else if (ent->deadflag &&
-		!ent->flyingnun)
+		!ent->flyingnun &&
+		!ent->client->limbo_mode &&
+		level.time < ent->client->respawn_time)
 	{
 		if (ent->client->resp.deathblend < 1)
 			ent->client->resp.deathblend += 0.1;
@@ -942,6 +944,12 @@ void SV_CalcBlend (edict_t *ent)
 
 	} else if (ent->client->resp.deathblend) {
 		ent->client->resp.deathblend = 0;
+	}
+
+	if (ent->client->deathcam_fade_time > level.time)
+	{
+		float fade = (ent->client->deathcam_fade_time - level.time) / 0.5;
+		SV_AddBlend (0.0, 0.0, 0.0, fade, ent->client->ps.blend);
 	}
 
 	if (contents & (CONTENTS_SOLID))//|CONTENTS_LAVA))

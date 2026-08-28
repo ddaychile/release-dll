@@ -1437,9 +1437,14 @@ void M_View_Credits_ITA (edict_t *ent, pmenu_t *p, int choice)
 
 void VoteMap (edict_t *ent, pmenu_t *p, int choice) 
 {
-	PMenu_Close(ent);
+	choice = (choice - 7) / 2;
 
-	choice = (choice - 7)/2;
+	if (ent->client->voted || choice < 0 || choice >= 4 ||
+		!votemaps[choice] || !level.intermissiontime ||
+		level.map_vote_time <= 0 || level.time > level.map_vote_time + 10)
+		return;
+
+	PMenu_Close(ent);
 
 	//safe_bprintf (PRINT_HIGH, "%s voted for %s.\n", ent->client->pers.netname, votemaps[choice]); 
 	safe_bprintf (PRINT_HIGH, "1 vote for %s.\n", votemaps[choice]); 
@@ -1474,6 +1479,9 @@ void MapVote(edict_t *ent)
 
 	for (i=0; i <4; i++)
 	{
+		if (!votemaps[i])
+			break;
+
 		//check for bot support
 		//gi.dprintf ("x%s\n",mapstring);
 		if (bots->value)
@@ -1524,5 +1532,3 @@ void MapVote(edict_t *ent)
 
 	PMenu_Open(ent, ent->client->menu_cur, 7, sizeof(ent->client->menu_cur) / sizeof(pmenu_t));
 }
-
-
