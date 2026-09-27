@@ -2342,6 +2342,7 @@ void respawn (edict_t *self)
 		self->client->ps.pmove.pm_time = 14;
 
 		self->client->respawn_time = level.time;
+		self->client->deathcam_fade_time = level.time + 0.3;
 
 //		if(observer_on_death->value)
 //		{

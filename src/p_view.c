@@ -841,6 +841,7 @@ void SV_CalcBlend (edict_t *ent)
 	vec3_t	vieworg;
 	int		remaining;
 //	float	blendtime_remain;
+	float fade_cam;
 
 
 
@@ -942,6 +943,13 @@ void SV_CalcBlend (edict_t *ent)
 
 	} else if (ent->client->resp.deathblend) {
 		ent->client->resp.deathblend = 0;
+	}
+
+	// Hans: fade effect on death camera
+	if (deathcam_fade->value && ent->client->deathcam_fade_time > level.time)
+	{
+		fade_cam = (ent->client->deathcam_fade_time - level.time) / 0.5;
+		SV_AddBlend (0.0, 0.0, 0.0, fade_cam, ent->client->ps.blend);
 	}
 
 	if (contents & (CONTENTS_SOLID))//|CONTENTS_LAVA))

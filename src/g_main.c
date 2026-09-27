@@ -110,8 +110,8 @@ cvar_t	*flood_waitdelay;
 //faf
 cvar_t  *player_scores;
 cvar_t  *max_gibs;
-// Hans: cvar to enable/disable blood spray effects
-cvar_t  *blood_effects;
+cvar_t  *blood_effects; // Hans: cvar to enable/disable blood spray effects
+cvar_t  *deathcam_fade; // Hans: enable fade on death camera
 cvar_t  *extra_anims;//faf
 cvar_t  *force_auto_select;
 

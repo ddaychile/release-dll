@@ -750,8 +750,8 @@ extern	cvar_t	*flood_waitdelay;
 //faf
 extern  cvar_t  *player_scores;
 extern  cvar_t  *max_gibs;
-// Hans: cvar to enable/disable blood spray effects
-extern  cvar_t  *blood_effects;
+extern  cvar_t  *blood_effects; // Hans: enable/disable blood spray effects
+extern  cvar_t  *deathcam_fade; // Hans: enable fade on death camera
 extern  cvar_t  *extra_anims;
 extern  cvar_t  *force_auto_select;
 
@@ -1650,6 +1650,7 @@ struct gclient_s
 	int			anim_end2;//faf:  for alternate models
 
 	float       enter_spawn_time;//faf
+	float       deathcam_fade_time; //hans
 	int			spawn_kill_time;//faf
 
 	float		spawn_safe_time;
