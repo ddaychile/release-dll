@@ -3723,6 +3723,17 @@ void Weapon_Sniper_Fire (edict_t *ent)
 	//faf:  keep them from firing too fast
 	if (!fast_sniper->value && level.time < ent->client->last_fire_time + 1.78F)
 	{
+		//Hans: do not leave the rifle stuck in WEAPON_FIRING and
+		//     scoped when the cooldown rejects a shot. A stuck
+		//     FIRING state blocks weapon switching (Weapon_Generic
+		//     defers newweapon while firing) and this early return
+		//     skipped the auto-unscope below, leaving the zoomed
+		//     view locked for the whole cooldown. Unscope instead.
+		ent->client->aim = false;
+		check_unscope(ent);//faf
+		ent->client->ps.fov = STANDARD_FOV;
+		ent->client->crosshair = false;
+		ent->client->weaponstate = WEAPON_LOWER;
 		ent->client->ps.gunframe = 9;//first idle frame
 		return;//faf
 	}

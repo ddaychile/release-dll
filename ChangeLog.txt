@@ -5,6 +5,13 @@ Versión 5.068
   sangre (spray y sangrado por cuchillo). Por defecto activada (1).
   Permite desactivar los efectos de sangre sin modificar el código.
 
+- Corrige el bloqueo de vista con el rifle de francotirador al disparar
+  dos veces en menos de 2 segundos o al cambiar de arma rápido: el tope
+  de cadencia (fast_sniper) de Weapon_Sniper_Fire() de g_weapon.c dejaba
+  el arma atascada en estado WEAPON_FIRING con la mira ampliada,
+  bloqueando el cambio de arma durante todo el cooldown. Ahora el arma
+  baja la mira y queda lista (READY).
+
 Versión 5.067
 -------------
 
