@@ -924,6 +924,23 @@ char *LoadEntFile(char *mapname, char *entities)
 	}
 
 
+	// Free For All: ents/<map>_ffa.ent replaces the normal ent file when it exists (it can add spawn points
+	// that only exist in FFA); without it the normal file is used. Team deathmatch never reads it.
+	if (G_IsFFA())
+	{
+		sprintf(entfilename, "ents/%s_ffa.ent", mapname);
+		for (i = 0; entfilename[i]; i++)
+			entfilename[i] = tolower(entfilename[i]);
+
+		newentities = ReadEntFile(entfilename);
+
+		if (newentities)
+		{
+			gi.dprintf("%s_ffa.ent Loaded (Free For All)\n", mapname);
+			return(newentities);
+		}
+	}
+
 	sprintf(entfilename, "ents/%s.ent", mapname);
 	// convert string to all lowercase (for Linux)
 	for (i = 0; entfilename[i]; i++)
