@@ -1981,6 +1981,8 @@ extern int jpn_index;
 #define PISTOL_SPREAD 10 // valor era 40 hans
 #define LMG_SPREAD 10 // Valor para test era 20 (Original 80)- ZeRo
 #define HMG_SPREAD 10 // Valor para test (Original 100)- ZeRo
+#define LMG_BLOOM_STEP 12	// spread aimed extra por disparo sostenido (BAR/MP43)
+#define LMG_BLOOM_KICK 0.12	// grados de recoil vertical por disparo sostenido (BAR/MP43)
 
 
 
