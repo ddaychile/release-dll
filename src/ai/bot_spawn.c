@@ -38,6 +38,12 @@ void Assign_Bot_Class (edict_t *self)
 	int j;
 	edict_t *cl_ent;
 
+	// Free For All: every player, bots included, is a Sniper
+	if (G_IsFFA())
+	{
+		self->client->resp.mos = SNIPER;
+		return;
+	}
 
 	randnum = rand()%8;
 	 if (randnum == 0)
@@ -182,7 +188,7 @@ void BOT_Respawn (edict_t *self)
 //	self->solid = SOLID_BBOX;
 	self->svflags &= ~SVF_NOCLIENT;
 	self->client->ps.gunindex = 0;
-	self->client->forcespawn = level.time + RI->value;//.5;//faf: fixes standing corpse bug
+	self->client->forcespawn = level.time + G_RespawnInterval();//.5;//faf: fixes standing corpse bug
 	self->client->limbo_mode=false;
 	self->stance_max=self->stance_min=0; //these 2 lines are for stances that have to be set
 	self->stance_view=20;//faf 22;				//in each clientthink.
@@ -590,7 +596,7 @@ void BOT_DMClass_JoinGame (edict_t *ent, char *team_name)
 	ent->svflags &= ~SVF_NOCLIENT;
 	ent->client->ps.gunindex = 0;
 
-	ent->client->forcespawn = level.time + RI->value;//.5;//faf: fixes standing corpse bug
+	ent->client->forcespawn = level.time + G_RespawnInterval();//.5;//faf: fixes standing corpse bug
 
 	ent->client->limbo_mode=false;
 	ent->stance_max=ent->stance_min=0; //these 2 lines are for stances that have to be set
@@ -728,7 +734,11 @@ void BOT_SpawnBot (int team, char *name, char *skin, char *userinfo)
 
 	if (level.intermissiontime)
 		return;
-		
+
+	// Free For All: bots need team_list[0] as their faction (the map warning is logged at level start)
+	if (G_IsFFA() && !team_list[0])
+		return;
+
 
 	bot = BOT_FindFreeClient ();
 	
@@ -789,15 +799,16 @@ void BOT_SpawnBot (int team, char *name, char *skin, char *userinfo)
 	AI_ResetNavigation(bot);
 
 
-	bot->client->resp.team_on = team_list[team];
+	// Free For All: bots use the same faction as everybody else
+	bot->client->resp.team_on = team_list[G_IsFFA() ? 0 : team];
 
 	bot->think = BOT_JoinGame;
 
 
-	if (level.time >= level_wait->value + bot->client->resp.team_on->delay)
+	if (level.time >= G_LobbyTime(bot->client->resp.team_on->delay))
 		bot->nextthink = level.time + (random()*2.0);
 	else
-		bot->nextthink = level_wait->value + bot->client->resp.team_on->delay + (random()*2.0);
+		bot->nextthink = G_LobbyTime(bot->client->resp.team_on->delay) + (random()*2.0);
 
 
 /*	if( ctf->value && team != NULL )
@@ -842,6 +853,7 @@ void BOT_RemoveBot(char *name, edict_t *botremove)
 			//freed = true;
 			AI_EnemyRemoved (bot);
 			G_FreeAI( bot ); //jabot092(2)
+			FFA_ForgetPlayer (bot);
 			//safe_bprintf (PRINT_MEDIUM, "%s removed\n", bot->client->pers.netname);
 		}
 	}

@@ -434,6 +434,21 @@ ED_CallSpawn
 Finds the spawn function for the entity and calls it
 ===============
 */
+// Free For All has no objectives: these entities only exist for objective scoring/missions
+static char *ffa_skipped_classnames[] =
+{
+	"objective_touch",
+	"objective_touch_ent",
+	"objective_area",
+	"timed_objective_touch",
+	"objective_flag",
+	"objective_VIP",
+	"misc_civilian",
+	"spawn_protect",	// spawn areas kill whoever is not of the owner team, there are no teams here
+	"weapon_sandbag",	// the sandbags item shares the knife slot but it is not a usable weapon here
+	NULL
+};
+
 void ED_CallSpawn (edict_t *ent)
 {
 	spawn_t	*s;
@@ -446,6 +461,18 @@ void ED_CallSpawn (edict_t *ent)
 		return;
 	}
 
+	if (G_IsFFA())
+	{
+		for (i = 0; ffa_skipped_classnames[i]; i++)
+		{
+			if (!strcmp(ffa_skipped_classnames[i], ent->classname))
+			{
+				G_FreeEdict (ent);
+				return;
+			}
+		}
+	}
+
 	// check item spawn functions
 	for (i = 0, item = itemlist; i <= game.num_items; i++, item++)
 	{
@@ -453,6 +480,13 @@ void ED_CallSpawn (edict_t *ent)
 			continue;
 		if (!strcmp(item->classname, ent->classname))
 		{	// found it
+			// Free For All: only the sniper rifle and the knife are usable weapons
+			if (G_IsFFA() && (item->flags & IT_WEAPON) &&
+				item->position != LOC_SNIPER && item->position != LOC_KNIFE)
+			{
+				G_FreeEdict (ent);
+				return;
+			}
 			SpawnItem (ent, item);
 			return;
 		}
@@ -1107,7 +1141,10 @@ void SpawnEntities2 (char *mapname, char *entities, char *spawnpoint)
 
 	gi.FreeTags (TAG_LEVEL);
 
-
+	// Free For All: the teams live in TAG_LEVEL memory that was just freed, do not keep the old pointers
+	// (a map without teams would otherwise leave dangling ones)
+	if (G_IsFFA())
+		memset (team_list, 0, sizeof(team_list));
 
 	memset (&level, 0, sizeof(level));
 	memset (g_edicts, 0, game.maxentities * sizeof (g_edicts[0]));
@@ -1210,6 +1247,9 @@ void SpawnEntities2 (char *mapname, char *entities, char *spawnpoint)
 	//pbowens: this is actually very handy
 	gi.dprintf("server map: %s\n", mapname);
 
+	if (G_IsFFA() && !team_list[0])
+		gi.dprintf("WARNING: Free For All needs team_list[0] (info_team_start) as loadout provider; map %s defines no team, players cannot enter the game\n", mapname);
+
 	LoadCampFile();
 
 	AI_NewMap();//JABot
@@ -1251,6 +1291,9 @@ void SpawnEntities2 (char *mapname, char *entities, char *spawnpoint)
 
 #endif
 
+
+// Free For All: true only when its own statusbar was built (see SP_worldspawn), TeamStats checks it
+qboolean ffa_statusbar_active = false;
 
 char *dday_statusbar =
 "yb	-24 "
@@ -1545,7 +1588,58 @@ void SP_worldspawn (edict_t *ent)
 	gi.configstring (CS_MAXCLIENTS, va("%i", (int)(maxclients->value) ) );
 
 	// status bar program
-	gi.configstring (CS_STATUSBAR, dday_statusbar);
+	ffa_statusbar_active = false;
+	if (G_IsFFA())
+	{
+		// Free For All: the team KILLS/POINTS block is replaced by the top scorer and your own frags
+		static char ffa_statusbar[4096];
+		char *stats_start = strstr (dday_statusbar, "yt 17 ");
+		char *stats_end = strstr (dday_statusbar, "if 30 ");
+
+		FFA_HudReset ();
+
+		// rand() is never seeded by the game: after every full restart ('map') the DLL starts with the same
+		// sequence, so the spawn tie-breaks would repeat identically. Seed it once per level.
+		initialize_random_seed ();
+
+		// no winner carried over from a previous match (the DLL is not always reloaded between maps)
+		Last_Team_Winner = 99;
+
+		if (stats_start && stats_end && stats_start < stats_end &&
+			strlen (dday_statusbar) + 256 < sizeof (ffa_statusbar))
+		{
+			strncpy (ffa_statusbar, dday_statusbar, stats_start - dday_statusbar);
+			ffa_statusbar[stats_start - dday_statusbar] = 0;
+			strcat (ffa_statusbar,
+				"yt 17 xr -165 string2 \"TOP SCORER\" "
+				"yt 30 xr -196 stat_string 22 "
+				"yt 41 xr -150 num 3 24 "
+				"yt 70 xr -124 string2 \"YOU\" "
+				"yt 82 xr -150 num 3 23 "
+				// announcements (stat 25 is the big number, 26 and 27 the texts above and below it)
+				// (separate ifs: nested ones are not skipped correctly by the client)
+				"if 26 "
+				"	xv 64 yv 30 stat_string 26 "
+				"endif "
+				"if 25 "
+				"	xv 126 yv 42 num 3 25 "
+				"endif "
+				"if 27 "
+				"	xv 64 yv 78 stat_string 27 "
+				"endif ");
+			strcat (ffa_statusbar, stats_end);
+			gi.configstring (CS_STATUSBAR, ffa_statusbar);
+			ffa_statusbar_active = true;
+		}
+		else
+		{
+			// the original team statusbar is used, FFA_HudStats must not write its stats (see TeamStats)
+			gi.dprintf ("WARNING: the Free For All statusbar could not be built (markers not found in dday_statusbar), using the team one\n");
+			gi.configstring (CS_STATUSBAR, dday_statusbar);
+		}
+	}
+	else
+		gi.configstring (CS_STATUSBAR, dday_statusbar);
 
 	//---------------
 

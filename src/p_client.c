@@ -1253,7 +1253,7 @@ void player_die (edict_t *self, edict_t *inflictor, edict_t *attacker, int damag
 	
 	if (!self->deadflag)
 	{
-		self->leave_limbo_time = level.time + RI->value; //faf
+		self->leave_limbo_time = level.time + G_RespawnInterval(); //faf
 
 		self->client->respawn_time = level.time + 1.0;
 		//LookAtKiller (self, inflictor, attacker);
@@ -2036,10 +2036,102 @@ void Find_Mission_Start_Point(edict_t *ent)
   find the entry position for the units to be spawned to when the mission begins
 */
 
+// Free For All spawn selection: distances are capped (a spot farther than this from everybody is as good as any
+// other, and with nobody in play every spot gets the cap) and a small random part breaks the remaining ties
+#define FFA_SPAWN_RANGE_CAP		16384
+#define FFA_SPAWN_TIE_JITTER	16
+
+// Free For All: distance from a spot to the nearest player that is actually in play
+// (not observer, not in limbo, not dead), ignoring the player that is about to spawn
+static float FFA_PlayersRangeFromSpot (edict_t *self, vec3_t spot_origin)
+{
+	edict_t	*player;
+	vec3_t	v;
+	int		n;
+	float	dist, best = FFA_SPAWN_RANGE_CAP;
+
+	for (n = 1; n <= maxclients->value; n++)
+	{
+		player = &g_edicts[n];
+
+		if (!player->inuse || !player->client || player == self)
+			continue;
+		if (player->flyingnun || player->client->limbo_mode || player->deadflag || player->health <= 0)
+			continue;
+
+		VectorSubtract (spot_origin, player->s.origin, v);
+		dist = VectorLength (v);
+		if (dist < best)
+			best = dist;
+	}
+
+	return best;
+}
+
+// Free For All: spawn spots are not tied to a team. Picks randomly among the 3 spots
+// farthest from any player, searching every reinforcement/deathmatch spot of the map.
+static edict_t *FFA_SelectSpawnPoint (edict_t *ent)
+{
+	static char *spotnames[] = {"info_player_deathmatch", "info_reinforcements_start", "info_reinforcements_nearest", NULL};
+	edict_t	*spot, *best[3];
+	float	bestdist[3], dist;
+	int		i, j, n, count;
+
+	for (i = 0; i < 3; i++)
+	{
+		best[i] = NULL;
+		bestdist[i] = -1;
+	}
+
+	for (n = 0; spotnames[n]; n++)
+	{
+		spot = NULL;
+		while ((spot = G_Find (spot, FOFS(classname), spotnames[n])) != NULL)
+		{
+			// the small random part breaks the ties (for example when nobody is in play every spot is equally far)
+			dist = FFA_PlayersRangeFromSpot (ent, spot->s.origin) + random() * FFA_SPAWN_TIE_JITTER;
+
+			for (i = 0; i < 3; i++)
+			{
+				if (dist > bestdist[i])
+				{
+					for (j = 2; j > i; j--)
+					{
+						best[j] = best[j-1];
+						bestdist[j] = bestdist[j-1];
+					}
+					best[i] = spot;
+					bestdist[i] = dist;
+					break;
+				}
+			}
+		}
+	}
+
+	for (count = 0; count < 3 && best[count]; count++);
+
+	if (!count)
+		return NULL;
+
+	return best[(int)(random() * count) % count];
+}
+
 void Find_Mission_Start_Point(edict_t *ent, vec3_t origin, vec3_t angles)
 {
 	edict_t	*spot = NULL;
 	int team = ent->client->resp.team_on->index;
+
+	if (G_IsFFA())
+	{
+		spot = FFA_SelectSpawnPoint(ent);
+		if (spot)
+		{
+			VectorCopy (spot->s.origin, origin);
+			origin[2] += 9;
+			VectorCopy (spot->s.angles, angles);
+			return;
+		}
+	}
 
 	/*
 	while( (spot = G_Find (spot, FOFS(classname), ent->client->resp.team_on->mos[ent->client->resp.mos]->MOS_Spaw_Point))!=NULL)
@@ -2079,9 +2171,18 @@ void Find_Mission_Start_Point(edict_t *ent, vec3_t origin, vec3_t angles)
 
 
 
-	if (!spot) 
+	if (!spot)
 		spot = G_Find (spot, FOFS(classname),"info_player_start");
-	
+
+
+	// Free For All: no spawn point at all in the map, do not dereference NULL
+	if (!spot && G_IsFFA())
+	{
+		gi.dprintf ("Find_Mission_Start_Point: no spawn point found for %s, using the origin\n", ent->client->pers.netname);
+		VectorClear (origin);
+		VectorClear (angles);
+		return;
+	}
 
 	VectorCopy (spot->s.origin, origin);
 	origin[2] += 9;
@@ -2489,6 +2590,10 @@ void PutClientInServer (edict_t *ent)
 		ent->model = va("players/%s/tris.md2", ent->client->resp.team_on->playermodel);
 	else
 	{
+		// Free For All: the map may not define any team, keep a valid model instead of crashing
+		if (G_IsFFA() && !team_list[0])
+			ent->model = "players/usa/tris.md2";
+		else
 		ent->model = va("players/%s/tris.md2", team_list[0]->teamid);
 
 //faf: removed for team dll support		ent->model = "players/usa/tris.md2";
@@ -3061,6 +3166,8 @@ void ClientDisconnect (edict_t *ent)
 	gi.WriteShort (ent-g_edicts);
 	gi.WriteByte (MZ_LOGOUT);
 	gi.multicast (ent->s.origin, MULTICAST_PVS);
+
+	FFA_ForgetPlayer (ent);
 
 	gi.unlinkentity (ent);
 
@@ -4395,6 +4502,9 @@ void ClientBeginServerFrame (edict_t *ent)
 
 	client = ent->client;
 
+	if (G_IsFFA())
+		FFA_JoinPlayer(ent);
+
 //		gi.dprintf("    %i\n", ent->client->ps.gunframe);//faf test
 
 
@@ -4515,7 +4625,7 @@ void ClientBeginServerFrame (edict_t *ent)
 				M_ChooseMOS(ent);
 				client->latched_buttons = 0;
 			}
-			if (level.framenum > (10 * (int)(level_wait->value  + delay)) &&
+			if (level.framenum > (10 * (int)G_LobbyTime(delay)) &&
 			ent->leave_limbo_time < level.time - .1)
 			{
 				EndObserverMode(ent); //faf
@@ -4576,7 +4686,7 @@ void ClientBeginServerFrame (edict_t *ent)
 	if (ent->client->resp.team_on)
 		delay = ent->client->resp.team_on->delay;
 
-	if (level.framenum > (10 * (int)(level_wait->value  + delay))  &&
+	if (level.framenum > (10 * (int)G_LobbyTime(delay))  &&
 	(ent->client->limbo_mode) &&
 	(ent->leave_limbo_time < level.time) &&
 	(ent->client->menu == 0))  // so you dont spawn while choosing a class

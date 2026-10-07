@@ -86,7 +86,7 @@ void SwitchToObserver(edict_t *ent)
 
 	if (!ent->client->display_info && ent->client->layout_type != SHOW_CAMPAIGN)
 	{
-		if(team_list[0])
+		if(team_list[0] && !G_IsFFA())
 			MainMenu(ent);
 	}
 }
@@ -709,6 +709,9 @@ void M_ChooseMOS(edict_t *ent)
 //	int index;
 	edict_t *cl_ent;
 
+	if (G_IsFFA())
+		return;
+
 	// kernel: do not show menu at the beginning
 	if (level.framenum <= (10 * (int)(motd_time->value)))
 		return;
@@ -885,10 +888,34 @@ void M_ChooseMOS(edict_t *ent)
 }
 
 
+// Free For All: no team/class menus. Every player is silently assigned the faction of
+// team_list[0] (used only as skin/loadout provider, never as a team) and the Sniper class.
+void FFA_JoinPlayer(edict_t *ent)
+{
+	if (!ent->client || ent->ai || ent->flyingnun || ent->client->resp.team_on)
+		return;
+
+	if (!team_list[0])
+	{
+		// the map defines no team: tell the player instead of leaving them waiting silently
+		if (level.framenum % 100 == 0)
+			safe_centerprintf (ent, "Free For All cannot start:\nthis map defines no team (info_team_start)\n");
+		return;
+	}
+
+	ent->client->resp.team_on = team_list[0];
+	ent->client->resp.mos = SNIPER;
+	ent->client->resp.newmos = NONE;
+	ent->client->pers.afk_check_time = level.framenum;
+}
+
 void M_Team_Join(edict_t *ent, pmenu_t *p, int choice)
 {
 	//qboolean foundspot=false;
 	int i,j,k;
+
+	if (G_IsFFA())
+		return;
 
 	// kernel: do not show menu at the beginning
 	if (level.framenum <= (10 * (int)(motd_time->value)))
@@ -1033,6 +1060,9 @@ void ChooseTeam(edict_t *ent) {
 	char* theText = NULL;
 	char teamname[17];
 	int max_clients;
+
+	if (G_IsFFA())
+		return;
 
 	// kernel: do not show menu at the beginning
 	if (level.framenum <= (10 * (int)(motd_time->value)))

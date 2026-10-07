@@ -1749,6 +1749,9 @@ void SP_func_train (edict_t *self)
 
 	self->use = train_use;
 
+	// Free For All: a train never counts as an objective
+	if (G_IsFFA())
+		self->obj_gain = 0;
 
 	if (self->health)
 	{

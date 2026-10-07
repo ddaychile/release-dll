@@ -1497,7 +1497,8 @@ void BOT_DMclass_WeightPlayers(edict_t *self)
 		if (self->client && AIEnemies[i]->client && 
 			self->client->resp.team_on && 
 			AIEnemies[i]->client->resp.team_on && 
-			self->client->resp.team_on->index == AIEnemies[i]->client->resp.team_on->index
+			self->client->resp.team_on->index == AIEnemies[i]->client->resp.team_on->index &&
+			!G_IsFFA()
 			)
 		{}
 		else

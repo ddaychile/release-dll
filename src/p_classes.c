@@ -51,7 +51,7 @@ void Load_Weapon (edict_t *ent, gitem_t	*item)
 	}
 
 
-	if (!strcmp(item->dllname, team_list[1]->teamid))  //faf:  if its a team 1 weap...(usually grm)
+	if (team_list[1] && !strcmp(item->dllname, team_list[1]->teamid))  //faf:  if its a team 1 weap...(usually grm)
 	{
 		if (item->position == LOC_PISTOL)
 			ent->client->mags[1].pistol_rnd = ammo_item->quantity;
@@ -113,7 +113,8 @@ void Give_Class_Weapon(edict_t *ent)
 	client=ent->client;
 
 
-	if (knifefest->value)
+	// Free For All defines its own loadout: the legacy loadout overrides below do not apply to it
+	if (knifefest->value && !G_IsFFA())
 	{
 		item = FindItem("Helmet");
 		client->pers.inventory[ITEM_INDEX(item)] = 1;
@@ -152,19 +153,19 @@ void Give_Class_Weapon(edict_t *ent)
 		client->pers.inventory[ITEM_INDEX(item)] = 1;
 	}
 	// faf rifle-only code  //ddaylife 
-	if ((mauser_only->value == 1) && !(client->resp.mos == MEDIC))
+	if (!G_IsFFA() && (mauser_only->value == 1) && !(client->resp.mos == MEDIC))
 	{
 		item = FindTeamItem(team_list[1]->teamid, LOC_RIFLE);
 	}
-	else if ((sniper_only->value == 1) && !(client->resp.mos == MEDIC))
+	else if (!G_IsFFA() && (sniper_only->value == 1) && !(client->resp.mos == MEDIC))
 	{
 		item = FindTeamItem(team_list[(client->resp.team_on->index)]->teamid, LOC_SNIPER);
 	}
-	else if (swords->value == 1 && client->resp.mos != MEDIC)
+	else if (!G_IsFFA() && swords->value == 1 && client->resp.mos != MEDIC)
 	{
 		item = FindItem("Sword");
 	}
-	else if (random_class->value == 1) // Modo de clases al azar al spawnear, se activa con random_class 1 - ZeRo
+	else if (!G_IsFFA() && random_class->value == 1) // Modo de clases al azar al spawnear, se activa con random_class 1 - ZeRo
 	{ 
 		int random_value = (rand() % 9); // `rand() % 9` genera [0, 8] que son los numeros correspondientes a las clases.
 		client->resp.mos = random_value; // Le asignamos el numero generado.
@@ -190,7 +191,9 @@ void Give_Class_Weapon(edict_t *ent)
 
 	item = NULL;
 
-	if ((item = FindItemInTeam(client->resp.team_on->mos[client->resp.mos]->weapon2,
+	// Free For All: no secondary weapon (pistol), only the primary weapon and the knife
+	if (!G_IsFFA() &&
+		(item = FindItemInTeam(client->resp.team_on->mos[client->resp.mos]->weapon2,
                                client->resp.team_on->teamid)))
 		client->pers.inventory[ITEM_INDEX(item)] = 1;
 
@@ -222,7 +225,7 @@ void Give_Class_Weapon(edict_t *ent)
 	//if(client->resp.team_on->mos[client->resp.mos]->grenades)
 	//{
 
-	if (!no_nades->value)//ddaylife
+	if (!no_nades->value && !G_IsFFA())//ddaylife
 		// kernel: this forces team id when assigns grenades (italians has potato masher like germans)
 		if ((item = FindItemInTeam(client->resp.team_on->mos[client->resp.mos]->grenades,
                                    client->resp.team_on->teamid)))
@@ -247,9 +250,9 @@ void Give_Class_Ammo(edict_t *ent)
 	
 	if (ent->client->resp.team_on->mos[ent->client->resp.mos]->ammo1 )
 	{
-		if ((mauser_only->value == 1) && !(ent->client->resp.mos == MEDIC))
+		if (!G_IsFFA() && (mauser_only->value == 1) && !(ent->client->resp.mos == MEDIC))
 			item= FindTeamItem(team_list[1]->teamid, LOC_RIFLE);
-		else if ((sniper_only->value == 1) && !(ent->client->resp.mos == MEDIC))
+		else if (!G_IsFFA() && (sniper_only->value == 1) && !(ent->client->resp.mos == MEDIC))
 			item= FindTeamItem(team_list[(ent->client->resp.team_on->index)]->teamid, LOC_SNIPER);
 		else
 			item = FindItemInTeam(ent->client->resp.team_on->mos[ent->client->resp.mos]->weapon1,
@@ -269,7 +272,7 @@ void Give_Class_Ammo(edict_t *ent)
 		}
 	}
 
-	if (ent->client->resp.team_on->mos[ent->client->resp.mos]->ammo2 )
+	if (ent->client->resp.team_on->mos[ent->client->resp.mos]->ammo2 && !G_IsFFA())
 	{
 		item = FindItemInTeam(ent->client->resp.team_on->mos[ent->client->resp.mos]->weapon2,
 							  ent->client->resp.team_on->teamid);

@@ -529,9 +529,133 @@ void DeathmatchScoreboardMessage (edict_t *ent, edict_t *killer)
 TeamStats
 =============
 */
+// Free For All: statusbar stats 22 and 23 show the top scorer (a text shared by everybody,
+// kept in a general configstring) and the frags of the player who is looking
+// The engine only accepts configstring indexes below CS_GENERAL + MAX_GENERAL (= CS_PLAYERIDS); CS_GENERAL + client
+// number and CS_OBJECTIVES + client number are used by the player id and the object health, so the last slot is used
+#define FFA_TOP_SCORER_CS	(CS_PLAYERIDS - 1)
+
+// Free For All announcements: two texts (above and below a big number) kept in the two slots before the top scorer one
+#define FFA_ANNOUNCE_TOP_CS		(CS_PLAYERIDS - 2)
+#define FFA_ANNOUNCE_BOTTOM_CS	(CS_PLAYERIDS - 3)
+#define FFA_ANNOUNCE_WIDTH		24		// characters; the statusbar centers the texts for this width
+#define FFA_ANNOUNCE_TIME		4		// seconds on screen
+
+static int		ffa_hud_lastframe = -1;
+static int		ffa_hud_topscore = 0;
+static char		ffa_hud_lasttext[64] = "";
+static int		ffa_announce_number = 0;
+static float	ffa_announce_until = 0;
+
+// called when a level starts: the configstrings were reset, so the top scorer text must be sent again
+void FFA_HudReset (void)
+{
+	ffa_hud_lastframe = -1;
+	ffa_hud_lasttext[0] = 0;
+	ffa_announce_number = 0;
+	ffa_announce_until = 0;
+}
+
+// centers src in a field of FFA_ANNOUNCE_WIDTH characters, drawn with the alternate (orange) text
+static void FFA_AnnounceText (int cs, char *src)
+{
+	char	text[FFA_ANNOUNCE_WIDTH * 2 + 1];
+	int		len = strlen (src), i;
+
+	if (len > FFA_ANNOUNCE_WIDTH)
+		len = FFA_ANNOUNCE_WIDTH;
+
+	Com_sprintf (text, sizeof(text), "%*s%.*s", (FFA_ANNOUNCE_WIDTH - len) / 2, "", len, src);
+
+	for (i = 0; text[i]; i++)
+		text[i] |= 0x80;
+
+	gi.configstring (cs, text);
+}
+
+// Free For All: big on-screen announcement for everybody, a text, a number in the big font and another text
+void FFA_ShowAnnouncement (char *top_text, int number, char *bottom_text)
+{
+	FFA_AnnounceText (FFA_ANNOUNCE_TOP_CS, top_text);
+	FFA_AnnounceText (FFA_ANNOUNCE_BOTTOM_CS, bottom_text);
+
+	ffa_announce_number = number;
+	ffa_announce_until = level.time + FFA_ANNOUNCE_TIME;
+}
+
+static void FFA_HudStats (edict_t *ent)
+{
+	char		text[64];
+	edict_t		*cl_ent, *top = NULL;
+	int			i;
+
+	if (level.framenum != ffa_hud_lastframe)
+	{
+		ffa_hud_lastframe = level.framenum;
+
+		for (i = 0; i < game.maxclients; i++)
+		{
+			cl_ent = g_edicts + 1 + i;
+			if (!cl_ent->inuse || !cl_ent->client || !cl_ent->client->resp.team_on)
+				continue;
+
+			if (!top || cl_ent->client->resp.score > top->client->resp.score)
+				top = cl_ent;
+		}
+
+		if (top)
+		{
+			// padded on the left to 12 characters so the name ends at the same edge as the score
+			Com_sprintf (text, sizeof(text), "%12.12s", top->client->pers.netname);
+			ffa_hud_topscore = top->client->resp.score;
+		}
+		else
+		{
+			Com_sprintf (text, sizeof(text), "%12s", "-");
+			ffa_hud_topscore = 0;
+		}
+
+		// the high bit draws the text with the same alternate color as the "TOP SCORER" and "YOU" labels
+		for (i = 0; text[i]; i++)
+			text[i] |= 0x80;
+
+		if (strcmp (text, ffa_hud_lasttext))
+		{
+			gi.configstring (FFA_TOP_SCORER_CS, text);
+			strcpy (ffa_hud_lasttext, text);
+		}
+	}
+
+	ent->client->ps.stats[STAT_TEAM0_ICON] = FFA_TOP_SCORER_CS;
+	ent->client->ps.stats[STAT_TEAM0_KILLS] = ent->client->resp.score;
+	ent->client->ps.stats[STAT_TEAM0_POINTS] = ffa_hud_topscore;
+
+	// announcement: the big number (stat 25) and the two texts (stats 26 and 27), only while it is on screen
+	// (during the intermission the scoreboard draws the final announcement itself, above its panel)
+	if (level.time < ffa_announce_until && !level.intermissiontime)
+	{
+		ent->client->ps.stats[STAT_TEAM1_ICON] = ffa_announce_number;
+		ent->client->ps.stats[STAT_TEAM1_KILLS] = FFA_ANNOUNCE_TOP_CS;
+		ent->client->ps.stats[STAT_TEAM1_POINTS] = FFA_ANNOUNCE_BOTTOM_CS;
+	}
+	else
+	{
+		ent->client->ps.stats[STAT_TEAM1_ICON] = 0;
+		ent->client->ps.stats[STAT_TEAM1_KILLS] = 0;
+		ent->client->ps.stats[STAT_TEAM1_POINTS] = 0;
+	}
+}
+
 void TeamStats (edict_t *ent)
 {
 	int i;
+
+	// without the Free For All statusbar the stats would be read by the team one: use the team stats
+	if (G_IsFFA() && ffa_statusbar_active)
+	{
+		FFA_HudStats(ent);
+		return;
+	}
 
 	for (i=0 ; i<MAX_TEAMS ; i++)
 	{
@@ -588,6 +712,132 @@ void TeamStats (edict_t *ent)
 #define TEAM1    0
 #define TEAM2    1
 
+// Free For All: one individual list sorted by score, no teams and no team counters.
+// During the intermission the winner is shown. The accuracy page (second press of the scores key)
+// uses the same panel with accuracy, hits and shots instead of kills and deaths.
+static void FFA_ScoreboardMessage (edict_t *ent, qboolean accuracy_page)
+{
+	char		string[1400];
+	char		pingstring[4];
+	int			sorted[MAX_CLIENTS], sortedscores[MAX_CLIENTS];
+	int			total = 0, i, j, k, score, len;
+	int			hits, shots, acc;
+	edict_t		*cl_ent;
+
+	for (i = 0; i < game.maxclients; i++)
+	{
+		cl_ent = g_edicts + 1 + i;
+		if (!cl_ent->inuse || !game.clients[i].resp.team_on)
+			continue;
+
+		score = game.clients[i].resp.score;
+		for (j = 0; j < total; j++)
+		{
+			if (score > sortedscores[j])
+				break;
+		}
+		for (k = total; k > j; k--)
+		{
+			sorted[k] = sorted[k - 1];
+			sortedscores[k] = sortedscores[k - 1];
+		}
+		sorted[j] = i;
+		sortedscores[j] = score;
+		total++;
+	}
+
+	// standard Quake II panel as background: the team ones carry team logos and flags
+	strcpy (string, "xv 32 yv 8 picn inventory ");
+
+	// the text must stay inside the folder of the panel: 24 characters starting at xv 54
+	if (accuracy_page)
+	{
+		strcat (string, "xv 58 yv 30 string \"FREE FOR ALL - ACCURACY\" ");
+		strcat (string, "xv 54 yv 52 string \"Player    Acc%  Hit Shot\" ");
+	}
+	else
+	{
+		strcat (string, "xv 102 yv 30 string \"FREE FOR ALL\" ");
+		strcat (string, "xv 54 yv 52 string \"Png Player      K  D +/-\" ");
+	}
+
+	if (level.intermissiontime && total)
+	{
+		char	title[40];
+
+		if (total > 1 && sortedscores[0] == sortedscores[1])
+		{
+			strcat (string, "xv 118 yv 40 string \"Tie game\" ");
+			Com_sprintf (title, sizeof(title), "TIE GAME");
+		}
+		else
+		{
+			sprintf (string + strlen(string), "xv 86 yv 40 string \"Winner: %-10.10s\" ",
+					 game.clients[sorted[0]].pers.netname);
+			Com_sprintf (title, sizeof(title), "%.12s WINS!", game.clients[sorted[0]].pers.netname);
+		}
+
+		// big banner at the top of the screen, above the panel (the panel covers the middle of the screen):
+		// the number is the top score (stat 24)
+		sprintf (string + strlen(string), "xv %d yt 8 string2 \"%s\" ", 160 - 4 * (int)strlen(title), title);
+		if (sortedscores[0] > 0)
+			strcat (string, "xv 126 yt 20 num 3 24 xv 140 yt 56 string2 \"FRAGS\" ");
+	}
+
+	len = strlen(string);
+
+	for (i = 0; i < total; i++)
+	{
+		if (len > 1300 || i >= MAX_SCORES_PER_TEAM)
+		{
+			sprintf (string + strlen(string), "xv 54 yv %d string \"and %d more\" ",
+					 66 + MAX_SCORES_PER_TEAM * 12, total - i);
+			break;
+		}
+
+		cl_ent = g_edicts + 1 + sorted[i];
+
+		if (cl_ent->ai)
+			sprintf(pingstring, "BOT");
+		else if (game.clients[sorted[i]].ping < 1000)
+		{
+			if (snprintf(pingstring, 4, "%3d", game.clients[sorted[i]].ping % 1000) > 3)
+				sprintf(pingstring, "999");
+		}
+		else
+			sprintf(pingstring, "999");
+
+		// the row of the player looking at the scoreboard is drawn with the alternate (orange) text
+		if (accuracy_page)
+		{
+			hits = game.clients[sorted[i]].resp.accuracy_hits;
+			shots = hits + game.clients[sorted[i]].resp.accuracy_misses;
+			acc = shots ? (int)(100.0 * hits / shots) : 0;
+
+			sprintf (string + strlen(string), "xv 54 yv %d %s \"%-10.10s%3d%%%5d%5d\"",
+					 66 + i * 12,
+					 (sorted[i] == ent - g_edicts - 1) ? "string2" : "string",
+					 game.clients[sorted[i]].pers.netname,
+					 acc, hits, shots);
+		}
+		else
+		// +/- is kills minus deaths (suicides are deaths)
+		sprintf (string + strlen(string), "xv 54 yv %d %s \"%s %-10.10s%3d%3d%+4d\"",
+				 66 + i * 12,
+				 (sorted[i] == ent - g_edicts - 1) ? "string2" : "string",
+				 pingstring,
+				 game.clients[sorted[i]].pers.netname,
+				 game.clients[sorted[i]].resp.ffa_kills,
+				 game.clients[sorted[i]].resp.ffa_deaths,
+				 game.clients[sorted[i]].resp.ffa_kills - game.clients[sorted[i]].resp.ffa_deaths);
+
+		len = strlen(string);
+	}
+
+	gi.WriteByte(svc_layout);
+	gi.WriteString(string);
+}
+
 void A_ScoreboardMessage (edict_t *ent)//, edict_t *killer)
 {
 //	char scoreleftpic[256];   //faf:  for team dll support
@@ -612,6 +862,12 @@ void A_ScoreboardMessage (edict_t *ent)//, edict_t *killer)
 	if (ent->ai || !ent->inuse)
 		return;
 	//[end]
+
+	if (G_IsFFA())
+	{
+		FFA_ScoreboardMessage(ent, false);
+		return;
+	}
 
 	total[TEAM1] = total[TEAM2] = totalalive[TEAM1] = totalalive[TEAM2] =
 		totalscore[TEAM1] = totalscore[TEAM2] = 0;
@@ -914,6 +1170,12 @@ void A_ScoreboardMessage2 (edict_t *ent)//, edict_t *killer)
 	if (ent->ai || !ent->inuse)
 		return;
 	//[end]
+
+	if (G_IsFFA())
+	{
+		FFA_ScoreboardMessage(ent, true);
+		return;
+	}
 
 	total[TEAM1] = total[TEAM2] = totalalive[TEAM1] = totalalive[TEAM2] =
 		totalscore[TEAM1] = totalscore[TEAM2] = 0;
@@ -1640,10 +1902,10 @@ void G_SetStats (edict_t *ent)
 	delay = 0;
 	if (ent->client->resp.team_on)
 		delay = ent->client->resp.team_on->delay;
-	if (level.framenum < ((int)(delay + level_wait->value) * 10) )
+	if (level.framenum < ((int)G_LobbyTime(delay) * 10) )
 	{
 		ent->client->ps.stats[STAT_TIMER_ICON] = gi.imageindex ("i_dday");
-		ent->client->ps.stats[STAT_TIMER] = ((int)(delay + level_wait->value) - (level.framenum / 10));
+		ent->client->ps.stats[STAT_TIMER] = ((int)G_LobbyTime(delay) - (level.framenum / 10));
 	} 	
 	// forced respawn tuner (i_respcount)
 	else if (level.framenum <= ent->client->forcespawn)
@@ -1853,6 +2115,12 @@ void SplittedScoreboardMessage (edict_t *ent)
 	if (ent->ai || !ent->inuse)
 		return;
 	//[end]
+
+	if (G_IsFFA())
+	{
+		FFA_ScoreboardMessage(ent, false);
+		return;
+	}
 
 	total[TEAM1] = total[TEAM2] = totalalive[TEAM1] = totalalive[TEAM2] =
 		totalscore[TEAM1] = totalscore[TEAM2] = 0;
@@ -2152,6 +2420,12 @@ void SplittedScoreboardMessage2 (edict_t *ent)
 	if (ent->ai || !ent->inuse)
 		return;
 	//[end]
+
+	if (G_IsFFA())
+	{
+		FFA_ScoreboardMessage(ent, true);
+		return;
+	}
 
 	total[TEAM1] = total[TEAM2] = totalalive[TEAM1] = totalalive[TEAM2] =
 		totalscore[TEAM1] = totalscore[TEAM2] = 0;

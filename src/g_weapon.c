@@ -1579,7 +1579,7 @@ void fire_grenade2 (edict_t *self, vec3_t start, vec3_t aimdir, int damage, int 
 			// team = Q_stricmp(grenade->item->ammo , "Mk 2 Grenade");  //faf: team dll support, replaced with below
 			if (!strcmp(grenade->item->dllname, team_list[0]->teamid))
 					team = 0;
-			else if (!strcmp(grenade->item->dllname, team_list[1]->teamid))
+			else if (team_list[1] && !strcmp(grenade->item->dllname, team_list[1]->teamid))
 					team = 1;
 			else
 			{

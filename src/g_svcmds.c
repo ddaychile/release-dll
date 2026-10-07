@@ -65,6 +65,9 @@ void Svcmd_Teamswitch_f (void)
 	if (!ent->client)
 		return;
 
+	if (G_IsFFA())
+		return;
+
 	if (ent->client->resp.team_on)
 	{
 		team = (ent->client->resp.team_on->index+1)%2;
@@ -417,6 +420,10 @@ void SetupCampaign (qboolean restart)
 	FILE *check;
 
 	if (!*campaign->string)
+		return;
+
+	// Free For All: campaigns depend on team victories, so they are not used
+	if (G_IsFFA())
 		return;
 
 

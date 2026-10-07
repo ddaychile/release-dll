@@ -183,7 +183,21 @@ void Killed (edict_t *targ, edict_t *inflictor, edict_t *attacker, int damage, v
 
 	if(!targ->deadflag)
 	{
-		
+		// Free For All: every death counts (suicides included); a kill goes to the attacker, or
+		// to whoever last wounded the victim when the victim bled out (as in the score below)
+		if (G_IsFFA() && targ->client)
+		{
+			targ->client->resp.ffa_deaths++;
+
+			if (attacker && attacker->client && attacker != targ)
+				attacker->client->resp.ffa_kills++;
+			else if ((attacker == targ || attacker == NULL || attacker == world) &&
+				targ->client->last_wound_inflictor &&
+				targ->client->last_wound_inflictor != targ &&
+				targ->client->last_wound_inflictor->client)
+				targ->client->last_wound_inflictor->client->resp.ffa_kills++;
+		}
+
 	// pbowens: suicide gives other team kill
 		if (targ->client && targ->client->resp.team_on)
 		{
@@ -211,7 +225,8 @@ void Killed (edict_t *targ, edict_t *inflictor, edict_t *attacker, int damage, v
 				}
 				else
 				{
-					team_list[(targ->client->resp.team_on->index+1)%2]->kills++;
+					if (!G_IsFFA())
+						team_list[(targ->client->resp.team_on->index+1)%2]->kills++;
 					//targ->client->resp.plus_minus--;	
 					if (targ->client->aim)
 						targ->client->resp.stat_bot_minus--;
@@ -236,7 +251,7 @@ void Killed (edict_t *targ, edict_t *inflictor, edict_t *attacker, int damage, v
 			attacker->client->resp.team_on )
 		{
 
-			if (attacker != targ && attacker->client->resp.team_on == targ->client->resp.team_on) {
+			if (attacker != targ && attacker->client->resp.team_on == targ->client->resp.team_on && !G_IsFFA()) {
 				if (team_kill->value == 2)
 					attacker->client->penalty = PENALTY_TEAM_KILL;
 			}
@@ -302,7 +317,7 @@ void Killed (edict_t *targ, edict_t *inflictor, edict_t *attacker, int damage, v
 		//targ->client->limbo_mode=true;
 
 		if (!targ->deadflag)
-			targ->client->forcespawn = (level.framenum + FORCE_RESPAWN);
+			targ->client->forcespawn = (level.framenum + (G_IsFFA() ? (int)(G_RespawnInterval() * 10) : FORCE_RESPAWN));
 	}
 
 	targ->die_time=0;
@@ -847,7 +862,7 @@ void T_Damage (edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir,
 		if (!inflictor->client->resp.team_on)
 			continue;
 		if (check_ent->client->resp.team_on ==
-			 inflictor->client->resp.team_on)
+			 inflictor->client->resp.team_on && !G_IsFFA())
 			continue;
 		if (check_ent->enemy)
 			continue;

@@ -46,6 +46,7 @@ edict_t		*g_edicts;
 cvar_t	*deathmatch;
 cvar_t	*coop;
 cvar_t	*ctb_mode; // kernel: selects mode for CTB (0 disabled, 1 one briefcase, 2 many briefcases)
+cvar_t	*ffa; // Free For All mode (0 disabled, 1 enabled): teamless, every player is an enemy
 cvar_t	*dmflags;
 cvar_t	*skill;
 cvar_t	*fraglimit;
@@ -862,7 +863,7 @@ void EndDMLevel (void)
 			if (t == NULL) //faf:  happens when running a map thats not on maplist and map is to change
 			{
 				//let it stay off maplist until a map on the maplist is changed to
-				if (team_list[0]->nextmap && MapExists(team_list[0]->nextmap))
+				if (team_list[0] && team_list[0]->nextmap && MapExists(team_list[0]->nextmap))
 				{
 					safe_bprintf (PRINT_HIGH, "Next map: %s \n", team_list[0]->nextmap);
 					BeginIntermission (CreateTargetChangeLevel (team_list[0]->nextmap));
@@ -984,6 +985,111 @@ void EndDMLevel (void)
 CheckDMRules
 =================
 */
+// Free For All: player with the highest score among those who joined (NULL if nobody),
+// *tie is set when several players share that score
+static edict_t *FFA_TopPlayer (qboolean *tie)
+{
+	edict_t	*ent, *top = NULL;
+	int		i;
+
+	*tie = false;
+	for (i = 1; i <= maxclients->value; i++)
+	{
+		ent = &g_edicts[i];
+
+		if (!ent->inuse || !ent->client || !ent->client->resp.team_on)
+			continue;
+
+		if (!top || ent->client->resp.score > top->client->resp.score)
+		{
+			top = ent;
+			*tie = false;
+		}
+		else if (ent->client->resp.score == top->client->resp.score)
+			*tie = true;
+	}
+
+	return top;
+}
+
+static void FFA_AnnounceWinner (void)
+{
+	qboolean	tie;
+	edict_t		*top = FFA_TopPlayer(&tie);
+
+	if (!top)
+		return;
+
+	if (tie)
+	{
+		safe_bprintf (PRINT_HIGH, "Free For All ended in a tie at %i frags.\n", top->client->resp.score);
+		FFA_ShowAnnouncement ("TIE GAME", top->client->resp.score, (top->client->resp.score > 0) ? "FRAGS" : " ");
+	}
+	else
+	{
+		safe_bprintf (PRINT_HIGH, "%s wins the Free For All with %i frags!\n", top->client->pers.netname, top->client->resp.score);
+		FFA_ShowAnnouncement (va("%.12s WINS!", top->client->pers.netname), top->client->resp.score,
+							  (top->client->resp.score > 0) ? "FRAGS" : " ");
+	}
+}
+
+// Free For All: the server fraglimit, or a standard one when the server leaves it at 0
+static int FFA_FragLimit (void)
+{
+	if (fraglimit->value > 0)
+		return (int)fraglimit->value;
+
+	return FFA_DEFAULT_FRAGLIMIT;
+}
+
+// Free For All: screen announcements when somebody gets close to winning or reaches a
+// multiple of 10 frags. resp.ffa_warned and resp.ffa_milestone keep each announcement from repeating.
+// Only the player in the lead is announced; the others are marked silently so a late announcement
+// does not appear when they take the lead afterwards.
+static void FFA_CheckAnnouncements (void)
+{
+	edict_t		*ent, *top;
+	qboolean	tie, leader;
+	int			i, score, left, limit = FFA_FragLimit();
+
+	top = FFA_TopPlayer (&tie);
+	if (!top)
+		return;
+
+	for (i = 1; i <= maxclients->value; i++)
+	{
+		ent = &g_edicts[i];
+
+		if (!ent->inuse || !ent->client || !ent->client->resp.team_on)
+			continue;
+
+		score = ent->client->resp.score;
+		left = limit - score;
+		leader = (score >= top->client->resp.score);
+
+		if (score > 0 && left <= 1 && ent->client->resp.ffa_warned < 2)
+		{
+			ent->client->resp.ffa_warned = 2;
+			if (leader)
+				FFA_ShowAnnouncement (va("%.12s NEEDS", ent->client->pers.netname), 1, "MORE FRAG TO WIN");
+		}
+		else if (score > 0 && left <= 5 && left > 1 && ent->client->resp.ffa_warned < 1)
+		{
+			ent->client->resp.ffa_warned = 1;
+			if (leader)
+				FFA_ShowAnnouncement (va("%.12s NEEDS", ent->client->pers.netname), left, "MORE FRAGS TO WIN");
+		}
+		else if (leader && score >= 10 && score / 10 > ent->client->resp.ffa_milestone)
+		{
+			FFA_ShowAnnouncement (va("%.12s REACHED", ent->client->pers.netname), (score / 10) * 10, "FRAGS");
+		}
+
+		// milestones are marked even when a warning was shown instead, so they are not repeated later
+		if (score >= 10 && score / 10 > ent->client->resp.ffa_milestone)
+			ent->client->resp.ffa_milestone = score / 10;
+	}
+}
+
 void CheckDMRules (void)
 {
 	int			i=0,tempscore=0;
@@ -1107,7 +1213,7 @@ void CheckDMRules (void)
 			break;
 
 		// kernel: time to win only will work in deathmatch mode
-		if (deathmatch->value && team_list[i]->time_to_win)
+		if (!G_IsFFA() && deathmatch->value && team_list[i]->time_to_win)
 		{
 			delay = (team_list[i]->time_to_win - level.time);
 		
@@ -1131,7 +1237,7 @@ void CheckDMRules (void)
 		}
 	}
 	//faf:  rewrite this so tie games are announced correctly
-	if (team_list[0] && team_list[1])
+	if (team_list[0] && team_list[1] && !G_IsFFA())
 	{
 		if (team_list[0]->need_kills > 0 &&
 			team_list[0]->kills >= team_list[0]->need_kills) 
@@ -1299,6 +1405,12 @@ void CheckDMRules (void)
 				else
 					Last_Team_Winner = -1; // tie or draw
 			}
+			else if (G_IsFFA())
+			{
+				// Free For All: no team wins, the best player is announced
+				FFA_AnnounceWinner();
+				Last_Team_Winner = 99;
+			}
 			else
 			{
 				// check who team wins by kills
@@ -1319,6 +1431,26 @@ void CheckDMRules (void)
 	}
 
 	// kernel: CTB mode does not count frags to finish
+	// Free For All: the fraglimit is individual (the first player to reach it wins), there are no team kills
+	if (G_IsFFA())
+	{
+		qboolean	tie;
+		edict_t		*top = FFA_TopPlayer(&tie);
+
+		if (top && top->client->resp.score >= FFA_FragLimit())
+		{
+			safe_bprintf (PRINT_HIGH, "Fraglimit hit.\n");
+			FFA_AnnounceWinner();
+			Last_Team_Winner = 99;
+			ResetCountTimer();
+			EndDMLevel ();
+		}
+		else
+			FFA_CheckAnnouncements();
+
+		return;
+	}
+
 	if (fraglimit->value && !ctb_mode->value)
 	{
 		// kernel: check if fraglimit changed its value to update need_kills properties
@@ -1503,6 +1635,32 @@ void G_RunFrame (void)
 				BOT_RemoveBot("",check_ent);
 
 		}
+	}
+
+	// Free For All: bots are not balanced per team, their total is alliedlevel + axislevel
+	else if (G_IsFFA() && level.framenum > 40 && bots->value &&
+		((level.framenum < 300 && level.framenum%10 == 1) ||
+		(level.framenum%40 == 1)))
+	{
+		int		botcount = 0;
+		int		botlevel = (int)(alliedlevel->value + axislevel->value);
+		edict_t	*lastbot = NULL;
+
+		for (i = 1; i <= maxclients->value; i++)
+		{
+			check_ent = g_edicts + i;
+			if (!check_ent->inuse || !check_ent->client || !check_ent->ai)
+				continue;
+
+			botcount++;
+			lastbot = check_ent;
+		}
+
+		if (botcount > botlevel)
+			BOT_RemoveBot("", lastbot);
+		else if (level.allied_cmps && botcount < botlevel &&
+			 ( level.framenum > 1800 || (HumanPlayerCount() <= playermaxforbots->value - 1 || playermaxforbots->value == 0) ))
+			BOT_SpawnBot ( 0, "", "", NULL);
 	}
 
 	//maintain certain player/bot levels per team according to cvars

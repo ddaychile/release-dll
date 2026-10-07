@@ -2435,6 +2435,10 @@ void Cmd_Say_f (edict_t *ent, qboolean team, qboolean arg0, qboolean saved)
 	gclient_t	*cl;
 	char teamname[5];
 
+	// Free For All: there are no teams, so team chat is public chat
+	if (G_IsFFA())
+		team = false;
+
 	if (ent->client->resp.team_on)
 	{
 		if (snprintf(teamname, 5, "%s ", ent->client->resp.team_on->playermodel) >= 5)
