@@ -940,6 +940,7 @@ qboolean OnSameTeam(edict_t *self,edict_t *target);
 qboolean G_IsFFA(void);
 void FFA_JoinPlayer(edict_t *ent);
 void FFA_HudReset(void);
+void FFA_SpawnReset(void);
 void initialize_random_seed();	// p_classes.c
 void FFA_ForgetPlayer(edict_t *gone);
 void FFA_ShowAnnouncement(char *top_text, int number, char *bottom_text);

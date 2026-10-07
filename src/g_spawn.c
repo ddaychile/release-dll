@@ -1614,6 +1614,7 @@ void SP_worldspawn (edict_t *ent)
 		char *stats_end = strstr (dday_statusbar, "if 30 ");
 
 		FFA_HudReset ();
+		FFA_SpawnReset ();
 
 		// rand() is never seeded by the game: after every full restart ('map') the DLL starts with the same
 		// sequence, so the spawn tie-breaks would repeat identically. Seed it once per level.

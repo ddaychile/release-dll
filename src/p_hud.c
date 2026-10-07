@@ -712,6 +712,10 @@ void TeamStats (edict_t *ent)
 #define TEAM1    0
 #define TEAM2    1
 
+// Free For All: distance from the top of the screen of the winner banner shown over the final scoreboard
+// (the title; the big number is 12 below and "FRAGS" 48 below). Raise it to move the banner down.
+#define FFA_FINAL_BANNER_YT		128
+
 // Free For All: one individual list sorted by score, no teams and no team counters.
 // During the intermission the winner is shown. The accuracy page (second press of the scores key)
 // uses the same panel with accuracy, hits and shots instead of kills and deaths.
@@ -779,9 +783,10 @@ static void FFA_ScoreboardMessage (edict_t *ent, qboolean accuracy_page)
 
 		// big banner at the top of the screen, above the panel (the panel covers the middle of the screen):
 		// the number is the top score (stat 24)
-		sprintf (string + strlen(string), "xv %d yt 8 string2 \"%s\" ", 160 - 4 * (int)strlen(title), title);
+		sprintf (string + strlen(string), "xv %d yt %d string2 \"%s\" ", 160 - 4 * (int)strlen(title), FFA_FINAL_BANNER_YT, title);
 		if (sortedscores[0] > 0)
-			strcat (string, "xv 126 yt 20 num 3 24 xv 140 yt 56 string2 \"FRAGS\" ");
+			sprintf (string + strlen(string), "xv 126 yt %d num 3 24 xv 140 yt %d string2 \"FRAGS\" ",
+					 FFA_FINAL_BANNER_YT + 12, FFA_FINAL_BANNER_YT + 48);
 	}
 
 	len = strlen(string);

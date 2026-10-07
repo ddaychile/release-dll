@@ -2041,6 +2041,20 @@ void Find_Mission_Start_Point(edict_t *ent)
 #define FFA_SPAWN_RANGE_CAP		16384
 #define FFA_SPAWN_TIE_JITTER	16
 
+// A spawn point used in the last seconds goes to the end of the list (it is only picked if there are not
+// enough other spots), so players that respawn together or in a row do not end up on the same spot
+#define FFA_SPAWN_RECENT_TIME		5		// seconds
+#define FFA_SPAWN_RECENT_PENALTY	100000
+#define FFA_SPOT_SLOTS				2048	// edict numbers that can be tracked
+
+static float ffa_spot_used[FFA_SPOT_SLOTS];	// level.time each spawn point was last used, 0 = not used in this level
+
+// called when a Free For All level starts
+void FFA_SpawnReset (void)
+{
+	memset (ffa_spot_used, 0, sizeof(ffa_spot_used));
+}
+
 // Free For All: distance from a spot to the nearest player that is actually in play
 // (not observer, not in limbo, not dead), ignoring the player that is about to spawn
 static float FFA_PlayersRangeFromSpot (edict_t *self, vec3_t spot_origin)
@@ -2075,12 +2089,12 @@ static edict_t *FFA_SelectSpawnPoint (edict_t *ent)
 	static char *spotnames[] = {"info_player_deathmatch", "info_reinforcements_start", "info_reinforcements_nearest", NULL};
 	edict_t	*spot, *best[3];
 	float	bestdist[3], dist;
-	int		i, j, n, count;
+	int		i, j, n, count, slot;
 
 	for (i = 0; i < 3; i++)
 	{
 		best[i] = NULL;
-		bestdist[i] = -1;
+		bestdist[i] = -2 * FFA_SPAWN_RECENT_PENALTY;	// below any score, even a penalized one
 	}
 
 	for (n = 0; spotnames[n]; n++)
@@ -2090,6 +2104,12 @@ static edict_t *FFA_SelectSpawnPoint (edict_t *ent)
 		{
 			// the small random part breaks the ties (for example when nobody is in play every spot is equally far)
 			dist = FFA_PlayersRangeFromSpot (ent, spot->s.origin) + random() * FFA_SPAWN_TIE_JITTER;
+
+			// used in the last seconds: send it to the end of the list
+			slot = spot - g_edicts;
+			if (slot >= 0 && slot < FFA_SPOT_SLOTS && ffa_spot_used[slot] > 0 &&
+				level.time - ffa_spot_used[slot] < FFA_SPAWN_RECENT_TIME)
+				dist -= FFA_SPAWN_RECENT_PENALTY;
 
 			for (i = 0; i < 3; i++)
 			{
@@ -2113,7 +2133,13 @@ static edict_t *FFA_SelectSpawnPoint (edict_t *ent)
 	if (!count)
 		return NULL;
 
-	return best[(int)(random() * count) % count];
+	spot = best[(int)(random() * count) % count];
+
+	slot = spot - g_edicts;
+	if (slot >= 0 && slot < FFA_SPOT_SLOTS)
+		ffa_spot_used[slot] = level.time;
+
+	return spot;
 }
 
 void Find_Mission_Start_Point(edict_t *ent, vec3_t origin, vec3_t angles)
