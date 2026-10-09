@@ -1988,7 +1988,7 @@ extern int jpn_index;
 #define HMG_SPREAD 10 // Valor para test (Original 100)- ZeRo
 
 // Browning Hi-Power: automatic pistol of the Medic (all factions)
-#define BROWNING_DAMAGE			15
+#define BROWNING_DAMAGE			17
 #define BROWNING_MAG			10
 #define BROWNING_FIRE_DELAY		2		// frames between shots (5 shots per second)
 #define BROWNING_SPREAD			20		// aimed spread of the first shot
