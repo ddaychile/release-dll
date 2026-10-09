@@ -40,6 +40,16 @@ void SP_item_weapon_b34(edict_t *self)
 	SpawnItem(self,FindItem("weapon_b34"));
 }
 
+static void SP_item_weapon_webleymedic(edict_t *self)
+{
+	SpawnItem(self, FindItemByClassname("weapon_webleymedic"));
+}
+
+static void SP_item_ammo_webleymedic(edict_t *self)
+{
+	SpawnItem(self, FindItemByClassname("ammo_webleymedic"));
+}
+
 void SP_item_weapon_carcano(edict_t *self)
 {
 	SpawnItem(self,FindItemByClassname("weapon_carcano"));
@@ -134,5 +144,7 @@ spawn_t sp_ita[MAX_TEAM_ITEMS] =
 	{ "ammo_rocketsI", SP_item_ammo_rocketsI },
 	{ "ammo_mauser98k", SP_item_ammo_mauser98k },
 	{ "ammo_grenades_ita", SP_item_ammo_grenades_ita },
-	{ "ammo_breda", SP_item_ammo_breda }
+	{ "ammo_breda", SP_item_ammo_breda },
+	{ "weapon_webleymedic", SP_item_weapon_webleymedic },
+	{ "ammo_webleymedic",  SP_item_ammo_webleymedic  },
 };

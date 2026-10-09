@@ -49,7 +49,7 @@ GunInfo_t usaguninfo[MAX_TEAM_GUNS]=
 		DAMAGE_COLT45, 0,
 		0
 	},
-	{//M1 Garand
+		{//M1 Garand
 		{4},{76}, 6,78, 64,67,
 			
 			"usa/m1/unload.wav",
@@ -146,7 +146,23 @@ GunInfo_t usaguninfo[MAX_TEAM_GUNS]=
 		DAMAGE_M1903, 0,
 		0,
 		"usa/m1903/bolt.wav", 67//66
-	}
+	},
+	{//WebleyMedic (heavy pistol)
+		{4},{82}, 6,84, 69,69,
+
+			"usa/colt45/unload.wav",
+				{49},
+
+			"usa/colt45/reload.wav",
+				{56},
+
+		"usa/colt45/fire.wav",
+		NULL,
+
+		MOD_PISTOL,
+		DAMAGE_WEBLEYMEDIC, 0,
+		10
+	},
 };
 
 

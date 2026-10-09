@@ -48,7 +48,7 @@ GunInfo_t polguninfo[MAX_TEAM_GUNS]=
 		DAMAGE_VIS, 0, 
 		0
 	},
-	{//svt
+		{//svt
 		{4},{76}, 6,78, 64,67,
 			
 			"pol/svt/unload.wav",
@@ -161,7 +161,23 @@ GunInfo_t polguninfo[MAX_TEAM_GUNS]=
 		DAMAGE_M98KS, 0,
 		0,
 		"grm/m98ks/bolt.wav", 67 //66
-	}
+	},
+	{//WebleyMedic (heavy pistol)
+		{4},{82}, 6,84, 69,69,
+
+			"pol/vis/unload.wav",
+				{49},
+
+			"pol/vis/reload.wav",
+				{56},
+
+		"pol/vis/fire.wav",
+		NULL,
+
+		MOD_PISTOL,
+		DAMAGE_WEBLEYMEDIC, 0,
+		10
+	},
 };
 
 

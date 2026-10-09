@@ -81,6 +81,34 @@ gitem_t grmitems[MAX_TEAM_ITEMS]=
 /*QUAKED weapon_mauser98k (.3 .3 1) (-16 -16 -16) (16 16 16)
 */
 	{
+		"weapon_webleymedic",
+		WEAPON_WEBLEYMEDIC,
+		Pickup_Weapon,
+		Use_Weapon,
+		Drop_Weapon,
+		Weapon_WebleyMedic,
+		"misc/w_pkup.wav",
+		"models/weapons/gbr/g_webley/tris.md2", 0,
+		"models/weapons/gbr/v_webley/tris.md2",
+/* icon */		"w_webley",
+/* pickup */	"Webley Medic",
+		0,
+		1,
+		"webleymedic_mag",
+		IT_WEAPON,
+		NULL,
+		0,
+		LOC_PISTOL,
+		2,
+		1,
+		5000,
+		100,
+/* precache */ "gbr/webley/fire.wav gbr/webley/reload.wav gbr/webley/unload.wav",
+		"gbr",
+		&grmguninfo[WebleyMedic_FRAME],
+		0
+	},
+	{
 		"weapon_mauser98k", 
 		WEAPON_MAUSER98K,
 		Pickup_Weapon,
@@ -305,6 +333,37 @@ gitem_t grmitems[MAX_TEAM_ITEMS]=
 
 /*QUAKED ammo_p38 (.3 .3 1) (-16 -16 -16) (16 16 16)
 */
+
+/*QUAKED ammo_webleymedic (.3 .3 1) (-16 -16 -16) (16 16 16)
+*/
+	{
+		"ammo_webleymedic",
+		AMMO_WEBLEYMEDIC,
+		Pickup_Ammo,
+		NULL,
+		Drop_Ammo,
+		NULL,
+		"misc/am_pkup.wav",
+		"models/items/ammo/gbr/webbullets/tris.md2", 0,
+		NULL,
+/* icon */		"a_webley",
+/* pickup */	"webleymedic_mag",
+/* width */		3,
+		WebleyMedicMAG,
+		NULL,
+		IT_AMMO,
+		NULL,
+		AMMO_TYPE_PISTOL,
+		0,
+		0,
+		0.25,
+		0,
+		0,
+/* precache */ "",
+		"gbr",
+		0,
+		0
+	},
 	{
 		"ammo_p38",
 		AMMO_P38,

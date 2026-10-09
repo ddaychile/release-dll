@@ -147,7 +147,23 @@ GunInfo_t gbrguninfo[MAX_TEAM_GUNS]=
 		DAMAGE_Enfields, 0,
 		0,
 		"gbr/303s/bolt.wav", 77
-	}
+	},
+	{//WebleyMedic (heavy pistol — slow, high damage, low spread)
+		{4},{82}, 6,84, 69,69,
+
+			"gbr/webley/unload.wav",
+				{49},
+
+			"gbr/webley/reload.wav",
+				{56},
+
+		"gbr/webley/fire.wav",
+		NULL,
+
+		MOD_PISTOL,
+		DAMAGE_WEBLEYMEDIC, 0,
+		10
+	},
 };
 
 

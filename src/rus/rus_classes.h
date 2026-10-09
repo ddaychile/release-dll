@@ -202,7 +202,7 @@ SMos_t RUS_MOS_List[NUM_CLASSES]=
 		"class_medic",
 		"Morphine",
 		1,
-		"Tokarev TT33",
+		"Webley Medic",
 		2,
 		NULL,
 		0,

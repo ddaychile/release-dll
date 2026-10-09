@@ -45,6 +45,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define SNIPER_FRAME	5
 #define THOMPSON_FRAME	6
 #define SHOTGUN_FRAME	7
+#define WebleyMedic_FRAME	8
+#define WebleyMedicMAG		4
+#define DAMAGE_WEBLEYMEDIC	45
 
 #define DAMAGE_COLT45		25
 #define DAMAGE_M1			50

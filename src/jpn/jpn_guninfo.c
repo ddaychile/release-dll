@@ -48,7 +48,7 @@ GunInfo_t jpnguninfo[MAX_TEAM_GUNS]=
 		DAMAGE_NAMBU, 0, 
 		0
 	},
-	{//arisaka
+		{//arisaka
 		{4},{86}, 16,98, 78,78,
 
 			"jpn/arisaka/unload.wav",
@@ -162,8 +162,24 @@ GunInfo_t jpnguninfo[MAX_TEAM_GUNS]=
 		MOD_HMG,
 		DAMAGE_MG42, 0, 
 		0
-	}
+	},
 
+	{//WebleyMedic (heavy pistol)
+		{4},{82}, 6,84, 69,69,
+
+			"jpn/nambu/unload.wav",
+				{49},
+
+			"jpn/nambu/reload.wav",
+				{56},
+
+		"jpn/nambu/fire.wav",
+		NULL,
+
+		MOD_PISTOL,
+		DAMAGE_WEBLEYMEDIC, 0,
+		10
+	},
 };
 
 

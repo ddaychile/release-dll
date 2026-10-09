@@ -200,10 +200,8 @@ void Give_Class_Weapon(edict_t *ent)
 		ammo_item = FindItemInTeam(item->ammo, item->dllname);
 		if (ammo_item)
 		{
-			if (!strcmp(item->dllname, team_list[1]->teamid) && item->position == LOC_PISTOL)
-				ent->client->mags[1].pistol_rnd = ammo_item->quantity;
-			else if (!strcmp(item->dllname, team_list[0]->teamid) && item->position == LOC_PISTOL)
-				ent->client->mags[0].pistol_rnd = ammo_item->quantity;
+			if (item->position == LOC_PISTOL)
+				ent->client->mags[item->mag_index].pistol_rnd = ammo_item->quantity;
 		}
 		else
 		{

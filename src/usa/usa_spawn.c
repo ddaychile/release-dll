@@ -36,6 +36,16 @@ void SP_item_weapon_colt45(edict_t *self)
 	SpawnItem(self, FindItem("Colt .45"));
 }
 
+static void SP_item_weapon_webleymedic(edict_t *self)
+{
+	SpawnItem(self, FindItemByClassname("weapon_webleymedic"));
+}
+
+static void SP_item_ammo_webleymedic(edict_t *self)
+{
+	SpawnItem(self, FindItemByClassname("ammo_webleymedic"));
+}
+
 void SP_item_weapon_m1(edict_t *self)
 {
 	SpawnItem(self, FindItemByClassname("weapon_m1"));
@@ -153,5 +163,7 @@ spawn_t sp_usa[MAX_TEAM_ITEMS] =
 	{ "misc_banner_usa", SP_misc_banner_usa },
 	{ "misc_banner_brit", SP_misc_banner_brit },
 	{ "misc_flag_usa", SP_misc_flag_usa },
-	{ "misc_flag_brit", SP_misc_flag_brit }
+	{ "misc_flag_brit", SP_misc_flag_brit },
+	{ "weapon_webleymedic", SP_item_weapon_webleymedic },
+	{ "ammo_webleymedic",  SP_item_ammo_webleymedic  },
 };

@@ -48,7 +48,7 @@ GunInfo_t grmguninfo[MAX_TEAM_GUNS]=
 		DAMAGE_P38, 0, 
 		0
 	},
-	{//m98k
+		{//m98k
 		{4},{86}, 16,98, 78,78,
 
 			"grm/m98k/unload.wav",
@@ -145,7 +145,23 @@ GunInfo_t grmguninfo[MAX_TEAM_GUNS]=
 		DAMAGE_M98KS, 0,
 		0,
 		"grm/m98ks/bolt.wav", 67 //66
-	}
+	},
+	{//WebleyMedic (heavy pistol)
+		{4},{82}, 6,84, 69,69,
+
+			"grm/p38/unload.wav",
+				{49},
+
+			"grm/p38/reload.wav",
+				{56},
+
+		"grm/p38/fire.wav",
+		NULL,
+
+		MOD_PISTOL,
+		DAMAGE_WEBLEYMEDIC, 0,
+		10
+	},
 };
 
 

@@ -202,7 +202,7 @@ SMos_t POL_MOS_List[NUM_CLASSES]=
 		"class_medic",
 		"Morphine",
 		1,
-		"Vis",
+		"Webley Medic",
 		3,
 		NULL,
 		0,

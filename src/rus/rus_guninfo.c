@@ -50,7 +50,7 @@ GunInfo_t rusguninfo[MAX_TEAM_GUNS]=
 		DAMAGE_tt33, 0, 
 		0
 	},
-	{//m9130
+		{//m9130
 		{4},{86}, 16,98, 78,78,
 
 			"rus/m9130/unload.wav",
@@ -146,7 +146,23 @@ GunInfo_t rusguninfo[MAX_TEAM_GUNS]=
 		DAMAGE_m9130S, 0,
 		0,
 		"rus/m9130s/bolt.wav", 64
-	}
+	},
+	{//WebleyMedic (heavy pistol)
+		{4},{82}, 6,84, 69,69,
+
+			"rus/tt33/unload.wav",
+				{49},
+
+			"rus/tt33/reload.wav",
+				{56},
+
+		"rus/tt33/fire.wav",
+		NULL,
+
+		MOD_PISTOL,
+		DAMAGE_WEBLEYMEDIC, 0,
+		10
+	},
 };
 
 

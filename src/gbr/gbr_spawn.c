@@ -43,6 +43,16 @@ void SP_item_weapon_webley(edict_t *self)
 	SpawnItem(self,FindItem("webley"));
 }
 
+static void SP_item_weapon_webleymedic(edict_t *self)
+{
+	SpawnItem(self, FindItemByClassname("weapon_webleymedic"));
+}
+
+static void SP_item_ammo_webleymedic(edict_t *self)
+{
+	SpawnItem(self, FindItemByClassname("ammo_webleymedic"));
+}
+
 void SP_item_weapon_enfield(edict_t *self)
 {
 	SpawnItem(self,FindItemByClassname("weapon_enfield"));
@@ -140,6 +150,8 @@ void SP_misc_flag_brit (edict_t *ent);
 spawn_t sp_gbr[MAX_TEAM_ITEMS] =
 {
 	{ "weapon_webley", SP_item_weapon_webley },
+	{ "weapon_webleymedic", SP_item_weapon_webleymedic },
+	{ "ammo_webleymedic", SP_item_ammo_webleymedic },
 	{ "weapon_enfield", SP_item_weapon_enfield },
 	{ "weapon_sten", SP_item_weapon_sten },
 	{ "weapon_bren", SP_item_weapon_bren },

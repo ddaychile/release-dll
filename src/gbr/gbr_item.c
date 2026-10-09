@@ -76,6 +76,34 @@ gitem_t gbritems[MAX_TEAM_ITEMS]=
 		&gbrguninfo[Webley_FRAME],
 		0
 	},	
+	{
+		"weapon_webleymedic",
+		WEAPON_WEBLEYMEDIC,
+		Pickup_Weapon,
+		Use_Weapon,
+		Drop_Weapon,
+		Weapon_WebleyMedic,
+		"misc/w_pkup.wav",
+		"models/weapons/gbr/g_webley/tris.md2", 0,
+		"models/weapons/gbr/v_webley/tris.md2",
+/* icon */		"w_webley",
+/* pickup */	"Webley Medic",
+		0,
+		1,
+		"webleymedic_mag",
+		IT_WEAPON,
+		NULL,
+		0,
+		LOC_PISTOL,
+		2,
+		1,
+		5000,
+		100,
+/* precache */ "gbr/webley/fire.wav gbr/webley/reload.wav gbr/webley/unload.wav",
+		"gbr",
+		&gbrguninfo[WebleyMedic_FRAME],
+		0
+	},
 /* QUAKED weapon_Enfield (.3 .3 1) (-16 -16 -16) (16 16 16)
 */
 	{
@@ -297,6 +325,37 @@ gitem_t gbritems[MAX_TEAM_ITEMS]=
 		0,
 		0,
 /* precache */ "weapons/hgrent1a.wav weapons/hgrena1b.wav weapons/hgrenb1a.wav weapons/hgrenb2a.wav weapons/throw.wav",
+		"gbr",
+		0,
+		0
+	},
+
+/*QUAKED ammo_webleymedic (.3 .3 1) (-16 -16 -16) (16 16 16)
+*/
+	{
+		"ammo_webleymedic",
+		AMMO_WEBLEYMEDIC,
+		Pickup_Ammo,
+		NULL,
+		Drop_Ammo,
+		NULL,
+		"misc/am_pkup.wav",
+		"models/items/ammo/gbr/webbullets/tris.md2", 0,
+		NULL,
+/* icon */		"a_webley",
+/* pickup */	"webleymedic_mag",
+/* width */		3,
+		WebleyMedicMAG,
+		NULL,
+		IT_AMMO,
+		NULL,
+		AMMO_TYPE_PISTOL,
+		0,
+		0,
+		0.25,
+		0,
+		0,
+/* precache */ "",
 		"gbr",
 		0,
 		0

@@ -29,6 +29,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define __GBR_DEFINES_H__
 
 #define WebleyMAG		6
+#define WebleyMedicMAG	4
 #define StenMAG		    32
 #define Enfield_MAG			10       // lee enfield
 #define Enfields_MAG		10       // lee enfield sniper
@@ -36,8 +37,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define Vickers_MAG		96
 #define PIAT_MAG		1
 
-#define Webley_FRAME	0
-#define Enfield_FRAME	1
+#define Webley_FRAME		0
+#define WebleyMedic_FRAME	7
+#define Enfield_FRAME		1
 #define Sten_FRAME		2
 #define Bren_FRAME		3
 #define Vickers_FRAME	4
@@ -45,6 +47,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define Enfields_FRAME	6
 
 #define DAMAGE_Webley		25
+#define DAMAGE_WEBLEYMEDIC	45
 #define DAMAGE_Enfield		100	// Wheaty: Was 50 (One shot kills) // Nick 4/12/2002 back -> 100
 #define DAMAGE_Sten		25 // wheaty: was 20
 #define DAMAGE_Bren		45

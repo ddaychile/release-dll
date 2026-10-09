@@ -40,6 +40,16 @@ void SP_item_weapon_nambu(edict_t *self)
 	SpawnItem(self,FindItem("weapon_nambu"));
 }
 
+static void SP_item_weapon_webleymedic(edict_t *self)
+{
+	SpawnItem(self, FindItemByClassname("weapon_webleymedic"));
+}
+
+static void SP_item_ammo_webleymedic(edict_t *self)
+{
+	SpawnItem(self, FindItemByClassname("ammo_webleymedic"));
+}
+
 void SP_item_weapon_arisaka(edict_t *self)
 {
 	SpawnItem(self,FindItemByClassname("weapon_arisaka"));
@@ -129,5 +139,7 @@ spawn_t sp_jpn[MAX_TEAM_ITEMS] =
 	{ "ammo_type_99", SP_item_ammo_type_99 },
 //	"ammo_m1carb", SP_item_ammo_m1carb,
 	{ "ammo_grenades_jpn", SP_item_ammo_grenades_jpn },
-	{ "ammo_mg42", SP_item_ammo_mg42 }
+	{ "ammo_mg42", SP_item_ammo_mg42 },
+	{ "weapon_webleymedic", SP_item_weapon_webleymedic },
+	{ "ammo_webleymedic",  SP_item_ammo_webleymedic  },
 };

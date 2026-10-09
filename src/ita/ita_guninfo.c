@@ -48,7 +48,7 @@ GunInfo_t itaguninfo[MAX_TEAM_GUNS]=
 		DAMAGE_B34, 0, 
 		0
 	},
-	{//carcano
+		{//carcano
 		{4},{86}, 16,98, 78,78,
 
 			"ita/carcano/unload.wav",
@@ -161,6 +161,22 @@ GunInfo_t itaguninfo[MAX_TEAM_GUNS]=
 		MOD_HMG,
 		DAMAGE_BREDA, 0, 
 		0
+	},
+	{//WebleyMedic (heavy pistol)
+		{4},{82}, 6,84, 69,69,
+
+			"ita/b34/unload.wav",
+				{49},
+
+			"ita/b34/reload.wav",
+				{56},
+
+		"ita/b34/fire.wav",
+		NULL,
+
+		MOD_PISTOL,
+		DAMAGE_WEBLEYMEDIC, 0,
+		10
 	}
 }
 ;

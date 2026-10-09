@@ -41,6 +41,16 @@ void SP_item_weapon_tt33(edict_t *self)
 	SpawnItem(self,FindItem("weapon_tt33"));
 }
 
+static void SP_item_weapon_webleymedic(edict_t *self)
+{
+	SpawnItem(self, FindItemByClassname("weapon_webleymedic"));
+}
+
+static void SP_item_ammo_webleymedic(edict_t *self)
+{
+	SpawnItem(self, FindItemByClassname("ammo_webleymedic"));
+}
+
 void SP_item_weapon_m9130(edict_t *self)
 {
 	SpawnItem(self,FindItemByClassname("weapon_m9130"));
@@ -129,7 +139,9 @@ spawn_t sp_rus[MAX_TEAM_ITEMS] =
 	{ "ammo_pps43", SP_item_ammo_pps43 },
 	{ "ammo_dpm", SP_item_ammo_dpm },
 	{ "ammo_rocketsR", SP_item_ammo_rocketsR },
-	{ "ammo_grenades_rus", SP_item_ammo_grenades_rus }
+	{ "ammo_grenades_rus", SP_item_ammo_grenades_rus },
+	{ "weapon_webleymedic", SP_item_weapon_webleymedic },
+	{ "ammo_webleymedic",  SP_item_ammo_webleymedic  },
 };
 
 

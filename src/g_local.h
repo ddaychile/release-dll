@@ -2092,6 +2092,7 @@ typedef enum
 	WEAPON_RPG1,
 	WEAPON_M9130S,
 	WEAPON_WEBLEY,
+	WEAPON_WEBLEYMEDIC,
 	WEAPON_ENFIELD,
 	WEAPON_STEN,
 	WEAPON_BREN,
@@ -2147,6 +2148,7 @@ typedef enum
 	AMMO_ROCKETSR,
 	AMMO_GRENADES_GBR,
 	AMMO_WEBLEY,
+	AMMO_WEBLEYMEDIC,
 	AMMO_ENFIELD,
 	AMMO_STEN,
 	AMMO_BREN,
@@ -2218,9 +2220,9 @@ qboolean dropnodes;
 char	*votemaps[5];
 int		mapvotes[5];
 
-#define MAX_TEAM_ITEMS 19
+#define MAX_TEAM_ITEMS 21
 #define NUM_CLASSES 10
-#define MAX_TEAM_GUNS 8
+#define MAX_TEAM_GUNS 9
 
 
 qboolean objective_hittable (edict_t *self, edict_t *objective, vec3_t orig);

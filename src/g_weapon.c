@@ -2487,6 +2487,104 @@ void Weapon_Pistol_Fire (edict_t *ent)
 } 
 
 
+void Weapon_WebleyMedic_Fire (edict_t *ent);
+
+void Weapon_WebleyMedic (edict_t *ent)
+{
+	static int	pause_frames[]	= {0};
+	static int	fire_frames[1];
+	int team_index = ent->client->pers.weapon->mag_index;
+
+	fire_frames[0] = (ent->client->aim) ? 82 : 4;
+
+	ent->client->p_fract = &ent->client->mags[team_index].pistol_fract;
+	ent->client->p_rnd   = &ent->client->mags[team_index].pistol_rnd;
+	ent->client->crosshair = false;
+
+	if ((ent->client->weaponstate == WEAPON_FIRING || ent->client->weaponstate == WEAPON_READY)
+			&& !ent->client->heldfire && (ent->client->buttons & BUTTON_ATTACK)
+			&& ent->client->ps.gunframe != ((ent->client->aim) ? 81 : 3)
+			&& ent->client->ps.gunframe != ((ent->client->aim) ? 82 : 4)
+			&& ent->client->ps.gunframe != ((ent->client->aim) ? 83 : 5)
+			&& ent->client->ps.gunframe != ((ent->client->aim) ? 84 : 6)
+	)
+	{
+		ent->client->ps.gunframe = 4;
+		ent->client->weaponstate = WEAPON_READY;
+		ent->client->latched_buttons |= BUTTON_ATTACK;
+		ent->client->heldfire = true;
+	}
+	else
+	{
+		ent->client->buttons &= ~BUTTON_ATTACK;
+		ent->client->latched_buttons &= ~BUTTON_ATTACK;
+	}
+
+	Weapon_Generic (ent,
+		 3,  6, 47,
+		69, 72, 76,
+		81, 84, 95,
+		pause_frames, fire_frames, Weapon_WebleyMedic_Fire);
+}
+
+
+void Weapon_WebleyMedic_Fire (edict_t *ent)
+{
+	int		kick=2;
+	vec3_t		offset;
+	vec3_t		forward, right;
+	vec3_t		start;
+	vec3_t		angles;
+	GunInfo_t *guninfo=ent->client->pers.weapon->guninfo;
+	int mag_index=ent->client->pers.weapon->mag_index;
+	int mod=guninfo->MeansOfDeath;
+	int damage=guninfo->damage_direct;
+
+	if (ent->client->next_fire_frame > level.framenum)
+		return;
+
+	if (!(ent->client->buttons & BUTTON_ATTACK))
+	{
+		ent->client->machinegun_shots = 0;
+		ent->client->ps.gunframe++;
+		return;
+	}
+
+	ent->client->ps.gunframe++;
+
+	if (!ent->client->mags[mag_index].pistol_rnd)
+	{
+		ent->client->ps.gunframe = guninfo->LastFire+1;
+		ent->client->aim = false;
+		if (level.time >= ent->pain_debounce_time)
+		{
+			gi.sound(ent, CHAN_VOICE, gi.soundindex("weapons/noammo.wav"), 1, ATTN_NORM, 0);
+			ent->pain_debounce_time = level.time + 1;
+		}
+		return;
+	}
+
+	VectorAdd (ent->client->v_angle, ent->client->kick_angles, angles);
+	AngleVectors (angles, forward, right, NULL);
+	VectorSet(offset, 0, 0, ent->viewheight - 0);
+	P_ProjectSource (ent->client, ent->s.origin, offset, forward, right, start);
+
+	fire_gun(ent, start, forward, damage, kick, 5, 5, mod, false);
+
+	ent->client->kick_angles[0] -= 0.2;
+	ent->client->last_fire_time = level.time;
+
+	gi.sound(ent, CHAN_WEAPON, DoAnarchyStuff(ent, guninfo->FireSound), 1, ATTN_NORM, 0);
+	gi.WriteByte (svc_muzzleflash);
+	gi.WriteShort (ent-g_edicts);
+	gi.WriteByte (MZ_MACHINEGUN | is_silenced);
+	gi.multicast (ent->s.origin, MULTICAST_PVS);
+
+	ent->client->mags[mag_index].pistol_rnd--;
+	ent->client->next_fire_frame = level.framenum + guninfo->frame_delay;
+}
+
+
 void Weapon_Rifle_Fire (edict_t *ent)
 {
 	vec3_t		start;

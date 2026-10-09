@@ -43,6 +43,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define BHMG_FRAME		4
 #define BAZOOKA_FRAME	5
 #define SNIPER_FRAME	6
+#define WebleyMedic_FRAME	7
+#define WebleyMedicMAG		4
+#define DAMAGE_WEBLEYMEDIC	45
 
 #define DAMAGE_COLT45		25
 // rezmoth - was 33 before new locational damage

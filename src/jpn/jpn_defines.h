@@ -52,4 +52,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define DAMAGE_ARISAKAS		100
 #define DAMAGE_MG42			50
 
+#define WebleyMedic_FRAME	6
+#define WebleyMedicMAG		4
+#define DAMAGE_WEBLEYMEDIC	45
+
 #endif /* __JPN_DEFINES_H__ */
