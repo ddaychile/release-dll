@@ -763,6 +763,7 @@ extern cvar_t  *ent_files;
 
 extern cvar_t  *exbattleinfo; // ZeRo - Activa datos de batalla adicionales: headshots, helmet saves y killing spree. Valores sobre 2 determinan las kills necesarias para la racha.
 extern cvar_t  *random_class; // ZeRo
+extern cvar_t  *officer_bonus; // ZeRo - Activa el bonus de cooldown para los airstrikes del officer. Cada kill resta 5 segundos.
 extern cvar_t  *sniper_only;
 extern cvar_t  *mauser_only;
 extern cvar_t  *swords;

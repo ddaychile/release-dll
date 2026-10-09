@@ -1637,31 +1637,45 @@ void G_SetStats (edict_t *ent)
 	// TIMERS
 	//
 	// level_wait timer (i_dday)
-	delay = 0;
-	if (ent->client->resp.team_on)
-		delay = ent->client->resp.team_on->delay;
-	if (level.framenum < ((int)(delay + level_wait->value) * 10) )
-	{
-		ent->client->ps.stats[STAT_TIMER_ICON] = gi.imageindex ("i_dday");
-		ent->client->ps.stats[STAT_TIMER] = ((int)(delay + level_wait->value) - (level.framenum / 10));
-	} 	
-	// forced respawn tuner (i_respcount)
-	else if (level.framenum <= ent->client->forcespawn)
-	{
-		ent->client->ps.stats[STAT_TIMER_ICON] = gi.imageindex ("i_respcount");
-		ent->client->ps.stats[STAT_TIMER] = (ent->client->forcespawn - level.framenum) / 10;
-	}
-	else if ((level.time < ent->leave_limbo_time) && (ent->client->limbo_mode))  //faf:  respawn timer
-	{
-		ent->client->ps.stats[STAT_TIMER_ICON] = gi.imageindex ("i_dday");
-		ent->client->ps.stats[STAT_TIMER] = ((int)(ent->leave_limbo_time - level.time)) + 1;
-	}
-	else if (level.map_vote_time > 0)
-	{
-		ent->client->ps.stats[STAT_TIMER_ICON] = gi.imageindex ("i_dday");
-		ent->client->ps.stats[STAT_TIMER] = ((int)(15 + level.map_vote_time - level.time));
+delay = 0;
+if (ent->client->resp.team_on)
+    delay = ent->client->resp.team_on->delay;
 
-	}
+if (level.framenum < ((int)(delay + level_wait->value) * 10))
+{
+    ent->client->ps.stats[STAT_TIMER_ICON] = gi.imageindex("i_dday");
+    ent->client->ps.stats[STAT_TIMER] = ((int)(delay + level_wait->value) - (level.framenum / 10));
+}
+// forced respawn timer (i_respcount)
+else if (level.framenum <= ent->client->forcespawn)
+{
+    ent->client->ps.stats[STAT_TIMER_ICON] = gi.imageindex("i_respcount");
+    ent->client->ps.stats[STAT_TIMER] = (ent->client->forcespawn - level.framenum) / 10;
+}
+else if ((level.time < ent->leave_limbo_time) && (ent->client->limbo_mode)) //faf: respawn timer
+{
+    ent->client->ps.stats[STAT_TIMER_ICON] = gi.imageindex("i_dday");
+    ent->client->ps.stats[STAT_TIMER] = ((int)(ent->leave_limbo_time - level.time)) + 1;
+}
+else if (level.map_vote_time > 0)
+{
+    ent->client->ps.stats[STAT_TIMER_ICON] = gi.imageindex("i_dday");
+    ent->client->ps.stats[STAT_TIMER] = ((int)(15 + level.map_vote_time - level.time));
+}
+// Mostrar cooldown del ataque aéreo - ZeRo
+else if (ent->client->resp.mos == OFFICER &&
+         ent->client->resp.team_on &&
+         ent->client->resp.AlreadySpawned &&
+         !ent->deadflag &&
+         ent->client->resp.team_on->arty_num >= (int)arty_max->value &&
+         ent->client->resp.team_on->arty_time_restrict > level.time &&
+         level.time >= ent->client->resp.team_on->arty_time_restrict - arty_time->value - arty_delay->value)
+{
+    float airstrikecd = ent->client->resp.team_on->arty_time_restrict - level.time;
+
+    ent->client->ps.stats[STAT_TIMER_ICON] = gi.imageindex("i_nextarty");
+    ent->client->ps.stats[STAT_TIMER] = (int)airstrikecd + 1;
+}
 
 
 

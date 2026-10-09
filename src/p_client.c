@@ -163,6 +163,23 @@ void KillingSpree(edict_t *attacker, edict_t *self) // Funcion principal
 	
 }
 
+static const char *OfficerBonus(edict_t *attacker, edict_t *self) // ZeRo - Reduccion del cooldown activo del ataque aéreo por cada kill del officer
+{
+    if (!attacker->client || !attacker->client->resp.team_on)
+        return "";
+
+    if (attacker == self || OnSameTeam(attacker, self))
+        return "";
+
+    if (attacker->client->resp.team_on->arty_time_restrict > level.time)
+    {
+        attacker->client->resp.team_on->arty_time_restrict -= 5;
+        return " - ** AIRSTRIKE COOLDOWN BONUS -5 SECONDS **";
+    }
+
+    return "";
+}
+
 //
 // Gross, ugly, disgustuing hack section
 //
@@ -454,6 +471,7 @@ void ClientObituary (edict_t *self, edict_t *inflictor, edict_t *attacker)
 	char		*message;
 	char		*message2;
 	char		*message3;
+	const char	*message4;
 
 	qboolean	ff;
 	edict_t *Tent;
@@ -844,9 +862,12 @@ void ClientObituary (edict_t *self, edict_t *inflictor, edict_t *attacker)
 				message3 = "";
 			if (message)
 			{
+				message4 = "";
+				if (officer_bonus->value == 1 && attacker->client && attacker->client->resp.mos == OFFICER)
+					message4 = OfficerBonus(attacker, self);
 				// Means of Death msgs now server customizable
 				if (death_msg->value == 0) // print to self only
-					safe_cprintf(self, PRINT_HIGH, "%s %s %s%s%s\n", self->client->pers.netname, message, attacker->client->pers.netname, message2, message3);
+					safe_cprintf(self, PRINT_HIGH, "%s %s %s%s%s%s\n", self->client->pers.netname, message, attacker->client->pers.netname, message2, message3, message4);
 				else if (death_msg->value == 1 || death_msg->value == 3) // print to everybody
 				{
 					for (i = 1; i <= game.maxclients; i++)
@@ -865,7 +886,7 @@ void ClientObituary (edict_t *self, edict_t *inflictor, edict_t *attacker)
 						if (OnSameTeam(Tent,attacker)){
 							safe_cprintf (Tent, PRINT_MEDIUM,"\2%s", attacker->client->pers.netname);}
 						else{safe_cprintf (Tent, PRINT_MEDIUM,"%s", attacker->client->pers.netname);}
-							safe_cprintf (Tent, PRINT_MEDIUM,"%s%s\n", message2, message3);
+							safe_cprintf (Tent, PRINT_MEDIUM,"%s%s%s\n", message2, message3, message4);
 
 					}
 						if (death_msg->value == 3) //print to server console
@@ -873,7 +894,7 @@ void ClientObituary (edict_t *self, edict_t *inflictor, edict_t *attacker)
 							gi.cprintf (NULL, PRINT_MEDIUM,"%s", self->client->pers.netname);
 							gi.cprintf (NULL, PRINT_MEDIUM," %s ", message);
 							gi.cprintf (NULL, PRINT_MEDIUM,"%s", attacker->client->pers.netname);
-							gi.cprintf (NULL, PRINT_MEDIUM,"%s%s\n", message2, message3);
+							gi.cprintf (NULL, PRINT_MEDIUM,"%s%s%s\n", message2, message3, message4);
 						}
 				}
 				else if (death_msg->value == 2) // print to team
@@ -885,7 +906,7 @@ void ClientObituary (edict_t *self, edict_t *inflictor, edict_t *attacker)
 							continue;
 
 						if (self->client->resp.team_on->index == Tent->client->resp.team_on->index)
-							safe_cprintf(Tent, PRINT_MEDIUM, "%s %s %s%s%s\n", self->client->pers.netname, message, attacker->client->pers.netname, message2, message3);
+							safe_cprintf(Tent, PRINT_MEDIUM, "%s %s %s%s%s%s\n", self->client->pers.netname, message, attacker->client->pers.netname, message2, message3, message4);
 					}
 
 				}

@@ -38,7 +38,7 @@ BASE_CFLAGS=-Wall -fcommon -Dstricmp=strcasecmp
 # using 'make build_release'.
 # This top level Makefile will build all Teams if you need (see below).
 
-CFLAGS_RELEASE=$(BASE_CFLAGS) -O3 -ffast-math -funroll-loops -fomit-frame-pointer -fexpensive-optimizations
+CFLAGS_RELEASE=$(BASE_CFLAGS) -O3 -ffast-math -funroll-loops -fomit-frame-pointer -fexpensive-optimizations -std=gnu17
 
 # Nick - Use 'make build_debug' to use this.
 CFLAGS_DEBUG=$(BASE_CFLAGS) -DDEBUG -g
