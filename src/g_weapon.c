@@ -2501,6 +2501,14 @@ void Weapon_WebleyMedic (edict_t *ent)
 	ent->client->p_rnd   = &ent->client->mags[team_index].pistol_rnd;
 	ent->client->crosshair = false;
 
+	// during the delay between two shots the animation does not start (nothing would be fired);
+	// a shot that is already playing is not interrupted
+	if (ent->client->weaponstate != WEAPON_FIRING && ent->client->next_fire_frame > level.framenum)
+	{
+		ent->client->buttons &= ~BUTTON_ATTACK;
+		ent->client->latched_buttons &= ~BUTTON_ATTACK;
+	}
+
 	if ((ent->client->weaponstate == WEAPON_FIRING || ent->client->weaponstate == WEAPON_READY)
 			&& !ent->client->heldfire && (ent->client->buttons & BUTTON_ATTACK)
 			&& ent->client->ps.gunframe != ((ent->client->aim) ? 81 : 3)
