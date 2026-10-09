@@ -583,6 +583,104 @@ void FFA_ShowAnnouncement (char *top_text, int number, char *bottom_text)
 	ffa_announce_until = level.time + FFA_ANNOUNCE_TIME;
 }
 
+// Free For All weapon roulette: during the lobby wait (frames 0 to 100 of the level, 10 per second) the icon of
+// the weapon changes faster and then slower and stops on the weapon of the match, which stays until the lobby
+// ends. It is a function of level.framenum, so there is no state per client (the ones that join later see the
+// frame that corresponds) and nothing is shown after the lobby. The icons are pics/ffa_<icon of the weapon>.png
+#define FFA_ROLL_LAST_FRAME		75		// frame where it stops on the weapon of the match
+#define FFA_ROLL_END_FRAME		100		// frame where the lobby ends and the icon is hidden
+#define FFA_ROLL_MAX			16
+#define FFA_ROLL_STEPS			23		// icons shown from the start to the stop (the gaps between them grow)
+
+static int		ffa_roll_gaps[FFA_ROLL_STEPS - 1] = {1,1,1,1,1,1,1,1,1,1, 2,2,2,2,2, 3,3,3, 4,4, 5, 6};
+static int		ffa_roll_count = 0;
+static int		ffa_roll_image[FFA_ROLL_MAX];
+static int		ffa_roll_winner = 0;
+static char		*ffa_roll_name = NULL;
+static int		ffa_roll_stepframe[FFA_ROLL_STEPS];
+
+// called when the weapon of the match is drawn: image indexes of the icons of the weapons of the draw, the
+// position of the winner among them and its name (count 0 turns the roulette off)
+void FFA_RouletteSetup (int count, int *images, int winner, char *name)
+{
+	int		i, frame;
+
+	ffa_roll_count = 0;
+	ffa_roll_name = NULL;
+
+	if (count < 1 || count > FFA_ROLL_MAX || winner < 0 || winner >= count)
+		return;
+
+	for (i = 0; i < count; i++)
+		ffa_roll_image[i] = images[i];
+
+	ffa_roll_count = count;
+	ffa_roll_winner = winner;
+	ffa_roll_name = name;
+
+	// frames in which the icon changes: the last one is the stop
+	frame = FFA_ROLL_LAST_FRAME;
+	for (i = FFA_ROLL_STEPS - 1; i >= 0; i--)
+	{
+		ffa_roll_stepframe[i] = frame;
+		if (i > 0)
+			frame -= ffa_roll_gaps[i - 1];
+	}
+}
+
+// image index of the icon to show in this frame (0 = none)
+static int FFA_RollImage (void)
+{
+	int		i, step = -1;
+
+	if (!ffa_roll_count || level.framenum >= FFA_ROLL_END_FRAME)
+		return 0;
+
+	for (i = 0; i < FFA_ROLL_STEPS; i++)
+	{
+		if (level.framenum >= ffa_roll_stepframe[i])
+			step = i;
+	}
+
+	if (step < 0)
+		return 0;
+
+	// the last step is the winner; the ones before go back through the list
+	return ffa_roll_image[((ffa_roll_winner - (FFA_ROLL_STEPS - 1 - step)) % ffa_roll_count + ffa_roll_count) % ffa_roll_count];
+}
+
+// once per frame: a tick every time the icon changes and, at the stop, a sound and the name of the weapon
+static void FFA_RollFrame (void)
+{
+	int		i;
+
+	if (!ffa_roll_count)
+		return;
+
+	for (i = 0; i < FFA_ROLL_STEPS; i++)
+	{
+		if (level.framenum != ffa_roll_stepframe[i])
+			continue;
+
+		if (i < FFA_ROLL_STEPS - 1)
+		{
+			// a tick only when the icon really changes
+			if (ffa_roll_count > 1)
+				gi.positioned_sound (vec3_origin, g_edicts, CHAN_AUTO, gi.soundindex ("misc/talk1.wav"), 1, ATTN_NONE, 0);
+		}
+		else
+		{
+			gi.positioned_sound (vec3_origin, g_edicts, CHAN_AUTO, gi.soundindex ("misc/pc_up.wav"), 1, ATTN_NONE, 0);
+			if (ffa_roll_name)
+			{
+				// only the name (the title is drawn with the banner); it goes away together with the banner
+				FFA_ShowAnnouncement (" ", 0, ffa_roll_name);
+				ffa_announce_until = FFA_ROLL_END_FRAME * 0.1f;
+			}
+		}
+	}
+}
+
 static void FFA_HudStats (edict_t *ent)
 {
 	char		text[64];
@@ -592,6 +690,8 @@ static void FFA_HudStats (edict_t *ent)
 	if (level.framenum != ffa_hud_lastframe)
 	{
 		ffa_hud_lastframe = level.framenum;
+
+		FFA_RollFrame ();
 
 		for (i = 0; i < game.maxclients; i++)
 		{
@@ -644,6 +744,9 @@ static void FFA_HudStats (edict_t *ent)
 		ent->client->ps.stats[STAT_TEAM1_KILLS] = 0;
 		ent->client->ps.stats[STAT_TEAM1_POINTS] = 0;
 	}
+
+	// weapon roulette: icon of the weapon (stat 2 is not used by anything else in the Free For All statusbar)
+	ent->client->ps.stats[STAT_ROUNDS_ICON] = FFA_RollImage ();
 }
 
 void TeamStats (edict_t *ent)

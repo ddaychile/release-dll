@@ -1339,7 +1339,7 @@ void FFA_RouletteInit (void)
 {
 	static int	pool[] = {INFANTRY, OFFICER, L_GUNNER, H_GUNNER, SNIPER, SPECIAL};
 	static char	last_weapon[64] = "";
-	int			valid[16], valid_team[16], valid_pistol[16], allowed[16];
+	int			valid[16], valid_team[16], valid_pistol[16], allowed[16], roll_image[16];
 	gitem_t		*items[16], *item;
 	edict_t		*ent;
 	int			i, j, t, m, n = 0;
@@ -1351,6 +1351,7 @@ void FFA_RouletteInit (void)
 	ffa_mos = SNIPER;
 	ffa_team = 0;
 	ffa_pistol = 0;
+	FFA_RouletteSetup (0, NULL, 0, NULL);
 	ffa_weapon_name = NULL;
 	ffa_weapon_pos = LOC_SNIPER;
 	ffa_weapon_ammo = NULL;
@@ -1433,8 +1434,10 @@ void FFA_RouletteInit (void)
 	ffa_weapon_ammo = items[j]->ammo;
 	ffa_weapon_name = items[j]->pickup_name;
 
-	gi.dprintf ("Free For All weapon: %s (class %i, faction %s, %s, %i weapons in the draw)\n", ffa_weapon_name, ffa_mos,
-				team_list[ffa_team]->teamid, ffa_pistol ? "pistol match" : "regular weapon", n);
+	// the roulette that is shown during the lobby wait: the icons of all the weapons of the draw
+	for (i = 0; i < n; i++)
+		roll_image[i] = gi.imageindex (va ("ffa_%s", items[i]->icon));
+	FFA_RouletteSetup (n, roll_image, j, ffa_weapon_name);
 
 	// items of the map: the chosen weapon of its faction, its ammo and the knife
 	for (i = game.maxclients + 1; i < globals.num_edicts; i++)
@@ -1775,7 +1778,7 @@ void SP_worldspawn (edict_t *ent)
 		Last_Team_Winner = 99;
 
 		if (stats_start && stats_end && stats_start < stats_end &&
-			strlen (dday_statusbar) + 256 < sizeof (ffa_statusbar))
+			strlen (dday_statusbar) + 512 < sizeof (ffa_statusbar))
 		{
 			strncpy (ffa_statusbar, dday_statusbar, stats_start - dday_statusbar);
 			ffa_statusbar[stats_start - dday_statusbar] = 0;
@@ -1785,6 +1788,14 @@ void SP_worldspawn (edict_t *ent)
 				"yt 41 xr -150 num 3 24 "
 				"yt 70 xr -124 string2 \"YOU\" "
 				"yt 82 xr -150 num 3 23 "
+				// weapon roulette: stat 2 is the image index of the banner of the weapon (320 x 112, the frame of
+				// the winner banner with the icon inside). It is drawn before the announcement texts, so these
+				// stay over it: the name of the weapon is the bottom text of the announcement (stat 27, y 78),
+				// which falls under the plate of the icon
+				"if 2 "
+				"	xv 0 yv 6 pic 2 "
+				"	xv 84 yv 40 string2 \"WEAPON OF THE MATCH\" "
+				"endif "
 				// announcements (stat 25 is the big number, 26 and 27 the texts above and below it)
 				// (separate ifs: nested ones are not skipped correctly by the client)
 				"if 26 "

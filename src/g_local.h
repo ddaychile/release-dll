@@ -692,6 +692,7 @@ extern	int		ffa_pistol;			// Free For All: the weapon of the match is the pistol
 #define FFA_PISTOL_MAGS		6		// Free For All: pistol magazines in a pistol match (the class gives 2 or 3 in team games)
 extern	char	*ffa_weapon_name;	// Free For All: pickup name of that weapon
 void FFA_RouletteInit (void);		// g_spawn.c
+void FFA_RouletteSetup (int count, int *images, int winner, char *name);	// p_hud.c
 #define FFA_DEFAULT_FRAGLIMIT	30	// Free For All frags to win when the server fraglimit is 0
 #define FFA_LEVEL_WAIT			10	// Free For All seconds of lobby at the start of the level
 #define FFA_RESPAWN_INTERVAL	3	// Free For All seconds to respawn after dying

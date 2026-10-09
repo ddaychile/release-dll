@@ -907,9 +907,6 @@ void FFA_JoinPlayer(edict_t *ent)
 	ent->client->resp.mos = ffa_mos;
 	ent->client->resp.newmos = NONE;
 	ent->client->pers.afk_check_time = level.framenum;
-
-	if (ffa_weapon_name)
-		safe_cprintf (ent, PRINT_HIGH, "Free For All weapon: %s\n", ffa_weapon_name);
 }
 
 void M_Team_Join(edict_t *ent, pmenu_t *p, int choice)
