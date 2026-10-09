@@ -118,6 +118,8 @@ void SP_item_ammo_breda(edict_t *self)
 
 spawn_t sp_ita[MAX_TEAM_ITEMS] =
 {
+	{ "weapon_browning", SP_item_weapon_browning },
+	{ "ammo_browning", SP_item_ammo_browning },
 	{ "weapon_b34", SP_item_weapon_b34 },
 	{ "weapon_carcano",SP_item_weapon_carcano },
 	{ "weapon_b38", SP_item_weapon_b38 },

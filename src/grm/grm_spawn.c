@@ -108,6 +108,8 @@ void SP_item_ammo_rocketsG(edict_t *self)
 
 spawn_t sp_grm[MAX_TEAM_ITEMS] =
 {
+	{ "weapon_browning", SP_item_weapon_browning },
+	{ "ammo_browning", SP_item_ammo_browning },
 	{ "weapon_p38", SP_item_weapon_p38 },
 	{ "weapon_mauser98k", SP_item_weapon_mauser98k },
 	{ "weapon_mp40", SP_item_weapon_mp40 },

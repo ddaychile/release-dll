@@ -313,6 +313,8 @@ typedef struct
 	// OTHER
 	int	  rnd_count;					//Hack to get the right # of rounds in the clip currently loaded (for dropping/picking up the weapon)
 
+	int	  hip_spread;					//Hip fire spread of the weapon (0 = the default hip spread of fire_gun)
+
 } GunInfo_t;
 
 
@@ -664,6 +666,7 @@ extern	int	body_armor_index;
 #define	MOD_BOTTLE			53
 #define	MOD_TANKHIT			54
 #define	MOD_SHOTGUN2		55
+#define	MOD_BROWNING		56	// Browning Hi-Power (the Medic's automatic pistol)
 
 extern	int	meansOfDeath;
 
@@ -1519,6 +1522,8 @@ struct gclient_s
 	int			breather_sound;
 
 	int			machinegun_shots;	// for weapon raising
+	int			browning_shots;		// Browning Hi-Power: shots of the current burst (spread)
+	int			browning_last_frame;	// Browning Hi-Power: level.framenum of its last shot
 
 	// animation vars
 	int			anim_end;
@@ -1982,6 +1987,16 @@ extern int jpn_index;
 #define LMG_SPREAD 10 // Valor para test era 20 (Original 80)- ZeRo
 #define HMG_SPREAD 10 // Valor para test (Original 100)- ZeRo
 
+// Browning Hi-Power: automatic pistol of the Medic (all factions)
+#define BROWNING_DAMAGE			15
+#define BROWNING_MAG			10
+#define BROWNING_FIRE_DELAY		2		// frames between shots (5 shots per second)
+#define BROWNING_SPREAD			20		// aimed spread of the first shot
+#define BROWNING_SPREAD_STEP	15		// extra aimed spread for every shot while the trigger is held
+#define BROWNING_BURST_GAP		3		// frames without shooting after which the spread goes back to the first shot
+#define BROWNING_HIP_SPREAD		200		// hip spread (fire_gun uses 600 by default)
+#define BROWNING_HEAD_BONUS		120		// % of damage of a head hit, which then counts as a chest hit
+
 
 
 
@@ -2072,6 +2087,7 @@ typedef enum
 	WEAPON_MORPHINE,
 	WEAPON_FLAMETHROWER,
 	WEAPON_COLT45,
+	WEAPON_BROWNING,
 	WEAPON_M1,
 	WEAPON_THOMPSON,
 	WEAPON_BAR,
@@ -2126,6 +2142,7 @@ typedef enum
 	AMMO_TNT,
 	AMMO_NAPALM,
 	AMMO_COLT45,
+	AMMO_BROWNING,
 	AMMO_M1,
 	AMMO_THOMPSON,
 	AMMO_BAR,
@@ -2218,7 +2235,7 @@ qboolean dropnodes;
 char	*votemaps[5];
 int		mapvotes[5];
 
-#define MAX_TEAM_ITEMS 19
+#define MAX_TEAM_ITEMS 21
 #define NUM_CLASSES 10
 #define MAX_TEAM_GUNS 8
 
@@ -2245,6 +2262,75 @@ int PlayerCountForTeam (int team_number);
 void Weapon_Generic (edict_t *ent, int FRAME_ACTIVATE_LAST, int FRAME_LFIRE_LAST, int FRAME_LIDLE_LAST, int FRAME_RELOAD_LAST, int FRAME_LASTRD_LAST,
 					 int FRAME_DEACTIVATE_LAST, int FRAME_RAISE_LAST,int FRAME_AFIRE_LAST, int FRAME_AIDLE_LAST,
 					 int *pause_frames, int *fire_frames, void (*fire)(edict_t *ent));
+
+// Browning Hi-Power (g_weapon.c): the same item and gun info for every faction, only dllname changes.
+// Its entries go first in the item list and in the spawn list of each faction (they are paired by position).
+void Weapon_Browning (edict_t *ent);
+void Weapon_Browning_Fire (edict_t *ent);
+void SP_item_weapon_browning (edict_t *self);
+void SP_item_ammo_browning (edict_t *self);
+extern GunInfo_t browning_guninfo;
+
+#define BROWNING_WEAPON_ITEM(dll) \
+	{ \
+		"weapon_browning", \
+		WEAPON_BROWNING, \
+		Pickup_Weapon, \
+		Use_Weapon, \
+		Drop_Weapon, \
+		Weapon_Browning, \
+		"misc/w_pkup.wav", \
+		"models/weapons/usa/g_colt45/tris.md2", 0, \
+		"models/weapons/usa/v_colt45/tris.md2", \
+		"w_colt45", \
+		"Browning Hi-Power", \
+		0, \
+		1, \
+		"browning_mag", \
+		IT_WEAPON, \
+		NULL, \
+		0, \
+		LOC_PISTOL, \
+		2, \
+		1, \
+		5000, \
+		100, \
+		"usa/colt45/fire.wav usa/colt45/reload.wav usa/colt45/unload.wav", \
+		dll, \
+		&browning_guninfo, \
+		0 \
+	}
+
+#define BROWNING_AMMO_ITEM(dll) \
+	{ \
+		"ammo_browning", \
+		AMMO_BROWNING, \
+		Pickup_Ammo, \
+		NULL, \
+		Drop_Ammo, \
+		NULL, \
+		"misc/am_pkup.wav", \
+		"models/items/ammo/pistols/tris.md2", 0, \
+		NULL, \
+		"a_colt45", \
+		"browning_mag", \
+		3, \
+		BROWNING_MAG, \
+		NULL, \
+		IT_AMMO, \
+		NULL, \
+		AMMO_TYPE_PISTOL, \
+		0, \
+		0, \
+		0.25, \
+		0, \
+		0, \
+		"", \
+		dll, \
+		NULL, \
+		0 \
+	}
+
 gitem_t	*FindNextPickup (edict_t *ent, int location);
 gitem_t	*FindItemB(classnameb_t classnameb);
 void SelectSpawnPoint (edict_t *ent, vec3_t origin, vec3_t angles);

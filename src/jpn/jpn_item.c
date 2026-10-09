@@ -47,6 +47,8 @@ GunInfo_t jpnguninfo[MAX_TEAM_GUNS];
 
 gitem_t jpnitems[MAX_TEAM_ITEMS]=
 {
+	BROWNING_WEAPON_ITEM("jpn"),
+	BROWNING_AMMO_ITEM("jpn"),
 /* Nambu Pistol becomes the standard issue weapon
 */
 	{

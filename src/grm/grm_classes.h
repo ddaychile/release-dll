@@ -202,7 +202,7 @@ SMos_t GRM_MOS_List[NUM_CLASSES]=
 		"class_medic",
 		"Morphine",
 		1,
-		"Walther P38",
+		"Browning Hi-Power",
 		2,
 		NULL,
 		0,

@@ -46,6 +46,8 @@ GunInfo_t polguninfo[MAX_TEAM_GUNS];
 
 gitem_t politems[MAX_TEAM_ITEMS]=
 {
+	BROWNING_WEAPON_ITEM("pol"),
+	BROWNING_AMMO_ITEM("pol"),
 /* Vis becomes the standard issue weapon
 */
 	{

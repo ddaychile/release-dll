@@ -413,8 +413,18 @@ void fire_gun(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int kick, 
 		// add spread to hip shots
 		if (self->client && !self->client->aim)
 		{
-			r = 400 - crandom() * 600;//hans era 600
-			u = crandom() * 600;// hans era 600
+			// a weapon can have its own hip spread (centered), otherwise the default one
+			if (self->client->pers.weapon && self->client->pers.weapon->guninfo &&
+				self->client->pers.weapon->guninfo->hip_spread)
+			{
+				r = crandom() * self->client->pers.weapon->guninfo->hip_spread;
+				u = crandom() * self->client->pers.weapon->guninfo->hip_spread;
+			}
+			else
+			{
+				r = 400 - crandom() * 600;//hans era 600
+				u = crandom() * 600;// hans era 600
+			}
 		}
 		else 
 		{
@@ -2485,6 +2495,157 @@ void Weapon_Pistol_Fire (edict_t *ent)
 	ent->client->next_fire_frame = level.framenum + guninfo->frame_delay;	
 	
 } 
+
+
+/////////////////////////////////////////////////
+// Browning Hi-Power (automatic pistol of the Medic, all factions)
+/////////////////////////////////////////////////
+
+// The same gun info for every faction, with the animations, sounds and models of the Colt .45.
+// The fire frames are 4-5 (hip) and 75-76 (aimed), so the shot animation can repeat while the trigger is held.
+GunInfo_t browning_guninfo =
+{
+	{4,5},{75,76}, 5,76, 62,62,
+
+		"usa/colt45/unload.wav",
+			{49},
+
+		"usa/colt45/reload.wav",
+			{56},
+
+	"usa/colt45/fire.wav",
+	NULL,
+
+	MOD_BROWNING,	// treated as a submachine gun by T_Damage: a headshot does not kill at once
+	BROWNING_DAMAGE, 0,
+	BROWNING_FIRE_DELAY,
+	NULL, 0,
+	0,
+	BROWNING_HIP_SPREAD
+};
+
+void SP_item_weapon_browning (edict_t *self)
+{
+	SpawnItem (self, FindItemByClassname ("weapon_browning"));
+}
+
+void SP_item_ammo_browning (edict_t *self)
+{
+	SpawnItem (self, FindItemByClassname ("ammo_browning"));
+}
+
+void Weapon_Browning (edict_t *ent)
+{
+	static int	pause_frames[]	= {55};
+	static int	fire_frames[3];
+	int			mag_index = ent->client->pers.weapon->mag_index;
+
+	fire_frames[0] = (ent->client->aim) ? 75 : 4;
+	fire_frames[1] = (ent->client->aim) ? 76 : 5;
+
+	ent->client->p_fract = &ent->client->mags[mag_index].pistol_fract;
+	ent->client->p_rnd   = &ent->client->mags[mag_index].pistol_rnd;
+
+	ent->client->crosshair = false;
+
+	Weapon_Generic (ent,
+		 3,  5, 47,
+		62, 65, 69,
+		74, 76, 88,
+
+		pause_frames, fire_frames, Weapon_Browning_Fire);
+}
+
+void Weapon_Browning_Fire (edict_t *ent)
+{
+	int			kick = 2;
+	int			shots, spread;
+	vec3_t		offset;
+	vec3_t		forward, right;
+	vec3_t		start;
+	vec3_t		angles;
+	GunInfo_t	*guninfo = ent->client->pers.weapon->guninfo;
+	int			mag_index = ent->client->pers.weapon->mag_index;
+	int			mod = guninfo->MeansOfDeath;
+	int			damage = guninfo->damage_direct;
+
+	if (ent->client->next_fire_frame > level.framenum)
+		return;
+
+	if (!(ent->client->buttons & BUTTON_ATTACK))
+	{
+		ent->client->machinegun_shots = 0;
+		ent->client->ps.gunframe++;
+		return;
+	}
+
+	// repeat the fire frames while the trigger is held
+	if (ent->client->aim)
+	{
+		if (ent->client->ps.gunframe == guninfo->LastAFire)
+			ent->client->ps.gunframe = guninfo->LastAFire - 1;
+		else
+			ent->client->ps.gunframe = guninfo->LastAFire;
+	}
+	else
+	{
+		if (ent->client->ps.gunframe == guninfo->LastFire)
+			ent->client->ps.gunframe = guninfo->LastFire - 1;
+		else
+			ent->client->ps.gunframe = guninfo->LastFire;
+	}
+
+	if (!ent->client->mags[mag_index].pistol_rnd)
+	{
+		ent->client->ps.gunframe = (ent->client->aim) ? guninfo->LastAFire + 1 : guninfo->LastFire + 1;
+		ent->client->weaponstate = WEAPON_READY;
+
+		if (level.time >= ent->pain_debounce_time)
+		{
+			gi.sound(ent, CHAN_VOICE, gi.soundindex("weapons/noammo.wav"), 1, ATTN_NORM, 0);
+			ent->pain_debounce_time = level.time + 1;
+		}
+		return;
+	}
+
+	ent->client->ps.gunframe++;
+
+	// the spread grows with every shot of a burst. A burst ends when the player stops shooting for a few
+	// frames (not when the button is released, so tapping the trigger does not reset the spread)
+	if (level.framenum - ent->client->browning_last_frame > BROWNING_BURST_GAP ||
+		level.framenum < ent->client->browning_last_frame)
+		ent->client->browning_shots = 0;
+
+	ent->client->browning_shots++;
+	ent->client->browning_last_frame = level.framenum;
+
+	shots = (ent->client->browning_shots > BROWNING_MAG) ? BROWNING_MAG : ent->client->browning_shots;
+	spread = BROWNING_SPREAD + (shots - 1) * BROWNING_SPREAD_STEP;
+
+	VectorSet(offset, 0, 0, ent->viewheight - 0);
+	VectorAdd (ent->client->v_angle, ent->client->kick_angles, angles);
+	AngleVectors (angles, forward, right, NULL);
+
+	// fire_gun skews the aimed spread to the left by half of it: aim to the right by the same amount to center it
+	if (ent->client->aim)
+		VectorMA (forward, spread / 2.0 / 8192, right, forward);
+
+	P_ProjectSource (ent->client, ent->s.origin, offset, forward, right, start);
+
+	fire_gun(ent, start, forward, damage, kick, spread, spread, mod, false);
+
+	ent->client->last_fire_time = level.time;
+
+	gi.sound(ent, CHAN_WEAPON, DoAnarchyStuff(ent, guninfo->FireSound), 1, ATTN_NORM, 0);
+
+	gi.WriteByte (svc_muzzleflash);
+	gi.WriteShort (ent-g_edicts);
+	gi.WriteByte (MZ_MACHINEGUN | is_silenced);
+	gi.multicast (ent->s.origin, MULTICAST_PVS);
+
+	ent->client->mags[mag_index].pistol_rnd--;
+	ent->client->next_fire_frame = level.framenum + guninfo->frame_delay;
+}
 
 
 void Weapon_Rifle_Fire (edict_t *ent)

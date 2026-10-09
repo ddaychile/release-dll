@@ -201,7 +201,7 @@ SMos_t USA_MOS_List[NUM_CLASSES]=
 		"class_medic",
 		"Morphine",
 		1,
-		"Colt .45",
+		"Browning Hi-Power",
 		2,
 		NULL,
 		0,

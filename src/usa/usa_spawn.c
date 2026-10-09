@@ -135,6 +135,8 @@ void SP_misc_flag_brit (edict_t *ent)
 
 spawn_t sp_usa[MAX_TEAM_ITEMS] =
 {
+	{ "weapon_browning", SP_item_weapon_browning },
+	{ "ammo_browning", SP_item_ammo_browning },
 	{ "weapon_colt45", SP_item_weapon_colt45 },
 	{ "weapon_m1", SP_item_weapon_m1 },
 	{ "weapon_thompson", SP_item_weapon_thompson },

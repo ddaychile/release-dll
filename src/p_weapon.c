@@ -677,6 +677,8 @@ void Use_Weapon (edict_t *ent, gitem_t *item)
 			item_rounds = ent->client->mags[0].antitank_rnd;
 		else if (!strcmp(item->ammo, "m1903_mag"))
 			item_rounds = ent->client->mags[0].sniper_rnd;
+		else if (!strcmp(item->ammo, "browning_mag"))
+			item_rounds = ent->client->mags[item->mag_index].pistol_rnd;
 		else if (!strcmp(item->ammo, "flame_mag"))
 			item_rounds = ent->client->flame_rnd;
 

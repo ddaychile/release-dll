@@ -749,6 +749,9 @@ void ClientObituary (edict_t *self, edict_t *inflictor, edict_t *attacker)
 				message = "was gunned down by";
 				message2 = "'s submachinegun";
 				break;
+			case MOD_BROWNING:
+				message = "was browned by";
+				break;
 			case MOD_SNIPER:
 				message = "was sniped by";
 				break;

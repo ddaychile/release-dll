@@ -48,6 +48,8 @@ GunInfo_t grmguninfo[MAX_TEAM_GUNS];
 
 gitem_t grmitems[MAX_TEAM_ITEMS]=
 {
+	BROWNING_WEAPON_ITEM("grm"),
+	BROWNING_AMMO_ITEM("grm"),
 /* Walther P38 becomes the standard issue weapon
 */
 	{

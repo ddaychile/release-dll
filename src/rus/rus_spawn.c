@@ -115,6 +115,8 @@ void SP_item_molotov(edict_t *self)
 
 spawn_t sp_rus[MAX_TEAM_ITEMS] =
 {
+	{ "weapon_browning", SP_item_weapon_browning },
+	{ "ammo_browning", SP_item_ammo_browning },
 	{ "weapon_tt33", SP_item_weapon_tt33 },
 	{ "weapon_m9130", SP_item_weapon_m9130 },
 	{ "weapon_ppsh41", SP_item_weapon_ppsh41 },

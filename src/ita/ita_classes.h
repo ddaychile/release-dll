@@ -202,7 +202,7 @@ SMos_t ITA_MOS_List[NUM_CLASSES]=
 		"class_medic",
 		"Morphine",
 		1,
-		"Beretta M1934",
+		"Browning Hi-Power",
 		3,
 		NULL,
 		0,

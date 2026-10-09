@@ -46,6 +46,8 @@ GunInfo_t itaguninfo[MAX_TEAM_GUNS];
 
 gitem_t itaitems[MAX_TEAM_ITEMS]=
 {
+	BROWNING_WEAPON_ITEM("ita"),
+	BROWNING_AMMO_ITEM("ita"),
 /* Beretta M1934 becomes the standard issue weapon
 */
 	{

@@ -121,6 +121,8 @@ void SP_item_ammo_piat(edict_t *self);
 
 spawn_t sp_pol[MAX_TEAM_ITEMS] =
 {
+	{ "weapon_browning", SP_item_weapon_browning },
+	{ "ammo_browning", SP_item_ammo_browning },
 	{ "weapon_vis", SP_item_weapon_vis },
 	{ "weapon_svt",SP_item_weapon_svt },
 //	"weapon_sten", SP_item_weapon_sten,
