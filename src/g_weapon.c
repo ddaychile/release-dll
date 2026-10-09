@@ -2874,10 +2874,16 @@ void Weapon_LMG_Fire (edict_t *ent)
 
 	ent->client->ps.gunframe++;
 
+	// BAR and MP43: progressive vertical recoil and spread bloom while the trigger is held
+	bloom = (!ent->ai &&
+		(!Q_stricmp(ent->client->pers.weapon->classname, "weapon_BAR") ||
+		 !Q_stricmp(ent->client->pers.weapon->classname, "weapon_mp43")));
+
 	if (!ent->ai)
 		ent->client->machinegun_shots++;
 
-	if (ent->client->machinegun_shots > 9)
+	// bloom weapons keep climbing until the trigger is released (the magazine bounds it)
+	if (!bloom && ent->client->machinegun_shots > 9)
 		ent->client->machinegun_shots = 9;
 
 
@@ -2898,11 +2904,6 @@ void Weapon_LMG_Fire (edict_t *ent)
 		VectorSet(offset, 0, 0, ent->viewheight - 0);	//10
 	else
 		gi.dprintf("*** Firing System Error\n");
-
-	// BAR and MP43: progressive vertical recoil and spread bloom while the trigger is held
-	bloom = (!ent->ai &&
-		(!Q_stricmp(ent->client->pers.weapon->classname, "weapon_BAR") ||
-		 !Q_stricmp(ent->client->pers.weapon->classname, "weapon_mp43")));
 
 	if (bloom)
 	{
@@ -2959,8 +2960,9 @@ void Weapon_LMG_Fire (edict_t *ent)
 
 	P_ProjectSource (ent->client, ent->s.origin, offset, forward, right, start);
 
+	// the spread stops growing at the 9th shot, only the recoil keeps climbing
 	if (bloom)
-		spread = LMG_SPREAD + (ent->client->machinegun_shots - 1) * LMG_BLOOM_STEP;
+		spread = LMG_SPREAD + ((ent->client->machinegun_shots > 9 ? 9 : ent->client->machinegun_shots) - 1) * LMG_BLOOM_STEP;
 
 	fire_gun(ent, start, forward, damage, kick, spread, spread, mod, false);
 
