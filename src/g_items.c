@@ -1574,6 +1574,38 @@ gitem_t	itemlist[MAX_ITEMS] =
 
 	},
 
+/*QUAKED weapon_healthpack (.3 .3 1) (-16 -16 -16) (16 16 16)
+Medic only: it is selected like a weapon (use special) and thrown with fire (see p_weapon.c)
+*/
+	{
+		"weapon_healthpack",
+		WEAPON_HEALTHPACK,
+		Pickup_Weapon,
+		Use_Weapon,
+		NULL,
+		Weapon_Healthpack,
+		"items/pkup.wav",
+		NULL,
+		0,
+		"models/weapons/v_healthpack/tris.md2",
+/* icon */		"w_healthpack",
+/* pickup */	"Healthpack",
+/* width */		1,
+		1,
+		"Healthpack",
+		IT_WEAPON|IT_AMMO,
+		NULL,
+		0,
+		LOC_SPECIAL,
+		0,
+		0,
+		0,
+		0,
+/* precache */ "models/items/healthpack/tris.md2 weapons/tnt/toss.wav",
+		""
+
+	},
+
 /*QUAKED weapon_Morphine(.3 .3 1) (-16 -16 -16) (16 16 16)
 */
 	{
