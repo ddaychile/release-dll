@@ -724,10 +724,11 @@ void TeamStats (edict_t *ent)
 // Free For All scoreboard panel: pics/ffa_score.png, 320 x 332, drawn centered on the 320 x 240 layout
 // (FFA_PANEL_Y = (240 - 332) / 2). Its dark area is x 23..297, y 28..270 of the picture: the title is at
 // y 30, the column header at y 44 and the rows start at y 58, every 10 units, up to 20 players.
-// The 26 characters of a row (208 units) start at FFA_TEXT_X, which centers them in the dark area.
+// The 30 characters of a row (240 units: ping, name of up to 15 characters, K, D and +/-) start at FFA_TEXT_X,
+// which centers them in the dark area.
 #define FFA_PANEL_Y		-46
 #define FFA_ROWS		20
-#define FFA_TEXT_X		56
+#define FFA_TEXT_X		40
 
 // Free For All: one individual list sorted by score, no teams and no team counters.
 // During the intermission the winner is shown. The accuracy page (second press of the scores key)
@@ -770,12 +771,12 @@ static void FFA_ScoreboardMessage (edict_t *ent, qboolean accuracy_page)
 	if (accuracy_page)
 	{
 		sprintf (string + strlen(string), "xv 68 yv %d string \"FREE FOR ALL - ACCURACY\" ", FFA_PANEL_Y + 30);
-		sprintf (string + strlen(string), "xv %d yv %d string \"Player      Acc%%  Hit Shot\" ", FFA_TEXT_X, FFA_PANEL_Y + 44);
+		sprintf (string + strlen(string), "xv %d yv %d string \"Player         Acc%%  Hit Shot\" ", FFA_TEXT_X, FFA_PANEL_Y + 44);
 	}
 	else
 	{
 		sprintf (string + strlen(string), "xv 112 yv %d string \"FREE FOR ALL\" ", FFA_PANEL_Y + 30);
-		sprintf (string + strlen(string), "xv %d yv %d string \"Png Player        K  D +/-\" ", FFA_TEXT_X, FFA_PANEL_Y + 44);
+		sprintf (string + strlen(string), "xv %d yv %d string \"Ping Player           K  D +/-\" ", FFA_TEXT_X, FFA_PANEL_Y + 44);
 	}
 
 	if (level.intermissiontime && total)
@@ -830,7 +831,7 @@ static void FFA_ScoreboardMessage (edict_t *ent, qboolean accuracy_page)
 			shots = hits + game.clients[sorted[i]].resp.accuracy_misses;
 			acc = shots ? (int)(100.0 * hits / shots) : 0;
 
-			sprintf (string + strlen(string), "yv %d %s \"%-12.12s%3d%%%5d%5d\" ",
+			sprintf (string + strlen(string), "yv %d %s \"%-15.15s%3d%%%5d%5d\" ",
 					 FFA_PANEL_Y + 58 + i * 10,
 					 (sorted[i] == ent - g_edicts - 1) ? "string2" : "string",
 					 game.clients[sorted[i]].pers.netname,
@@ -838,7 +839,7 @@ static void FFA_ScoreboardMessage (edict_t *ent, qboolean accuracy_page)
 		}
 		else
 		// +/- is kills minus deaths (suicides are deaths)
-		sprintf (string + strlen(string), "yv %d %s \"%s %-12.12s%3d%3d%+4d\" ",
+		sprintf (string + strlen(string), "yv %d %s \"%s  %-15.15s%3d%3d%+4d\" ",
 				 FFA_PANEL_Y + 58 + i * 10,
 				 (sorted[i] == ent - g_edicts - 1) ? "string2" : "string",
 				 pingstring,
