@@ -480,13 +480,6 @@ void ED_CallSpawn (edict_t *ent)
 			continue;
 		if (!strcmp(item->classname, ent->classname))
 		{	// found it
-			// Free For All: only the sniper rifle and the knife are usable weapons
-			if (G_IsFFA() && (item->flags & IT_WEAPON) &&
-				item->position != LOC_SNIPER && item->position != LOC_KNIFE)
-			{
-				G_FreeEdict (ent);
-				return;
-			}
 			SpawnItem (ent, item);
 			return;
 		}
@@ -1256,6 +1249,10 @@ void SpawnEntities2 (char *mapname, char *entities, char *spawnpoint)
 	}
 #endif
 
+	// Free For All: the weapon of the match is drawn and the items of the map cleaned before the item teams are
+	// linked (the teams of the map entities must not point to freed pickups)
+	FFA_RouletteInit ();
+
 	G_FindTeams ();
 
 
@@ -1311,6 +1308,160 @@ void SpawnEntities2 (char *mapname, char *entities, char *spawnpoint)
 
 // Free For All: true only when its own statusbar was built (see SP_worldspawn), TeamStats checks it
 qboolean ffa_statusbar_active = false;
+
+// Free For All roulette: the class (and so the weapon) that everybody uses in the match, drawn at the start of the level
+int		ffa_mos = SNIPER;
+char	*ffa_weapon_name = NULL;
+static int		ffa_weapon_pos = LOC_SNIPER;
+static char		*ffa_weapon_ammo = NULL;
+
+int		ffa_team = 0;	// index of team_list that provides the faction (skin and weapons) of the weapon of the match
+int		ffa_pistol = 0;	// the weapon of the match is the pistol of the class (a pistol match)
+
+// the rand() of the C library gives almost the same values for seeds that are close in time (the level changes
+// of a server are), so the weapon is drawn with a hash of the clock instead
+static unsigned int FFA_Hash (unsigned int x)
+{
+	x ^= x >> 16;
+	x *= 0x7feb352dU;
+	x ^= x >> 15;
+	x *= 0x846ca68bU;
+	x ^= x >> 16;
+	return x;
+}
+
+// Draws the weapon of the match among the weapons of the classes (INFANTRY, OFFICER, L_GUNNER, H_GUNNER, SNIPER
+// and SPECIAL; the Engineer, the Medic and the Flamethrower are not in the pool) of the factions of the two teams
+// of the map. Weapons that are not a gun (melee, rocket, flame, as the katana of the Japanese Special) or that
+// repeat another weapon are left out, and the weapon of the previous match is not drawn again when there are
+// more. Then the items of the map are cleaned: only the chosen weapon of that faction, its ammo and the knife stay.
+void FFA_RouletteInit (void)
+{
+	static int	pool[] = {INFANTRY, OFFICER, L_GUNNER, H_GUNNER, SNIPER, SPECIAL};
+	static char	last_weapon[64] = "";
+	int			valid[16], valid_team[16], valid_pistol[16], allowed[16];
+	gitem_t		*items[16], *item;
+	edict_t		*ent;
+	int			i, j, t, m, n = 0;
+
+	if (!G_IsFFA())
+		return;
+
+	// nothing of the previous level stays
+	ffa_mos = SNIPER;
+	ffa_team = 0;
+	ffa_pistol = 0;
+	ffa_weapon_name = NULL;
+	ffa_weapon_pos = LOC_SNIPER;
+	ffa_weapon_ammo = NULL;
+
+	if (!team_list[0])
+		return;
+
+	for (t = 0; t < 2; t++)
+	{
+		if (!team_list[t])
+			continue;
+
+		for (i = 0; i < 6; i++)
+		{
+			item = FindItemInTeam (team_list[t]->mos[pool[i]]->weapon1, team_list[t]->teamid);
+
+			if (!item || !item->ammo || !(item->flags & IT_WEAPON))
+				continue;
+			if (item->position == LOC_KNIFE || item->position == LOC_ROCKET || item->position == LOC_FLAME)
+				continue;
+			// the item must belong to the faction of the team (the lookup falls back to any faction)
+			if (!item->dllname || strcmp (item->dllname, team_list[t]->teamid))
+				continue;
+
+			for (j = 0; j < n; j++)
+			{
+				if (items[j] == item)
+					break;
+			}
+			if (j < n)
+				continue;
+
+			valid[n] = pool[i];
+			valid_team[n] = t;
+			valid_pistol[n] = 0;
+			items[n] = item;
+			n++;
+		}
+
+		// the pistol of the Officer of the faction: a pistol match (it is the only weapon of everybody)
+		item = FindItemInTeam (team_list[t]->mos[OFFICER]->weapon2, team_list[t]->teamid);
+
+		if (item && item->ammo && (item->flags & IT_WEAPON) && item->position == LOC_PISTOL &&
+			item->dllname && !strcmp (item->dllname, team_list[t]->teamid))
+		{
+			for (j = 0; j < n; j++)
+			{
+				if (items[j] == item)
+					break;
+			}
+			if (j == n)
+			{
+				valid[n] = OFFICER;
+				valid_team[n] = t;
+				valid_pistol[n] = 1;
+				items[n] = item;
+				n++;
+			}
+		}
+	}
+
+	if (!n)
+		return;
+
+	// every weapon has the same chance, except the one of the previous match
+	m = 0;
+	for (j = 0; j < n; j++)
+	{
+		if (n < 2 || Q_stricmp (items[j]->pickup_name, last_weapon))
+			allowed[m++] = j;
+	}
+
+	j = allowed[FFA_Hash ((unsigned int)time (NULL) ^ FFA_Hash ((unsigned int)clock ())) % m];
+	ffa_mos = valid[j];
+	ffa_team = valid_team[j];
+	ffa_pistol = valid_pistol[j];
+	strncpy (last_weapon, items[j]->pickup_name, sizeof(last_weapon) - 1);
+	last_weapon[sizeof(last_weapon) - 1] = 0;
+	ffa_weapon_pos = items[j]->position;
+	ffa_weapon_ammo = items[j]->ammo;
+	ffa_weapon_name = items[j]->pickup_name;
+
+	gi.dprintf ("Free For All weapon: %s (class %i, faction %s, %s, %i weapons in the draw)\n", ffa_weapon_name, ffa_mos,
+				team_list[ffa_team]->teamid, ffa_pistol ? "pistol match" : "regular weapon", n);
+
+	// items of the map: the chosen weapon of its faction, its ammo and the knife
+	for (i = game.maxclients + 1; i < globals.num_edicts; i++)
+	{
+		ent = &g_edicts[i];
+
+		// only the pickups of the map (monsters, turrets and key triggers also have an item)
+		if (!ent->inuse || !ent->item || !ent->classname || strcmp (ent->classname, ent->item->classname))
+			continue;
+
+		if (ent->item->flags & IT_WEAPON)
+		{
+			if (ent->item->position == LOC_KNIFE)
+				continue;
+			if (ent->item->position == ffa_weapon_pos && ent->item->dllname &&
+				!strcmp (ent->item->dllname, team_list[ffa_team]->teamid))
+				continue;
+
+			G_FreeEdict (ent);
+		}
+		else if ((ent->item->flags & IT_AMMO) && ent->item->pickup_name &&
+				 Q_stricmp (ent->item->pickup_name, ffa_weapon_ammo))
+		{
+			G_FreeEdict (ent);
+		}
+	}
+}
 
 char *dday_statusbar =
 "yb	-24 "

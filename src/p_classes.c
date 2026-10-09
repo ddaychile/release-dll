@@ -173,6 +173,10 @@ void Give_Class_Weapon(edict_t *ent)
 							  client->resp.team_on->teamid); // Le entregamos el arma principal a la clase sorteada.
 	}
 
+	else if (G_IsFFA() && ffa_pistol) // Free For All pistol match: the pistol of the class is the only weapon
+		item = FindItemInTeam(client->resp.team_on->mos[client->resp.mos]->weapon2,
+							  client->resp.team_on->teamid);
+
 	else
 		item = FindItemInTeam(client->resp.team_on->mos[client->resp.mos]->weapon1,
 							  client->resp.team_on->teamid);
@@ -233,7 +237,8 @@ void Give_Class_Weapon(edict_t *ent)
 	//}
 	//if(client->resp.team_on->mos[client->resp.mos]->special)
 	//{
-    if ((item = FindItemInTeam(client->resp.team_on->mos[client->resp.mos]->special,
+    if (!G_IsFFA() &&	// Free For All: only the weapon of the match and the knife (not the binoculars of the Officer)
+		(item = FindItemInTeam(client->resp.team_on->mos[client->resp.mos]->special,
                                client->resp.team_on->teamid)))
 		client->pers.inventory[ITEM_INDEX(item)]=client->resp.team_on->mos[client->resp.mos]->specnum;
 	//}
@@ -248,7 +253,7 @@ void Give_Class_Ammo(edict_t *ent)
 {
 	gitem_t *item, *ammo_item;
 	
-	if (ent->client->resp.team_on->mos[ent->client->resp.mos]->ammo1 )
+	if (ent->client->resp.team_on->mos[ent->client->resp.mos]->ammo1 && !(G_IsFFA() && ffa_pistol))
 	{
 		if (!G_IsFFA() && (mauser_only->value == 1) && !(ent->client->resp.mos == MEDIC))
 			item= FindTeamItem(team_list[1]->teamid, LOC_RIFLE);
@@ -272,14 +277,15 @@ void Give_Class_Ammo(edict_t *ent)
 		}
 	}
 
-	if (ent->client->resp.team_on->mos[ent->client->resp.mos]->ammo2 && !G_IsFFA())
+	// Free For All only gives the pistol (and its own number of magazines) in a pistol match
+	if (ent->client->resp.team_on->mos[ent->client->resp.mos]->ammo2 && (!G_IsFFA() || ffa_pistol))
 	{
 		item = FindItemInTeam(ent->client->resp.team_on->mos[ent->client->resp.mos]->weapon2,
 							  ent->client->resp.team_on->teamid);
 		if (item)
 		{
 			ammo_item = FindItemInTeam(item->ammo, item->dllname);
-			if (!Add_Ammo(ent, ammo_item, ent->client->resp.team_on->mos[ent->client->resp.mos]->ammo2))
+			if (!Add_Ammo(ent, ammo_item, G_IsFFA() ? FFA_PISTOL_MAGS : ent->client->resp.team_on->mos[ent->client->resp.mos]->ammo2))
 				safe_cprintf(ent, PRINT_HIGH, "No ammo for %s\n", item->pickup_name);
 		}
 		else

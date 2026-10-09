@@ -686,6 +686,12 @@ extern	cvar_t	*coop;
 extern	cvar_t	*ctb_mode; // kernel: selects mode for CTB (0 disabled, 1 one briefcase, 2 many briefcases)
 extern	cvar_t	*ffa; // Free For All mode (0 disabled, 1 enabled)
 extern	qboolean	ffa_statusbar_active; // Free For All statusbar built (g_spawn.c)
+extern	int		ffa_mos;			// Free For All: class (weapon) of every player in this match, drawn at the start of the level
+extern	int		ffa_team;			// Free For All: team_list index of the faction of that weapon (skin and loadout of everybody)
+extern	int		ffa_pistol;			// Free For All: the weapon of the match is the pistol of the class (a pistol match)
+#define FFA_PISTOL_MAGS		6		// Free For All: pistol magazines in a pistol match (the class gives 2 or 3 in team games)
+extern	char	*ffa_weapon_name;	// Free For All: pickup name of that weapon
+void FFA_RouletteInit (void);		// g_spawn.c
 #define FFA_DEFAULT_FRAGLIMIT	30	// Free For All frags to win when the server fraglimit is 0
 #define FFA_LEVEL_WAIT			10	// Free For All seconds of lobby at the start of the level
 #define FFA_RESPAWN_INTERVAL	3	// Free For All seconds to respawn after dying

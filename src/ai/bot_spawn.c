@@ -38,10 +38,10 @@ void Assign_Bot_Class (edict_t *self)
 	int j;
 	edict_t *cl_ent;
 
-	// Free For All: every player, bots included, is a Sniper
+	// Free For All: every player, bots included, uses the class of the weapon of the match
 	if (G_IsFFA())
 	{
-		self->client->resp.mos = SNIPER;
+		self->client->resp.mos = ffa_mos;
 		return;
 	}
 
@@ -800,7 +800,7 @@ void BOT_SpawnBot (int team, char *name, char *skin, char *userinfo)
 
 
 	// Free For All: bots use the same faction as everybody else
-	bot->client->resp.team_on = team_list[G_IsFFA() ? 0 : team];
+	bot->client->resp.team_on = team_list[G_IsFFA() ? ffa_team : team];
 
 	bot->think = BOT_JoinGame;
 

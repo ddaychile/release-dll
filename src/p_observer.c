@@ -888,8 +888,8 @@ void M_ChooseMOS(edict_t *ent)
 }
 
 
-// Free For All: no team/class menus. Every player is silently assigned the faction of
-// team_list[0] (used only as skin/loadout provider, never as a team) and the Sniper class.
+// Free For All: no team/class menus. Every player is silently assigned the faction of the weapon of the match
+// (team_list[ffa_team], used only as skin/loadout provider, never as a team) and its class (ffa_mos).
 void FFA_JoinPlayer(edict_t *ent)
 {
 	if (!ent->client || ent->ai || ent->flyingnun || ent->client->resp.team_on)
@@ -903,10 +903,13 @@ void FFA_JoinPlayer(edict_t *ent)
 		return;
 	}
 
-	ent->client->resp.team_on = team_list[0];
-	ent->client->resp.mos = SNIPER;
+	ent->client->resp.team_on = team_list[ffa_team];
+	ent->client->resp.mos = ffa_mos;
 	ent->client->resp.newmos = NONE;
 	ent->client->pers.afk_check_time = level.framenum;
+
+	if (ffa_weapon_name)
+		safe_cprintf (ent, PRINT_HIGH, "Free For All weapon: %s\n", ffa_weapon_name);
 }
 
 void M_Team_Join(edict_t *ent, pmenu_t *p, int choice)
