@@ -516,6 +516,7 @@ qboolean Cmd_Scope_f(edict_t *ent)
 
 	if (!ent->client->pers.weapon ||
  		 ent->client->pers.weapon->classnameb == WEAPON_SANDBAGS ||
+		 ent->client->pers.weapon->classnameb == WEAPON_HEALTHPACK ||
  	//	 ent->client->pers.weapon->position== LOC_GRENADES ||
 //bcass start - TNT
 		 ent->client->pers.weapon->position== LOC_TNT)

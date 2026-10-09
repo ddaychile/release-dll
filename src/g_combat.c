@@ -726,7 +726,8 @@ void Drop_Flamed (edict_t *ent)
 	if (item->classnameb == WEAPON_FISTS ||
 		item->classnameb == WEAPON_FLAMETHROWER ||
 		item->classnameb == WEAPON_BINOCULARS ||
-		item->classnameb == WEAPON_MORPHINE)
+		item->classnameb == WEAPON_MORPHINE ||
+		item->classnameb == WEAPON_HEALTHPACK)
 		return;
 
 	if (ent->client->grenade)
@@ -1119,7 +1120,8 @@ void T_Damage (edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir,
 				(targ->client->pers.weapon->classnameb != WEAPON_FISTS && 
 				targ->client->pers.weapon->classnameb != WEAPON_MORPHINE && 
 				targ->client->pers.weapon->classnameb != WEAPON_FLAMETHROWER &&
-				targ->client->pers.weapon->classnameb != WEAPON_BINOCULARS) &&
+				targ->client->pers.weapon->classnameb != WEAPON_BINOCULARS &&
+				targ->client->pers.weapon->classnameb != WEAPON_HEALTHPACK) &&
 				!targ->client->grenade && !targ->client->tnt) // kernel: live grenade or tnt won't drop gun
 				{
 					Drop_Shot (targ, targ->client->pers.weapon);

@@ -1643,6 +1643,8 @@ struct gclient_s
 
 	float       last_fire_time;//faf
 
+	float       next_healthpack_time;	// Medic: level.time when he can throw the next healthpack
+
 	qboolean    tank_hit;//faf
 
 	int			anim_end2;//faf:  for alternate models
@@ -1982,6 +1984,13 @@ extern int jpn_index;
 #define LMG_SPREAD 10 // Valor para test era 20 (Original 80)- ZeRo
 #define HMG_SPREAD 10 // Valor para test (Original 100)- ZeRo
 
+// Medic healthpack: a pack the Medic throws, any teammate that touches it recovers health
+#define HEALTHPACK_HEAL			25		// health that a teammate recovers
+#define HEALTHPACK_DELAY		3		// seconds between two throws
+#define HEALTHPACK_LIFE			60		// seconds a pack stays on the ground
+#define HEALTHPACK_FX_TIME		5		// seconds it throws green sparks after it is thrown, then it is just the crate
+#define HEALTHPACK_EDICT_MARGIN	64		// free entities that must be left to throw a pack
+
 
 
 
@@ -2198,7 +2207,9 @@ typedef enum
 	AIRSTRIKE,
 	AIRSTRIKE_CALLED,
 	PLANE,
-	BOMB
+	BOMB,
+	WEAPON_HEALTHPACK,
+	HEALTHPACK
 } classnameb_t;
 
 typedef enum
@@ -2242,6 +2253,8 @@ void Update_Campaign_Info (void);
 void WriteCampaignTxt(void);
 void SetupCampaign (qboolean restart);
 int PlayerCountForTeam (int team_number);
+void Weapon_Healthpack (edict_t *ent);
+void RemoveHealthpacks (edict_t *owner);
 void Weapon_Generic (edict_t *ent, int FRAME_ACTIVATE_LAST, int FRAME_LFIRE_LAST, int FRAME_LIDLE_LAST, int FRAME_RELOAD_LAST, int FRAME_LASTRD_LAST,
 					 int FRAME_DEACTIVATE_LAST, int FRAME_RAISE_LAST,int FRAME_AFIRE_LAST, int FRAME_AIDLE_LAST,
 					 int *pause_frames, int *fire_frames, void (*fire)(edict_t *ent));

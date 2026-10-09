@@ -939,7 +939,8 @@ void TossClientWeapon (edict_t *self)
 		((Q_stricmp (item->pickup_name, "Morphine")   == 0) ||
 		 (Q_stricmp (item->pickup_name, "Fists")      == 0) ||
 		 (Q_stricmp (item->pickup_name, "Sandbags")      == 0) ||
-		 (Q_stricmp (item->pickup_name, "Binoculars") == 0) ))
+		 (Q_stricmp (item->pickup_name, "Binoculars") == 0) ||
+		 (Q_stricmp (item->pickup_name, "Healthpack") == 0) ))
 		item = NULL;
 
 
@@ -1301,6 +1302,9 @@ void player_die (edict_t *self, edict_t *inflictor, edict_t *attacker, int damag
 	self->client->invincible_framenum = 0;
 	self->client->breather_framenum = 0;
 	self->client->enviro_framenum = 0;
+
+	// the healthpacks he threw do not stay on the ground when the Medic dies
+	RemoveHealthpacks (self);
 
 	// clear inventory
 	memset(self->client->pers.inventory, 0, sizeof(self->client->pers.inventory));
@@ -3045,6 +3049,8 @@ void ClientDisconnect (edict_t *ent)
 	//faf:  ctb code
 	if(ent->client->pers.inventory[ITEM_INDEX(FindItemB(ITEM_BRIEFCASE))])
 		Drop_Briefcase(ent, FindItemB(ITEM_BRIEFCASE));
+
+	RemoveHealthpacks (ent);
 
 
 
