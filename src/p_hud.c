@@ -712,9 +712,22 @@ void TeamStats (edict_t *ent)
 #define TEAM1    0
 #define TEAM2    1
 
-// Free For All: distance from the top of the screen of the winner banner shown over the final scoreboard
-// (the title; the big number is 12 below and "FRAGS" 48 below). Raise it to move the banner down.
-#define FFA_FINAL_BANNER_YT		128
+// Free For All winner banner shown over the final scoreboard: pics/ffa_winner.png, 320 x 112, drawn right above
+// the scoreboard panel (relative to the panel so they never overlap). Its dark area is y 30..82 of the picture:
+// the title is at y 34, the big number at y 44 and "FRAGS" at y 72.
+// Without the picture the same texts are drawn without a background.
+#define FFA_BANNER_H			112
+#define FFA_BANNER_TITLE_Y		34
+#define FFA_BANNER_NUMBER_Y		44
+#define FFA_BANNER_FRAGS_Y		72
+
+// Free For All scoreboard panel: pics/ffa_score.png, 320 x 332, drawn centered on the 320 x 240 layout
+// (FFA_PANEL_Y = (240 - 332) / 2). Its dark area is x 23..297, y 28..270 of the picture: the title is at
+// y 30, the column header at y 44 and the rows start at y 58, every 10 units, up to 20 players.
+// The 26 characters of a row (208 units) start at FFA_TEXT_X, which centers them in the dark area.
+#define FFA_PANEL_Y		-46
+#define FFA_ROWS		20
+#define FFA_TEXT_X		56
 
 // Free For All: one individual list sorted by score, no teams and no team counters.
 // During the intermission the winner is shown. The accuracy page (second press of the scores key)
@@ -750,53 +763,51 @@ static void FFA_ScoreboardMessage (edict_t *ent, qboolean accuracy_page)
 		total++;
 	}
 
-	// standard Quake II panel as background: the team ones carry team logos and flags
-	strcpy (string, "xv 32 yv 8 picn inventory ");
+	// own panel (pics/ffa_score.png) as background: the team ones carry team logos and flags
+	sprintf (string, "xv 0 yv %d picn ffa_score ", FFA_PANEL_Y);
 
-	// the text must stay inside the folder of the panel: 24 characters starting at xv 54
+	// the text stays inside the dark area of the panel
 	if (accuracy_page)
 	{
-		strcat (string, "xv 58 yv 30 string \"FREE FOR ALL - ACCURACY\" ");
-		strcat (string, "xv 54 yv 52 string \"Player    Acc%  Hit Shot\" ");
+		sprintf (string + strlen(string), "xv 68 yv %d string \"FREE FOR ALL - ACCURACY\" ", FFA_PANEL_Y + 30);
+		sprintf (string + strlen(string), "xv %d yv %d string \"Player      Acc%%  Hit Shot\" ", FFA_TEXT_X, FFA_PANEL_Y + 44);
 	}
 	else
 	{
-		strcat (string, "xv 102 yv 30 string \"FREE FOR ALL\" ");
-		strcat (string, "xv 54 yv 52 string \"Png Player      K  D +/-\" ");
+		sprintf (string + strlen(string), "xv 112 yv %d string \"FREE FOR ALL\" ", FFA_PANEL_Y + 30);
+		sprintf (string + strlen(string), "xv %d yv %d string \"Png Player        K  D +/-\" ", FFA_TEXT_X, FFA_PANEL_Y + 44);
 	}
 
 	if (level.intermissiontime && total)
 	{
 		char	title[40];
 
+		// the winner is not repeated inside the panel: it is shown by the banner below
 		if (total > 1 && sortedscores[0] == sortedscores[1])
-		{
-			strcat (string, "xv 118 yv 40 string \"Tie game\" ");
 			Com_sprintf (title, sizeof(title), "TIE GAME");
-		}
 		else
-		{
-			sprintf (string + strlen(string), "xv 86 yv 40 string \"Winner: %-10.10s\" ",
-					 game.clients[sorted[0]].pers.netname);
 			Com_sprintf (title, sizeof(title), "%.12s WINS!", game.clients[sorted[0]].pers.netname);
-		}
 
-		// big banner at the top of the screen, above the panel (the panel covers the middle of the screen):
-		// the number is the top score (stat 24)
-		sprintf (string + strlen(string), "xv %d yt %d string2 \"%s\" ", 160 - 4 * (int)strlen(title), FFA_FINAL_BANNER_YT, title);
+		// winner banner right above the panel; the number is the top score (stat 24)
+		sprintf (string + strlen(string), "xv 0 yv %d picn ffa_winner ", FFA_PANEL_Y - FFA_BANNER_H - 4);
+		sprintf (string + strlen(string), "xv %d yv %d string2 \"%s\" ", 160 - 4 * (int)strlen(title),
+				 FFA_PANEL_Y - FFA_BANNER_H - 4 + FFA_BANNER_TITLE_Y, title);
 		if (sortedscores[0] > 0)
-			sprintf (string + strlen(string), "xv 126 yt %d num 3 24 xv 140 yt %d string2 \"FRAGS\" ",
-					 FFA_FINAL_BANNER_YT + 12, FFA_FINAL_BANNER_YT + 48);
+			sprintf (string + strlen(string), "xv 126 yv %d num 3 24 xv 140 yv %d string2 \"FRAGS\" ",
+					 FFA_PANEL_Y - FFA_BANNER_H - 4 + FFA_BANNER_NUMBER_Y, FFA_PANEL_Y - FFA_BANNER_H - 4 + FFA_BANNER_FRAGS_Y);
 	}
+
+	// the x of the rows is set once (it stays) to keep the layout string short
+	sprintf (string + strlen(string), "xv %d ", FFA_TEXT_X);
 
 	len = strlen(string);
 
 	for (i = 0; i < total; i++)
 	{
-		if (len > 1300 || i >= MAX_SCORES_PER_TEAM)
+		if (len > 1300 || i >= FFA_ROWS)
 		{
-			sprintf (string + strlen(string), "xv 54 yv %d string \"and %d more\" ",
-					 66 + MAX_SCORES_PER_TEAM * 12, total - i);
+			sprintf (string + strlen(string), "yv %d string \"and %d more\" ",
+					 FFA_PANEL_Y + 58 + FFA_ROWS * 10, total - i);
 			break;
 		}
 
@@ -819,16 +830,16 @@ static void FFA_ScoreboardMessage (edict_t *ent, qboolean accuracy_page)
 			shots = hits + game.clients[sorted[i]].resp.accuracy_misses;
 			acc = shots ? (int)(100.0 * hits / shots) : 0;
 
-			sprintf (string + strlen(string), "xv 54 yv %d %s \"%-10.10s%3d%%%5d%5d\"",
-					 66 + i * 12,
+			sprintf (string + strlen(string), "yv %d %s \"%-12.12s%3d%%%5d%5d\" ",
+					 FFA_PANEL_Y + 58 + i * 10,
 					 (sorted[i] == ent - g_edicts - 1) ? "string2" : "string",
 					 game.clients[sorted[i]].pers.netname,
 					 acc, hits, shots);
 		}
 		else
 		// +/- is kills minus deaths (suicides are deaths)
-		sprintf (string + strlen(string), "xv 54 yv %d %s \"%s %-10.10s%3d%3d%+4d\"",
-				 66 + i * 12,
+		sprintf (string + strlen(string), "yv %d %s \"%s %-12.12s%3d%3d%+4d\" ",
+				 FFA_PANEL_Y + 58 + i * 10,
 				 (sorted[i] == ent - g_edicts - 1) ? "string2" : "string",
 				 pingstring,
 				 game.clients[sorted[i]].pers.netname,

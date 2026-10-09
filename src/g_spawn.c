@@ -1677,6 +1677,12 @@ void SP_worldspawn (edict_t *ent)
 
 	// pbowens: scoreboard
 	gi.imageindex ("scorehead");
+	if (G_IsFFA())
+	{
+		// Free For All scoreboard panel and winner banner, so the clients load/download them
+		gi.imageindex ("ffa_score");
+		gi.imageindex ("ffa_winner");
+	}
 	gi.imageindex ("scoreleft");
 	gi.imageindex ("scoreright");
 
