@@ -156,11 +156,10 @@ field_t fields[] = {
 
 	{"fullbright",FOFS(groundentity_linkcount),F_INT},
 	{"fog",FOFS(teleport_time),F_FLOAT},
-	{"obj_origin", FOFS(obj_origin), F_VECTOR}
+	{"obj_origin", FOFS(obj_origin), F_VECTOR},
 
-	
-	
-
+	// fin de la lista: sin esto un campo desconocido del mapa (p. ej. "focus" en dday1) recorre memoria ajena
+	{NULL, 0, F_INT}
 };
 
 // -------- just for savegames ----------
