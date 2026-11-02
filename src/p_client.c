@@ -456,6 +456,7 @@ void ClientObituary (edict_t *self, edict_t *inflictor, edict_t *attacker)
 	char		*message3;
 
 	qboolean	ff;
+	qboolean	kf;		// the death is on the killfeed: it is not printed to the clients
 	edict_t *Tent;
 
 
@@ -588,6 +589,8 @@ void ClientObituary (edict_t *self, edict_t *inflictor, edict_t *attacker)
 		}
 		if (message)
 		{
+			kf = Killfeed_Add (self->client->last_wound_inflictor, self, mod, false);
+
 			//faf: if they were wounded before they got themselves killed, name who wounded them.
 			if (self->client->last_wound_inflictor)
 			{
@@ -601,7 +604,7 @@ void ClientObituary (edict_t *self, edict_t *inflictor, edict_t *attacker)
 					safe_cprintf(self, PRINT_HIGH, "%s %s %s %s).\n", self->client->pers.netname, message, message2, self->client->last_wound_inflictor->client->pers.netname);
 				else if (death_msg->value == 1 || death_msg->value == 3) // print to everybody
 				{
-					for (i = 1; i <= game.maxclients; i++)
+					for (i = 1; i <= game.maxclients && !kf; i++)
 					{
 						Tent = &g_edicts[i];
 						if (!Tent->inuse || !Tent->client)
@@ -651,7 +654,7 @@ void ClientObituary (edict_t *self, edict_t *inflictor, edict_t *attacker)
 					safe_cprintf(self, PRINT_HIGH, "%s %s.\n", self->client->pers.netname, message);
 				else if (death_msg->value == 1 || death_msg->value == 3) // print to everybody
 				{
-					for (i = 1; i <= game.maxclients; i++)
+					for (i = 1; i <= game.maxclients && !kf; i++)
 					{
 						Tent = &g_edicts[i];
 						if (!Tent->inuse || !Tent->client)
@@ -844,12 +847,14 @@ void ClientObituary (edict_t *self, edict_t *inflictor, edict_t *attacker)
 				message3 = "";
 			if (message)
 			{
+				kf = Killfeed_Add (attacker, self, mod, self->client->resp.deathblend == 1);	// 1: the head shot that plays the "Headshot!" cue
+
 				// Means of Death msgs now server customizable
 				if (death_msg->value == 0) // print to self only
 					safe_cprintf(self, PRINT_HIGH, "%s %s %s%s%s\n", self->client->pers.netname, message, attacker->client->pers.netname, message2, message3);
 				else if (death_msg->value == 1 || death_msg->value == 3) // print to everybody
 				{
-					for (i = 1; i <= game.maxclients; i++)
+					for (i = 1; i <= game.maxclients && !kf; i++)
 					{
 						Tent = &g_edicts[i];
 						if (!Tent->inuse || !Tent->client)

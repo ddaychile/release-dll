@@ -2102,7 +2102,7 @@ char *dday_statusbar =
 	"yt 158 "
 	"xr -70 "
 	"pic 31 "
-"end if "
+"endif "
 
 
 // respawn timer
@@ -2252,18 +2252,18 @@ void SP_worldspawn (edict_t *ent)
 				"	xv 64 yv 78 stat_string 27 "
 				"endif ");
 			strcat (ffa_statusbar, stats_end);
-			gi.configstring (CS_STATUSBAR, ffa_statusbar);
+			Killfeed_SetBase (ffa_statusbar);
 			ffa_statusbar_active = true;
 		}
 		else
 		{
 			// the original team statusbar is used, FFA_HudStats must not write its stats (see TeamStats)
 			gi.dprintf ("WARNING: the Free For All statusbar could not be built (markers not found in dday_statusbar), using the team one\n");
-			gi.configstring (CS_STATUSBAR, dday_statusbar);
+			Killfeed_SetBase (dday_statusbar);
 		}
 	}
 	else
-		gi.configstring (CS_STATUSBAR, dday_statusbar);
+		Killfeed_SetBase (dday_statusbar);
 
 	//---------------
 

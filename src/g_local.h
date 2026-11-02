@@ -763,6 +763,7 @@ extern	cvar_t	*spawn_camp_time;
 extern	cvar_t	*invuln_medic;
 //extern	cvar_t	*teamgren;
 extern	cvar_t	*death_msg;
+extern	cvar_t	*killfeed_console;
 extern	cvar_t	*level_wait;
 extern	cvar_t	*invuln_spawn;
 
@@ -967,6 +968,10 @@ qboolean OnSameTeam(edict_t *self,edict_t *target);
 qboolean G_IsFFA(void);
 void FFA_JoinPlayer(edict_t *ent);
 void FFA_HudReset(void);
+// p_killfeed.c
+void Killfeed_SetBase(char *statusbar);
+qboolean Killfeed_Add(edict_t *killer, edict_t *victim, int mod, qboolean headshot);
+void Killfeed_Frame(void);
 void FFA_SpawnReset(void);
 void initialize_random_seed();	// p_classes.c
 void FFA_ForgetPlayer(edict_t *gone);

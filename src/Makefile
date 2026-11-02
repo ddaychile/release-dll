@@ -103,6 +103,7 @@ GAME_OBJS =	\
 	p_client.o \
 	p_generic_wep.o \
 	p_hud.o \
+	p_killfeed.o \
 	p_menu.o \
 	p_observer.o \
 	p_trail.o \
@@ -199,6 +200,8 @@ p_client.o: p_client.c g_local.h g_defines.h q_shared.h game.h \
 p_generic_wep.o: p_generic_wep.c g_local.h g_defines.h q_shared.h \
  game.h p_menu.h g_maps.h m_player.h
 p_hud.o: p_hud.c g_local.h g_defines.h q_shared.h game.h p_menu.h \
+ g_maps.h
+p_killfeed.o: p_killfeed.c g_local.h g_defines.h q_shared.h game.h p_menu.h \
  g_maps.h
 p_menu.o: p_menu.c g_local.h g_defines.h q_shared.h game.h p_menu.h \
  g_maps.h
