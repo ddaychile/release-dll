@@ -53,6 +53,7 @@ cvar_t	*ffa_gg_deaths;
 cvar_t	*ffa_gg_factions;
 cvar_t	*ffa_gg_snd_up;
 cvar_t	*ffa_gg_snd_down;
+cvar_t	*ffa_gg_victory_vol;
 cvar_t	*dmflags;
 cvar_t	*skill;
 cvar_t	*fraglimit;
@@ -1047,6 +1048,12 @@ static void FFA_AnnounceWinner (void)
 		{
 			edict_t		*speaker = NULL, *cl;
 			int			i, snd = gi.soundindex (va ("%s/victory.wav", team_list[0]->teamid));
+			float		vol = ffa_gg_victory_vol ? ffa_gg_victory_vol->value : 0.5f;
+
+			if (vol < 0)
+				vol = 0;
+			if (vol > 1)
+				vol = 1;
 
 			while ((speaker = G_Find (speaker, FOFS(classname), "target_speaker")))
 				speaker->s.sound = 0;
@@ -1057,9 +1064,9 @@ static void FFA_AnnounceWinner (void)
 				if (!cl->inuse || !cl->client || cl->ai)
 					continue;
 
-				gi.sound (cl, (CHAN_NO_PHS_ADD|CHAN_RELIABLE), snd, 1, ATTN_NONE, 0);
-				gi.sound (cl, (CHAN_NO_PHS_ADD|CHAN_RELIABLE), snd, 1, ATTN_NONE, 0);
-				gi.sound (cl, (CHAN_NO_PHS_ADD|CHAN_RELIABLE), snd, 1, ATTN_NONE, 0);
+				gi.sound (cl, (CHAN_NO_PHS_ADD|CHAN_RELIABLE), snd, vol, ATTN_NONE, 0);
+				gi.sound (cl, (CHAN_NO_PHS_ADD|CHAN_RELIABLE), snd, vol, ATTN_NONE, 0);
+				gi.sound (cl, (CHAN_NO_PHS_ADD|CHAN_RELIABLE), snd, vol, ATTN_NONE, 0);
 			}
 		}
 		return;

@@ -423,6 +423,7 @@ void InitGame (void)
 	ffa_gg_factions = gi.cvar("ffa_gg_factions", "1", 0);
 	ffa_gg_snd_up = gi.cvar("ffa_gg_snd_up", "ffa/gg_up2.wav", 0);
 	ffa_gg_snd_down = gi.cvar("ffa_gg_snd_down", "misc/menu3.wav", 0);
+	ffa_gg_victory_vol = gi.cvar("ffa_gg_victory_vol", "0.5", 0);
 
 	// kernel: time to display the MOTD at beginning of level
 	motd_time = gi.cvar("motd_time", "10", 0);
