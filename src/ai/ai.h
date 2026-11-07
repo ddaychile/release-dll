@@ -130,6 +130,8 @@ typedef struct
 
 	qboolean	defend_bot;
 
+	usercmd_t	last_ucmd;	// ultimo comando del bot, se repite en los ticks intermedios
+
 } ai_handle_t;
 
 

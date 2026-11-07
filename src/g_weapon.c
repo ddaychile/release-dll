@@ -5489,7 +5489,7 @@ void Molotov_Touch (edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *s
 		fire->touch        = PBM_FireDropTouch;
 		fire->burnout      = level.time + 2 + random() * 3;
 		fire->timestamp    = level.time;
-		fire->nextthink    = level.time + FRAMETIME;
+		fire->nextthink    = level.time + GAME_STEP;
 		fire->think        = PBM_CheckFire;
 	//				VectorCopy (30, fire->pos1);
 	//				VectorCopy (30, fire->pos2);

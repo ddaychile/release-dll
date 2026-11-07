@@ -923,7 +923,7 @@ void SV_CalcBlend (edict_t *ent)
 		!ent->flyingnun)
 	{
 		if (ent->client->resp.deathblend < 1)
-			ent->client->resp.deathblend += 0.1;
+			ent->client->resp.deathblend += 0.1 * TICK_SCALE;
 		if (ent->client->resp.deathblend > 1)
 			ent->client->resp.deathblend = 1;
 		SV_AddBlend (0.5 - (0.5 * ent->client->resp.deathblend), 0.0, 0.0, ent->client->resp.deathblend, ent->client->ps.blend);
@@ -1008,12 +1008,12 @@ void SV_CalcBlend (edict_t *ent)
 	}
 	else 
 	{ // drop the damage value
-		ent->client->damage_alpha -= 0.06;
+		ent->client->damage_alpha -= 0.06 * TICK_SCALE;
 		if (ent->client->damage_alpha < 0)
 			ent->client->damage_alpha = 0;
 
 		// drop the bonus value
-		ent->client->bonus_alpha -= 0.1;
+		ent->client->bonus_alpha -= 0.1 * TICK_SCALE;
 		if (ent->client->bonus_alpha < 0)
 			ent->client->bonus_alpha = 0;
 	}
@@ -1435,7 +1435,7 @@ void P_WorldEffects (void)
 		{
 			current_player->air_finished = level.time + 10;
 
-			if (((int)(current_client->breather_framenum - level.framenum) % 25) == 0)
+			if (level_gametick && ((int)(current_client->breather_framenum - level.framenum) % 25) == 0)
 			{
 				if (!current_client->breather_sound)
 					gi.sound (current_player, CHAN_AUTO, gi.soundindex("player/u_breath1.wav"), 1, ATTN_NORM, 0);
@@ -2357,7 +2357,7 @@ void ClientEndServerFrame (edict_t *ent)
 
 
 
-	if (ent->client)
+	if (ent->client && level_gametick)
 	{
 		framediff = level.framenum - ent->client->resp.enterframe;
 
@@ -2381,12 +2381,12 @@ void ClientEndServerFrame (edict_t *ent)
 		ent->client->smoke_effect_goal = 0;
 
 
-	if (ent->client->smoke_effect_goal){
+	if (ent->client->smoke_effect_goal && level_gametick){
 		ent->client->smoke_effect_goal -= .0013;
 		if (ent->deadflag)
 			ent->client->smoke_effect_goal -= .02;
 	}
-	if (ent->client->smoke_effect_actual != ent->client->smoke_effect_goal)
+	if (ent->client->smoke_effect_actual != ent->client->smoke_effect_goal && level_gametick)
 		ent->client->smoke_effect_actual = (ent->client->smoke_effect_goal + ent->client->smoke_effect_actual)/2;
 
 
@@ -2445,12 +2445,15 @@ void ClientEndServerFrame (edict_t *ent)
 	if (extra_anims->value == 1 && chile->value == 0)
 	{
 		//faf:  slow down view when changing stances
-		if (ent->stance_view > ent->viewheight + 10)
-			ent->viewheight+=10;
-		else if (ent->stance_view < ent->viewheight - 10)
-			ent->viewheight-= 10;
-		else
-			ent->viewheight = ent->stance_view;
+		if (level_gametick)
+		{
+			if (ent->stance_view > ent->viewheight + 10)
+				ent->viewheight+=10;
+			else if (ent->stance_view < ent->viewheight - 10)
+				ent->viewheight-= 10;
+			else
+				ent->viewheight = ent->stance_view;
+		}
 	}
 	else
 		ent->viewheight = ent->stance_view;
@@ -2495,7 +2498,8 @@ void ClientEndServerFrame (edict_t *ent)
 	// the player any normal movement attributes
 	//
 	P_ShowID (ent);
-	P_ExplosionEffects (ent);
+	if (level_gametick)
+		P_ExplosionEffects (ent);
 	if (level.intermissiontime)
 	{
 		float delay = (level.intermissiontime + INTERMISSION_DELAY);
@@ -2579,7 +2583,9 @@ void ClientEndServerFrame (edict_t *ent)
 			bobmove = 0.1;
 	}
 	
-	bobtime = (current_client->bobtime += bobmove);
+	if (level_gametick)
+		current_client->bobtime += bobmove;
+	bobtime = current_client->bobtime;
 
 	if (current_client->ps.pmove.pm_flags & PMF_DUCKED)
 		bobtime *= 4;
@@ -2624,7 +2630,8 @@ void ClientEndServerFrame (edict_t *ent)
 
 	G_SetClientSound (ent);
 
-	G_SetClientFrame (ent);//, 0);
+	if (level_gametick)
+		G_SetClientFrame (ent);//, 0);
 
 	/*
 	if (extra_anims->value != 1)
@@ -2659,7 +2666,7 @@ void ClientEndServerFrame (edict_t *ent)
 	//faf
 	// Do Jump-Stamina increase
 	//hans incrementa stamina x10 (antes era por 5)
-	    if (ent->client->jump_stamina < JUMP_MAX)
+	    if (level_gametick && ent->client->jump_stamina < JUMP_MAX)
 		{
 			ent->client->jump_stamina += JUMP_REGEN * 12;
 
@@ -2674,7 +2681,8 @@ void ClientEndServerFrame (edict_t *ent)
 
 
 	//should be done with the gun instead of client, but it won't matter 99% of the time
-	if (ent->client->pers.weapon &&
+	if (level_gametick &&
+		ent->client->pers.weapon &&
 		ent->client->pers.weapon->classnameb == WEAPON_MG42 &&
 		ent->client->mg42_temperature > 0)
 	{
@@ -2694,7 +2702,7 @@ void ClientEndServerFrame (edict_t *ent)
 
 	//we moved player to the void when first joining game, now move them to
 	//death view room
-	if (!ent->ai && ent->client->resp.enterframe == level.framenum - 2)
+	if (!ent->ai && level_gametick && ent->client->resp.enterframe == level.framenum - 2)
 	{
 		SelectSpawnPoint (ent, ent->s.origin, ent->s.angles);
 	}
@@ -2717,7 +2725,7 @@ void ClientEndServerFrame (edict_t *ent)
 
 	if (!ent->ai || !ent->inuse)
 	{
-		if (ent->client->layout_type == SHOW_SCORES && !(level.framenum & 31) )
+		if (ent->client->layout_type == SHOW_SCORES && level_gametick && !(level.framenum & 31) )
 		{ 
 			if (ent->client->menu)
 				PMenu_Update(ent);
@@ -2741,7 +2749,7 @@ void ClientEndServerFrame (edict_t *ent)
 			}
 			gi.unicast (ent, false);
 		}
-		if ((ent->client->layout_type == SHOW_OBJECTIVES_TEMP || ent->client->layout_type == SHOW_OBJECTIVES) && !(level.framenum & 40) )
+		if ((ent->client->layout_type == SHOW_OBJECTIVES_TEMP || ent->client->layout_type == SHOW_OBJECTIVES) && level_gametick && !(level.framenum & 40) )
 		{ 
 			if (ent->client->show_obj_temp_time < level.time - 5.5){
 				ent->client->show_obj_temp_time = 0;
@@ -2752,14 +2760,14 @@ void ClientEndServerFrame (edict_t *ent)
 				gi.unicast (ent, false);
 			}
 		}
-		if (ent->client->layout_type == SHOW_MEDIC_SCREEN 
+		if (ent->client->layout_type == SHOW_MEDIC_SCREEN && level_gametick
 			//&& 			level.framenum%2 == 0
 			)
 		{
 			Medic_Screen (ent);
 		}
 
-		if (level.framenum%50 == 1 &&
+		if (level_gametick && level.framenum%50 == 1 &&
 			ent->client->resp.mos == MEDIC &&
 			ent->client->layout_type == SHOW_NONE)
 			ent->client->layout_type = SHOW_MEDIC_SCREEN;
@@ -3167,15 +3175,19 @@ if (ent->client->turret)
 
 	//stores player's old position so bots can shoot at (pseudo lag simulator)
 	//if (ent->client->last_pos2)
-	VectorCopy (ent->client->last_pos1, ent->client->last_pos3);
-	//if (ent->client->last_pos1)
-	VectorCopy (ent->client->last_pos1, ent->client->last_pos2);
+	if (level_gametick)
+	{
+		VectorCopy (ent->client->last_pos1, ent->client->last_pos3);
+		//if (ent->client->last_pos1)
+		VectorCopy (ent->client->last_pos1, ent->client->last_pos2);
 
-	VectorCopy (ent->s.origin, ent->client->last_pos1);
+		VectorCopy (ent->s.origin, ent->client->last_pos1);
+	}
 
 	// kernel: AFK should not check bots
 	if (!ent->ai &&
 		afk_time->value &&
+		level_gametick &&
 		level.framenum % 10 == 0 &&
 		ent->client->resp.team_on &&
 		!level.intermissiontime)

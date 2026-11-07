@@ -305,7 +305,7 @@ void M_MoveFrame (edict_t *self)
 	int		index;
 
 	move = self->monsterinfo.currentmove;
-	self->nextthink = level.time + FRAMETIME;
+	self->nextthink = level.time + GAME_STEP;
 
 	if ((self->monsterinfo.nextframe) && (self->monsterinfo.nextframe >= move->firstframe) && (self->monsterinfo.nextframe <= move->lastframe))
 	{
@@ -427,7 +427,7 @@ void monster_triggered_spawn_use (edict_t *self, edict_t *other, edict_t *activa
 {
 	// we have a one frame delay here so we don't telefrag the guy who activated us
 	self->think = monster_triggered_spawn;
-	self->nextthink = level.time + FRAMETIME;
+	self->nextthink = level.time + GAME_STEP;
 	if (activator->client)
 		self->enemy = activator;
 	self->use = monster_use;
@@ -492,7 +492,7 @@ qboolean monster_start (edict_t *self)
 	if (!(self->monsterinfo.aiflags & AI_GOOD_GUY))
 		level.total_monsters++;
 
-	self->nextthink = level.time + FRAMETIME;
+	self->nextthink = level.time + GAME_STEP;
 	self->svflags |= SVF_MONSTER;
 	self->s.renderfx |= RF_FRAMELERP;
 	self->takedamage = DAMAGE_AIM;
@@ -618,7 +618,7 @@ void monster_start_go (edict_t *self)
 	}
 
 	self->think = monster_think;
-	self->nextthink = level.time + FRAMETIME;
+	self->nextthink = level.time + GAME_STEP;
 }
 
 

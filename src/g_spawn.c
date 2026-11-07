@@ -699,6 +699,9 @@ void SpawnEntities (char *mapname, char *entities, char *spawnpoint)
 	gi.FreeTags (TAG_LEVEL);
 
 	memset (&level, 0, sizeof(level));
+	level_subtick = 0;
+	level_gametick = true;
+	G_SetTickRate ();
 	memset (g_edicts, 0, game.maxentities * sizeof (g_edicts[0]));
 
 	strncpy (level.mapname, mapname, sizeof(level.mapname)-1);
@@ -1110,6 +1113,9 @@ void SpawnEntities2 (char *mapname, char *entities, char *spawnpoint)
 
 
 	memset (&level, 0, sizeof(level));
+	level_subtick = 0;
+	level_gametick = true;
+	G_SetTickRate ();
 	memset (g_edicts, 0, game.maxentities * sizeof (g_edicts[0]));
 
 	strncpy (level.mapname, mapname, sizeof(level.mapname)-1);

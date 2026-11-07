@@ -118,7 +118,7 @@ gibs
 void gib_think (edict_t *self)
 {
 	self->s.frame++;
-	self->nextthink = level.time + FRAMETIME;
+	self->nextthink = level.time + GAME_STEP;
 
 	if (self->s.frame == 10)
 	{
@@ -148,7 +148,7 @@ void gib_touch (edict_t *self, edict_t *other, cplane_t *plane, csurface_t *surf
 		{
 			self->s.frame++;
 			self->think = gib_think;
-			self->nextthink = level.time + FRAMETIME;
+			self->nextthink = level.time + GAME_STEP;
 		}
 	}
 }
@@ -639,7 +639,7 @@ Just for the debugging level.  Don't use
 void TH_viewthing(edict_t *ent)
 {
 	ent->s.frame = (ent->s.frame + 1) % 7;
-	ent->nextthink = level.time + FRAMETIME;
+	ent->nextthink = level.time + GAME_STEP;
 }
 
 void SP_viewthing(edict_t *ent)
@@ -860,7 +860,7 @@ void SP_func_object (edict_t *self)
 		self->solid = SOLID_BSP;
 		self->movetype = MOVETYPE_PUSH;
 		self->think = func_object_release;
-		self->nextthink = level.time + 2 * FRAMETIME;
+		self->nextthink = level.time + 2 * GAME_STEP;
 	}
 	else
 	{
@@ -1166,7 +1166,7 @@ void barrel_explode (edict_t *self)
 void barrel_delay (edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point)
 {
 	self->takedamage = DAMAGE_NO;
-	self->nextthink = level.time + 2 * FRAMETIME;
+	self->nextthink = level.time + 2 * GAME_STEP;
 	self->think = barrel_explode;
 	self->activator = attacker;
 }
@@ -1233,7 +1233,7 @@ void SP_misc_explobox (edict_t *self)
 
 	self->think = M_droptofloor;
 
-	self->nextthink = level.time + 2 * FRAMETIME;
+	self->nextthink = level.time + 2 * GAME_STEP;
 
 
 	gi.linkentity (self);
@@ -1279,7 +1279,7 @@ void misc_blackhole_think (edict_t *self)
 
 	if (++self->s.frame < 19)
 
-		self->nextthink = level.time + FRAMETIME;
+		self->nextthink = level.time + GAME_STEP;
 
 	else
 
@@ -1287,7 +1287,7 @@ void misc_blackhole_think (edict_t *self)
 
 		self->s.frame = 0;
 
-		self->nextthink = level.time + FRAMETIME;
+		self->nextthink = level.time + GAME_STEP;
 
 	}
 
@@ -1315,7 +1315,7 @@ void SP_misc_blackhole (edict_t *ent)
 
 	ent->think = misc_blackhole_think;
 
-	ent->nextthink = level.time + 2 * FRAMETIME;
+	ent->nextthink = level.time + 2 * GAME_STEP;
 
 	gi.linkentity (ent);
 
@@ -1335,7 +1335,7 @@ void misc_eastertank_think (edict_t *self)
 
 	if (++self->s.frame < 293)
 
-		self->nextthink = level.time + FRAMETIME;
+		self->nextthink = level.time + GAME_STEP;
 
 	else
 
@@ -1343,7 +1343,7 @@ void misc_eastertank_think (edict_t *self)
 
 		self->s.frame = 254;
 
-		self->nextthink = level.time + FRAMETIME;
+		self->nextthink = level.time + GAME_STEP;
 
 	}
 
@@ -1369,7 +1369,7 @@ void SP_misc_eastertank (edict_t *ent)
 
 	ent->think = misc_eastertank_think;
 
-	ent->nextthink = level.time + 2 * FRAMETIME;
+	ent->nextthink = level.time + 2 * GAME_STEP;
 
 	gi.linkentity (ent);
 
@@ -1391,7 +1391,7 @@ void misc_easterchick_think (edict_t *self)
 
 	if (++self->s.frame < 247)
 
-		self->nextthink = level.time + FRAMETIME;
+		self->nextthink = level.time + GAME_STEP;
 
 	else
 
@@ -1399,7 +1399,7 @@ void misc_easterchick_think (edict_t *self)
 
 		self->s.frame = 208;
 
-		self->nextthink = level.time + FRAMETIME;
+		self->nextthink = level.time + GAME_STEP;
 
 	}
 
@@ -1425,7 +1425,7 @@ void SP_misc_easterchick (edict_t *ent)
 
 	ent->think = misc_easterchick_think;
 
-	ent->nextthink = level.time + 2 * FRAMETIME;
+	ent->nextthink = level.time + 2 * GAME_STEP;
 
 	gi.linkentity (ent);
 
@@ -1447,7 +1447,7 @@ void misc_easterchick2_think (edict_t *self)
 
 	if (++self->s.frame < 287)
 
-		self->nextthink = level.time + FRAMETIME;
+		self->nextthink = level.time + GAME_STEP;
 
 	else
 
@@ -1455,7 +1455,7 @@ void misc_easterchick2_think (edict_t *self)
 
 		self->s.frame = 248;
 
-		self->nextthink = level.time + FRAMETIME;
+		self->nextthink = level.time + GAME_STEP;
 
 	}
 
@@ -1481,7 +1481,7 @@ void SP_misc_easterchick2 (edict_t *ent)
 
 	ent->think = misc_easterchick2_think;
 
-	ent->nextthink = level.time + 2 * FRAMETIME;
+	ent->nextthink = level.time + 2 * GAME_STEP;
 
 	gi.linkentity (ent);
 
@@ -1498,7 +1498,7 @@ There should be a item_commander_head that has this as it's target.
 void commander_body_think (edict_t *self)
 {
 	if (++self->s.frame < 24)
-		self->nextthink = level.time + FRAMETIME;
+		self->nextthink = level.time + GAME_STEP;
 	else
 		self->nextthink = 0;
 
@@ -1509,7 +1509,7 @@ void commander_body_think (edict_t *self)
 void commander_body_use (edict_t *self, edict_t *other, edict_t *activator)
 {
 	self->think = commander_body_think;
-	self->nextthink = level.time + FRAMETIME;
+	self->nextthink = level.time + GAME_STEP;
 	gi.sound (self, CHAN_BODY, gi.soundindex ("tank/pain.wav"), 1, ATTN_NORM, 0);
 }
 
@@ -1537,7 +1537,7 @@ void SP_monster_commander_body (edict_t *self)
 	gi.soundindex ("tank/pain.wav");
 
 	self->think = commander_body_drop;
-	self->nextthink = level.time + 5 * FRAMETIME;
+	self->nextthink = level.time + 5 * GAME_STEP;
 }
 
 
@@ -1548,7 +1548,7 @@ The banner is 128 tall.
 void misc_banner_think (edict_t *ent)
 {
 	ent->s.frame = (ent->s.frame + 1) % 16;
-	ent->nextthink = level.time + FRAMETIME;
+	ent->nextthink = level.time + GAME_STEP;
 }
 
 void SP_misc_banner (edict_t *ent)
@@ -1560,7 +1560,7 @@ void SP_misc_banner (edict_t *ent)
 	gi.linkentity (ent);
 
 	ent->think = misc_banner_think;
-	ent->nextthink = level.time + FRAMETIME;
+	ent->nextthink = level.time + GAME_STEP;
 }
 
 
@@ -1583,7 +1583,7 @@ void SP_misc_banner_generic (edict_t *ent, char *model)
 
 	ent->think = misc_banner_think;
 
-	ent->nextthink = level.time + FRAMETIME;
+	ent->nextthink = level.time + GAME_STEP;
 
 }
 
@@ -1595,7 +1595,7 @@ The banner is 128 tall.
 void misc_banner_x_think (edict_t *ent)
 {
 	ent->s.frame = (ent->s.frame + 1) % 16;
-	ent->nextthink = level.time + FRAMETIME;
+	ent->nextthink = level.time + GAME_STEP;
 }
 
 void SP_misc_banner_x (edict_t *ent)
@@ -1609,7 +1609,7 @@ void SP_misc_banner_x (edict_t *ent)
 	gi.linkentity (ent);
 
 	ent->think = misc_banner_x_think;
-	ent->nextthink = level.time + FRAMETIME;
+	ent->nextthink = level.time + GAME_STEP;
 }
 
 void SP_misc_banner_1 (edict_t *ent)
@@ -1623,7 +1623,7 @@ void SP_misc_banner_1 (edict_t *ent)
 	gi.linkentity (ent);
 
 	ent->think = misc_banner_think;
-	ent->nextthink = level.time + FRAMETIME;
+	ent->nextthink = level.time + GAME_STEP;
 }
 
 void SP_misc_banner_2 (edict_t *ent)
@@ -1637,7 +1637,7 @@ void SP_misc_banner_2 (edict_t *ent)
 	gi.linkentity (ent);
 
 	ent->think = misc_banner_think;
-	ent->nextthink = level.time + FRAMETIME;
+	ent->nextthink = level.time + GAME_STEP;
 }
 
 void SP_misc_banner_3 (edict_t *ent)
@@ -1651,7 +1651,7 @@ void SP_misc_banner_3 (edict_t *ent)
 	gi.linkentity (ent);
 
 	ent->think = misc_banner_think;
-	ent->nextthink = level.time + FRAMETIME;
+	ent->nextthink = level.time + GAME_STEP;
 }
 
 void SP_misc_banner_4 (edict_t *ent)
@@ -1665,7 +1665,7 @@ void SP_misc_banner_4 (edict_t *ent)
 	gi.linkentity (ent);
 
 	ent->think = misc_banner_think;
-	ent->nextthink = level.time + FRAMETIME;
+	ent->nextthink = level.time + GAME_STEP;
 }
 
 
@@ -1687,7 +1687,7 @@ void SP_misc_banner_x_generic (edict_t *ent, char *model)
 
 	ent->think = misc_banner_x_think;
 
-	ent->nextthink = level.time + FRAMETIME;
+	ent->nextthink = level.time + GAME_STEP;
 
 }
 //bcass end
@@ -1699,7 +1699,7 @@ void misc_skeleton_think (edict_t *ent)
 {
 //	ent->s.frame = (ent->s.frame + 1) % 16;
 	ent->s.frame = (ent->s.frame);
-	ent->nextthink = level.time + FRAMETIME;
+	ent->nextthink = level.time + GAME_STEP;
 }
 
 void SP_misc_skeleton (edict_t *ent)
@@ -1712,7 +1712,7 @@ void SP_misc_skeleton (edict_t *ent)
 	gi.linkentity (ent);
 
 	ent->think = misc_skeleton_think;
-	ent->nextthink = level.time + FRAMETIME;
+	ent->nextthink = level.time + GAME_STEP;
 }
 
 
@@ -1724,7 +1724,7 @@ void misc_md2_think (edict_t *ent)
 	else
 		ent->s.frame = (ent->s.frame);
 
-	ent->nextthink = level.time + FRAMETIME;
+	ent->nextthink = level.time + GAME_STEP;
 }
 
 void misc_md2_use (edict_t *self, edict_t *other, edict_t *activator)
@@ -1749,7 +1749,7 @@ void SP_misc_md2 (edict_t *ent)
 //	ent->s.frame = 1;
 
 	ent->think = misc_md2_think;
-	ent->nextthink = level.time + FRAMETIME;
+	ent->nextthink = level.time + GAME_STEP;
 
 
 	ent->use = misc_md2_use;
@@ -1841,7 +1841,7 @@ void SP_objective_flag (edict_t *ent)
 	gi.linkentity (ent);
 
 	ent->think = objective_flag_think;
-	ent->nextthink = level.time + FRAMETIME;
+	ent->nextthink = level.time + GAME_STEP;
 
 }
 
@@ -1902,7 +1902,7 @@ void SP_misc_skeleton_generic (edict_t *ent, char *model)
 
 	ent->think = misc_skeleton_think;
 
-	ent->nextthink = level.time + FRAMETIME;
+	ent->nextthink = level.time + GAME_STEP;
 
 }
 //bcass end
@@ -2031,7 +2031,7 @@ void SP_misc_viper (edict_t *ent)
 	VectorSet (ent->maxs, 16, 16, 32);
 
 	ent->think = func_train_find;
-	ent->nextthink = level.time + FRAMETIME;
+	ent->nextthink = level.time + GAME_STEP;
 	ent->use = misc_viper_use;
 	ent->svflags |= SVF_NOCLIENT;
 
@@ -2201,7 +2201,7 @@ void SP_misc_strogg_ship (edict_t *ent)
 
 	ent->think = func_train_find;
 
-	ent->nextthink = level.time + FRAMETIME;
+	ent->nextthink = level.time + GAME_STEP;
 
 	ent->use = misc_strogg_ship_use;
 
@@ -2225,14 +2225,14 @@ void misc_satellite_dish_think (edict_t *self)
 {
 	self->s.frame++;
 	if (self->s.frame < 38)
-		self->nextthink = level.time + FRAMETIME;
+		self->nextthink = level.time + GAME_STEP;
 }
 
 void misc_satellite_dish_use (edict_t *self, edict_t *other, edict_t *activator)
 {
 	self->s.frame = 0;
 	self->think = misc_satellite_dish_think;
-	self->nextthink = level.time + FRAMETIME;
+	self->nextthink = level.time + GAME_STEP;
 }
 
 void SP_misc_satellite_dish (edict_t *ent)

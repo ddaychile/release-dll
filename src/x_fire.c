@@ -162,7 +162,7 @@ void PBM_SmallExplodeThink (edict_t *self)
 	else if (self->s.frame == 3)
 		self->s.effects &= ~EF_HYPERBLASTER;
 
-	self->nextthink = level.time + FRAMETIME;
+	self->nextthink = level.time + GAME_STEP;
 }
 
 /*------------------------------------------------------/ New Code /--------
@@ -183,7 +183,7 @@ void PBM_StartSmallExplosion (edict_t *self)
 	VectorClear(self->velocity);
 	VectorClear(self->s.angles);
 	self->s.angles[YAW] = rand() % 360;
-	self->nextthink = level.time + FRAMETIME;
+	self->nextthink = level.time + GAME_STEP;
 	self->think = PBM_SmallExplodeThink;
 
 	gi.linkentity(self);
@@ -547,7 +547,7 @@ void PBM_Burn (edict_t *self)
 		self->timestamp = level.time + 1;
 	}
 
-	self->nextthink  = level.time + FRAMETIME;
+	self->nextthink  = level.time + GAME_STEP;
 }
 
 void Drop_Flamed (edict_t *ent);
@@ -630,7 +630,7 @@ void PBM_Ignite (edict_t *victim, edict_t *attacker, vec3_t point)
 	fire->enemy        = victim;
 	fire->classname    = "fire";
 	fire->timestamp    = level.time + 1;
-	fire->nextthink    = level.time + FRAMETIME;
+	fire->nextthink    = level.time + GAME_STEP;
 	fire->think        = PBM_Burn;
 	VectorCopy(burn_damage, fire->pos1);
 	VectorCopy(radius_damage, fire->pos2);
@@ -703,7 +703,7 @@ void PBM_CheckFire (edict_t *self)
 		}
 
 /* Fire is still burning, check again. */
-	self->nextthink  = level.time + FRAMETIME;
+	self->nextthink  = level.time + GAME_STEP;
 }
 
 /*------------------------------------------------------/ New Code /--------
@@ -785,7 +785,7 @@ void PBM_FireDrop
 	fire->touch        = PBM_FireDropTouch;
 	fire->burnout      = level.time + 2 + random() * 3;
 	fire->timestamp    = level.time;
-	fire->nextthink    = level.time + FRAMETIME;
+	fire->nextthink    = level.time + GAME_STEP;
 	fire->think        = PBM_CheckFire;
 	VectorCopy(damage, fire->pos1);
 	VectorCopy(radius_damage, fire->pos2);
@@ -830,7 +830,7 @@ void FireWood
 	fire->touch        = PBM_FireDropTouch;
 	fire->burnout      = level.time + 8 + random() * 2;
 	fire->timestamp    = level.time;
-	fire->nextthink    = level.time + FRAMETIME;
+	fire->nextthink    = level.time + GAME_STEP;
 	fire->think        = PBM_CheckFire;
 	VectorCopy(damage, fire->pos1);
 	VectorCopy(radius_damage, fire->pos2);
@@ -1069,7 +1069,7 @@ void PBM_FireFlamer
 	fireball->touch           = PBM_FireballTouch;
 	fireball->burnout         = level.time + 15000.0/speed;
 	fireball->timestamp       = 0;
-	fireball->nextthink       = level.time + FRAMETIME;
+	fireball->nextthink       = level.time + GAME_STEP;
 	fireball->think           = PBM_CheckFire;
 	VectorCopy(damage, fireball->pos1);
 	VectorCopy(radius_damage, fireball->pos2);
@@ -1190,7 +1190,7 @@ void PBM_FlameThrowerThink (edict_t *self)
 
 	//self->s.skinnum++;
 	self->s.skinnum += 3;
-	self->nextthink = level.time + FRAMETIME;
+	self->nextthink = level.time + GAME_STEP;
 
 
 	if (rand() % 100 == 1)
@@ -1227,7 +1227,7 @@ void Become_Flame (edict_t *fireball)
 //        fireball->s.frame      = 2;
 	fireball->s.skinnum    = 5;
 
-	fireball->nextthink       = level.time + FRAMETIME * 2;
+	fireball->nextthink       = level.time + GAME_STEP * 2;
 	fireball->think           = PBM_FlameThrowerThink;
 }
 
@@ -1283,7 +1283,7 @@ void PBM_FireFlameThrower
 //        fireball->think           = PBM_FlameThrowerThink;
 
 	fireball->think = Become_Flame;
-	fireball->nextthink = level.time + FRAMETIME * 2;
+	fireball->nextthink = level.time + GAME_STEP * 2;
 
 	VectorCopy(damage, fireball->pos1);
 	VectorCopy(radius_damage, fireball->pos2);

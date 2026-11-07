@@ -206,7 +206,7 @@ void explosion_effect (vec3_t start)
 	explo->s.renderfx |= RF_TRANSLUCENT; // <--
 	
 	explo->think = explo_think;
-	explo->nextthink = level.time + FRAMETIME;
+	explo->nextthink = level.time + GAME_STEP;
 	gi.linkentity (explo);
 
 }

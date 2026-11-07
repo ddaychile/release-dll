@@ -97,7 +97,23 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define FL_BOOTS                0x00002000  //Anti-Gravity boots flag
 
 
-#define	FRAMETIME		0.1
+// ticks del servidor por "frame de juego". level.framenum cuenta frames de
+// juego (100 ms) y GAME_STEP es su duracion. FRAMETIME es la duracion de un
+// tick del engine. Con el engine a 10 Hz (por defecto) TICKS_PER_FRAME es 1 y
+// FRAMETIME == GAME_STEP, asi que no cambia nada; G_SetTickRate() los ajusta
+// segun sv_fps cuando el engine soporta fps variable.
+extern double	game_frametime;
+extern int		game_ticks_per_frame;
+#define	FRAMETIME		game_frametime
+#define	TICKS_PER_FRAME	game_ticks_per_frame
+#define	GAME_STEP		0.1
+void G_SetTickRate (void);
+
+// Q2PRO: el game soporta fps variable del servidor (bit de g_features)
+#define	GMF_VARIABLE_FPS	0x00000800
+// fraccion de un frame de juego que dura un tick; sirve para escalar los
+// decaimientos "por frame" (con 10 Hz vale 1.0 exacto)
+#define	TICK_SCALE		(FRAMETIME / GAME_STEP)
 
 // memory tags to allow dynamic memory to be cleaned up
 
@@ -594,6 +610,8 @@ typedef struct
 
 extern	game_locals_t	game;
 extern	level_locals_t	level;
+extern	int				level_subtick;		// tick actual dentro del frame de juego
+extern	qboolean		level_gametick;		// true en el tick que empieza un frame de juego
 extern	game_import_t	gi;
 extern	game_export_t	globals;
 extern	spawn_temp_t	st;

@@ -242,6 +242,10 @@ void InitGame (void)
 {
 	gi.dprintf ("==== InitGame ====\n");
 
+	// Q2PRO: avisa que este game soporta fps variable (sv_fps). Con sv_fps en
+	// 10, que es el valor por defecto, el servidor corre igual que antes.
+	gi.cvar_forceset ("g_features", va("%d", GMF_VARIABLE_FPS));
+
 #ifdef DEBUG
 	gi.dprintf ("-- DEBUG  BUILD --\n");
 #endif // DEBUG

@@ -576,7 +576,7 @@ void BOT_DMClass_JoinGame (edict_t *ent, char *team_name)
 		ent->client->pers.netname);
 
 	ent->think = AI_Think;
-	ent->nextthink = level.time + FRAMETIME;
+	ent->nextthink = level.time + GAME_STEP;
 
 //	ent->client->resp.team_on=team_list[1];
 

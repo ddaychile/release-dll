@@ -1124,7 +1124,7 @@ void droptofloor (edict_t *ent)
 		ent->solid = SOLID_NOT;
 		if (ent == ent->teammaster)
 		{
-			ent->nextthink = level.time + FRAMETIME;
+			ent->nextthink = level.time + GAME_STEP;
 			ent->think = DoRespawn;
 		}
 	}
@@ -1325,7 +1325,7 @@ void SpawnItem (edict_t *ent, gitem_t *item)
 	}
 
 	ent->item = item;
-	ent->nextthink = level.time + 2 * FRAMETIME;    // items start after other solids
+	ent->nextthink = level.time + 2 * GAME_STEP;    // items start after other solids
 	ent->think = droptofloor;
 	ent->s.effects = item->world_model_flags;
 //faf	ent->s.renderfx = RF_GLOW;

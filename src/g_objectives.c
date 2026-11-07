@@ -61,7 +61,7 @@ void objective_area_think (edict_t *self) {
 	int newteam = -1;
 	int delay;
 
-	self->nextthink = level.time + FRAMETIME;
+	self->nextthink = level.time + GAME_STEP;
 
 	if (self->delay) // if there's a counter running
 	{
@@ -160,7 +160,7 @@ void SP_objective_area(edict_t *self) {
 		vtos(self->maxs) );
 
 	self->think=objective_area_think;	
-	self->nextthink = level.time + FRAMETIME;
+	self->nextthink = level.time + GAME_STEP;
 
 	self->movetype = MOVETYPE_NONE;
 //	self->svflags |= SVF_NOCLIENT;
@@ -347,7 +347,7 @@ void SP_objective_touch(edict_t *self)
 
 void timed_objective_touch_think (edict_t *self) 
 {
-	self->nextthink = level.time + FRAMETIME;
+	self->nextthink = level.time + GAME_STEP;
 
 	if (!self->wait)
 		return;
@@ -496,7 +496,7 @@ void SP_timed_objective_touch(edict_t *self)
 	self->obj_owner =-1;
 	self->touch=timed_objective_touch;
 	self->think=timed_objective_touch_think;
-	self->nextthink = level.time + FRAMETIME;
+	self->nextthink = level.time + GAME_STEP;
 //self->index=st.obj_owner;
 	self->movetype = MOVETYPE_NONE;	
 	self->solid = SOLID_TRIGGER;
@@ -777,7 +777,7 @@ void briefcase_spawn_unhide(edict_t *ent)
 	ent->svflags &= ~SVF_NOCLIENT;
 	ent->s.event = EV_ITEM_RESPAWN;
 	ent->think = droptofloor;
-	ent->nextthink = level.time + FRAMETIME;
+	ent->nextthink = level.time + GAME_STEP;
 	briefcase_respawn_needed = false;
 }
 
@@ -912,7 +912,7 @@ void briefcase_warn (edict_t *ent)
 void base_think (edict_t *ent)
 {
 	ent->s.frame = (ent->s.frame + 1) % 13; //faf
-	ent->nextthink = level.time + FRAMETIME;
+	ent->nextthink = level.time + GAME_STEP;
 }
 
 // kernel: ctb code
@@ -965,7 +965,7 @@ void SP_ctb_base(edict_t *ent)
 	gi.linkentity (ent);
 
 	ent->think = base_think;
-	ent->nextthink = level.time + FRAMETIME;
+	ent->nextthink = level.time + GAME_STEP;
 	ent->s.sound = gi.soundindex("faf/flag.wav");
 
 	ent->touch = base_touch;

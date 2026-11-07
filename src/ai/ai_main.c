@@ -996,6 +996,21 @@ void AI_Think (edict_t *self)
 		return;
 
 
+	// con tickrate > 10Hz la IA piensa una vez por frame de juego, pero el
+	// movimiento (pmove) se repite en cada tick para que no se vea entrecortado
+	if (!level_gametick && self->client)
+	{
+		if (self->ai->last_ucmd.msec && !self->deadflag && !self->client->limbo_mode)
+		{
+			usercmd_t	ucmd = self->ai->last_ucmd;
+
+			ClientThink (self, &ucmd);
+		}
+		self->nextthink = level.time + FRAMETIME;
+		return;
+	}
+	self->ai->last_ucmd.msec = 0;
+
 //gi.dprintf("%s \n",self->client->pers.userinfo);
 
 //	if (self->ai->teammatedodge)

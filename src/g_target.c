@@ -580,7 +580,7 @@ void target_laser_think (edict_t *self)
 
 	VectorCopy (tr.endpos, self->s.old_origin);
 
-	self->nextthink = level.time + FRAMETIME;
+	self->nextthink = level.time + GAME_STEP;
 }
 
 void target_laser_on (edict_t *self)
@@ -689,7 +689,7 @@ void target_lightramp_think (edict_t *self)
 
 	if ((level.time - self->timestamp) < self->speed)
 	{
-		self->nextthink = level.time + FRAMETIME;
+		self->nextthink = level.time + GAME_STEP;
 	}
 	else if (self->spawnflags & 1)
 	{
@@ -805,13 +805,13 @@ void target_earthquake_think (edict_t *self)
 	}
 
 	if (level.time < self->timestamp)
-		self->nextthink = level.time + FRAMETIME;
+		self->nextthink = level.time + GAME_STEP;
 }
 
 void target_earthquake_use (edict_t *self, edict_t *other, edict_t *activator)
 {
 	self->timestamp = level.time + self->count;
-	self->nextthink = level.time + FRAMETIME;
+	self->nextthink = level.time + GAME_STEP;
 	self->activator = activator;
 	self->last_move_time = 0;
 }

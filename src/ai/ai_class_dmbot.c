@@ -1762,7 +1762,7 @@ void BOT_DMClass_BloquedTimeout( edict_t *self )
 	self->health = 0;
 	self->ai->bloqued_timeout = level.time + 15.0;
 	self->die(self, self, self, 100000, vec3_origin);
-	self->nextthink = level.time + FRAMETIME;
+	self->nextthink = level.time + GAME_STEP;
 }
 
 
@@ -1778,7 +1778,7 @@ void BOT_DMclass_DeadFrame( edict_t *self )
 	self->client->buttons = 0;
 	ucmd.buttons = BUTTON_ATTACK;
 	ClientThink (self, &ucmd);
-	self->nextthink = level.time + FRAMETIME;
+	self->nextthink = level.time + GAME_STEP;
 }
 
 
@@ -1853,9 +1853,12 @@ void BOT_DMclass_RunFrame( edict_t *self )
 	ucmd.angles[ROLL] = ANGLE2SHORT(self->s.angles[ROLL]);
 
 	// set approximate ping and show values
-	ucmd.msec = 75 + floor (random () * 25) + 1;
+	ucmd.msec = (75 + floor (random () * 25) + 1) / TICKS_PER_FRAME;
 	self->client->ping = ucmd.msec;
 	self->client->ping = 0;
+
+	// ClientThink modifica el ucmd, guardar una copia para los ticks intermedios
+	self->ai->last_ucmd = ucmd;
 
 	// send command through id's code
 	ClientThink( self, &ucmd );

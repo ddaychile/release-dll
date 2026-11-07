@@ -66,7 +66,7 @@ void multi_trigger (edict_t *ent)
 	{	// we can't just remove (self) here, because this is a touch function
 		// called while looping through area links...
 		ent->touch = NULL;
-		ent->nextthink = level.time + FRAMETIME;
+		ent->nextthink = level.time + GAME_STEP;
 		ent->think = G_FreeEdict;
 	}
 }
@@ -505,7 +505,7 @@ void hurt_touch (edict_t *self, edict_t *other, cplane_t *plane, csurface_t *sur
 	if (self->spawnflags & 16)
 		self->timestamp = level.time + 1;
 	else
-		self->timestamp = level.time + FRAMETIME;
+		self->timestamp = level.time + GAME_STEP;
 
 	if (!(self->spawnflags & 4))
 	{

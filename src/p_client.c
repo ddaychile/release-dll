@@ -296,7 +296,7 @@ void SP_info_player_start(edict_t *self)
 	{
 		// invoke one of our gross, ugly, disgusting hacks
 		self->think = SP_CreateCoopSpots;
-		self->nextthink = level.time + FRAMETIME;
+		self->nextthink = level.time + GAME_STEP;
 	}
 }
 
@@ -344,7 +344,7 @@ void SP_info_player_coop(edict_t *self)
 	{
 		// invoke one of our gross, ugly, disgusting hacks
 		self->think = SP_FixCoopSpots;
-		self->nextthink = level.time + FRAMETIME;
+		self->nextthink = level.time + GAME_STEP;
 	}
 }
 
@@ -1001,7 +1001,7 @@ void TossClientWeapon (edict_t *self)
 		drop->spawnflags |= DROPPED_PLAYER_ITEM;
 
 		drop->touch = Touch_Item;
-		drop->nextthink = level.time + (self->client->quad_framenum - level.framenum) * FRAMETIME;
+		drop->nextthink = level.time + (self->client->quad_framenum - level.framenum) * GAME_STEP;
 		drop->think = G_FreeEdict;
 	}
 */
@@ -4399,10 +4399,13 @@ void ClientBeginServerFrame (edict_t *ent)
 
 
 	// run weapon animations if it hasn't been done by a ucmd_t
-	if (!client->weapon_thunk)
-		Think_Weapon (ent);
-	else
-		client->weapon_thunk = false;
+	if (level_gametick)
+	{
+		if (!client->weapon_thunk)
+			Think_Weapon (ent);
+		else
+			client->weapon_thunk = false;
+	}
 
 
 

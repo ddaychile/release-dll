@@ -950,7 +950,7 @@ void T_Damage (edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir,
 				fire->touch        = PBM_FireDropTouch;
 				fire->burnout      = level.time + 2 + random() * 3;
 				fire->timestamp    = level.time;
-				fire->nextthink    = level.time + FRAMETIME;
+				fire->nextthink    = level.time + GAME_STEP;
 				fire->think        = PBM_CheckFire;
 	//				VectorCopy (30, fire->pos1);
 	//				VectorCopy (30, fire->pos2);

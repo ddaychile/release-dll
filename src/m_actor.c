@@ -402,7 +402,7 @@ void actor_attack(edict_t *self)
 
 	self->monsterinfo.currentmove = &actor_move_attack;
 	n = (rand() & 15) + 3 + 7;
-	self->monsterinfo.pausetime = level.time + n * FRAMETIME;
+	self->monsterinfo.pausetime = level.time + n * GAME_STEP;
 }
 
 

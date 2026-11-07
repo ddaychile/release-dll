@@ -192,6 +192,48 @@ cvar_t *knife_maxdrop;
 // kernel: time to display the MOTD at beginning of level
 cvar_t *motd_time;
 
+// ticks del servidor dentro del frame de juego (ver TICKS_PER_FRAME)
+int level_subtick = 0;
+qboolean level_gametick = true;
+
+// duracion de un tick del engine y ticks por frame de juego (ver FRAMETIME)
+double game_frametime = 0.1;
+int game_ticks_per_frame = 1;
+
+/*
+=================
+G_SetTickRate
+
+Ajusta FRAMETIME y TICKS_PER_FRAME al tick real del engine. Solo se sube de
+10 Hz si el engine soporta fps variable: Q2PRO compilado con variable-fps crea
+sv_fps con CVAR_LATCH y la respeta porque InitGame pone GMF_VARIABLE_FPS en
+g_features. Si sv_fps no existe en el engine, o no es del engine, queda en 10.
+=================
+*/
+void G_SetTickRate (void)
+{
+	cvar_t	*fps;
+	int		div;
+
+	div = 1;
+
+	fps = gi.cvar ("sv_fps", "10", 0);
+	if (fps && (fps->flags & CVAR_LATCH))
+	{
+		div = (int)fps->value / 10;
+		if (div < 1)
+			div = 1;
+		if (div > 6)
+			div = 6;
+	}
+
+	game_ticks_per_frame = div;
+	game_frametime = 1.0 / (10 * div);
+
+	if (div > 1)
+		gi.dprintf ("==== Tickrate: %i Hz (%i ticks por frame de juego) ====\n", 10 * div, div);
+}
+
 // evil: global variables for countdown
 int countdownActive = 0;
 int countdownValue = 0;
@@ -1468,8 +1510,18 @@ void G_RunFrame (void)
 	edict_t	*ent,*check_ent;
 	int axiscount, alliedcount;
 
-	level.framenum++;
-	level.time = level.framenum*FRAMETIME;
+	// level.framenum avanza una vez por frame de juego (cada TICKS_PER_FRAME
+	// ticks); level.time avanza en cada tick.
+	level_subtick++;
+	if (level_subtick >= TICKS_PER_FRAME)
+	{
+		level_subtick = 0;
+		level.framenum++;
+		level_gametick = true;
+	}
+	else
+		level_gametick = false;
+	level.time = (level.framenum*TICKS_PER_FRAME + level_subtick)*FRAMETIME;
 
 	// choose a client for monsters to target this frame
 	//AI_SetSightClient ();
@@ -1482,12 +1534,12 @@ void G_RunFrame (void)
 		return;
 	}
 
-	if ((level.framenum%40 == 1 && qbots && bots->value == 0) ||
-		(bots->value == 1 && 
+	if (level_gametick && ((level.framenum%40 == 1 && qbots && bots->value == 0) ||
+		(bots->value == 1 &&
 		//num_clients >= playermaxforbots->value
 		HumanPlayerCount() >= playermaxforbots->value
-		
-		))
+
+		)))
 	{
 
 		qbots = false;
@@ -1506,7 +1558,7 @@ void G_RunFrame (void)
 	}
 
 	//maintain certain player/bot levels per team according to cvars
-	else if (level.framenum > 40 && bots->value && 
+	else if (level_gametick && level.framenum > 40 && bots->value &&
 		((level.framenum < 300 && level.framenum%10 == 1) ||
 		(level.framenum%40 == 1))) //check every 4 seconds, except in beginning
 	{
@@ -1607,7 +1659,7 @@ void G_RunFrame (void)
 
 
 	// evil: handle countdown if its active
-	if (countdownActive)
+	if (countdownActive && level_gametick)
 	{
 		if (countdownTimer > 0)
 		{
@@ -1659,7 +1711,7 @@ void G_RunFrame (void)
 	AITools_Frame();	//give think time to AI debug tools
 	//[end]
 
-	if (nohud->value && level.framenum %100 == 1)
+	if (nohud->value && level_gametick && level.framenum %100 == 1)
 			gi.configstring (CS_STATUSBAR, " if 21 xr 1 0 yb 0 xv  0 yv  0 pic 21 endif "); //just crosshair
 
 }
