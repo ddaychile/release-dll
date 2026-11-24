@@ -202,6 +202,17 @@ cvar_t *limit_flamer;
 
 // kernel: make dday faster again
 cvar_t *fast_arty;
+cvar_t *tornado;
+cvar_t *tornado_maps;
+cvar_t *tornado_gungame;
+cvar_t *tornado_interval;
+cvar_t *tornado_time;
+cvar_t *tornado_radius;
+cvar_t *tornado_height;
+cvar_t *tornado_speed;
+cvar_t *tornado_lift;
+cvar_t *tornado_fling;
+cvar_t *tornado_spins;
 cvar_t *fast_bleeding;
 cvar_t *fast_sniper;
 
@@ -1711,6 +1722,7 @@ void G_RunFrame (void)
 
 	Anticamp_RunFrame ();
 	Vote_RunFrame ();
+	Tornado_RunFrame ();
 
 	if ((level.framenum%40 == 1 && qbots && bots->value == 0) ||
 		(bots->value == 1 && 

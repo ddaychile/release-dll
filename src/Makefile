@@ -90,6 +90,7 @@ GAME_OBJS =	\
 	g_spawn.o \
 	g_svcmds.o \
 	g_target.o \
+	g_tornado.o \
 	g_trigger.o \
 	g_turret.o \
 	g_utils.o \
@@ -180,6 +181,8 @@ g_vote.o: g_vote.c g_local.h g_defines.h q_shared.h game.h \
 g_svcmds.o: g_svcmds.c g_local.h g_defines.h q_shared.h game.h \
  p_menu.h g_maps.h
 g_target.o: g_target.c g_local.h g_defines.h q_shared.h game.h \
+ p_menu.h g_maps.h
+g_tornado.o: g_tornado.c g_local.h g_defines.h q_shared.h game.h \
  p_menu.h g_maps.h
 g_trigger.o: g_trigger.c g_local.h g_defines.h q_shared.h game.h \
  p_menu.h g_maps.h

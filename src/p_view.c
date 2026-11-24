@@ -1103,6 +1103,14 @@ void P_FallingDamage (edict_t *ent)
 	if (ent->movetype == MOVETYPE_NOCLIP)
 		return;
 
+	// tornado: el que va en el tornado o salio volando de el cae sin dano (g_tornado.c)
+	if (ent->client->tornado_safe_until > level.time)
+	{
+		if (ent->groundentity && !ent->client->tornado)
+			ent->client->tornado_safe_until = 0;	// ya aterrizo
+		return;
+	}
+
 	if ((ent->client->oldvelocity[2] < 0) && (ent->velocity[2] > ent->client->oldvelocity[2]) && (!ent->groundentity))
 	{
 		delta = ent->client->oldvelocity[2];

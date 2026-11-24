@@ -481,6 +481,7 @@ typedef struct
 	int 		axis_sandbags;
 
 	qboolean	nofalldamage;	// "nofalldamage" "1" en el worldspawn: en este mapa la caida no hace dano
+	float		tornado_next;	// g_tornado.c: cuando aparece el proximo tornado automatico
 } level_locals_t;
 
 
@@ -868,6 +869,17 @@ extern cvar_t *limit_flamer;
 
 // kernel: make dday faster again
 extern cvar_t *fast_arty;
+extern cvar_t *tornado;            // 1 = tornado de broma automatico en los mapas de tornado_maps (sv tornado lo llama a mano)
+extern cvar_t *tornado_maps;       // mapas con tornado automatico, separados por espacio ("*" = todos)
+extern cvar_t *tornado_gungame;    // 1 = tornado automatico tambien en el Gun Game (ffa_gungame) de tornado_maps
+extern cvar_t *tornado_interval;   // maximo de segundos entre tornados (minimo: la mitad)
+extern cvar_t *tornado_time;       // segundos que dura cada tornado
+extern cvar_t *tornado_radius;     // radio en que agarra a los jugadores
+extern cvar_t *tornado_height;     // alto del embudo (hasta donde sube a los jugadores)
+extern cvar_t *tornado_speed;      // velocidad con que anda por el mapa
+extern cvar_t *tornado_lift;       // velocidad de subida del jugador
+extern cvar_t *tornado_fling;      // fuerza con que lo lanza al soltarlo
+extern cvar_t *tornado_spins;      // vueltas que da arriba antes de soltarlo
 extern cvar_t *fast_bleeding;
 extern cvar_t *fast_sniper;
 
@@ -1697,6 +1709,11 @@ struct gclient_s
 //faf	float		arty_time_fire;
 //	float		arty_time_restrict;
 	edict_t     *airstrike;//faf
+	edict_t     *tornado;            // tornado que lo lleva (NULL si ninguno)
+	float       tornado_catch_time;  // cuando lo agarro
+	float       tornado_top_time;    // cuando llego arriba y empezo a dar vueltas (0 = subiendo)
+	float       tornado_free_time;   // hasta cuando no lo puede volver a agarrar
+	float       tornado_safe_until;  // sin dano por caida hasta aterrizar (o hasta este tiempo)
 
 	float		jump_stamina;
 	qboolean	jump_push;
@@ -2497,6 +2514,14 @@ void Vote_ClientBegin (edict_t *ent);
 void Cmd_Vote_f (edict_t *ent);
 void Svcmd_VoteCancel_f (void);
 
+// g_tornado.c: tornado de broma que levanta a los jugadores (sin dano por caida)
+edict_t *Tornado_Spawn (edict_t *anchor);
+void Tornado_RunFrame (void);
+void Svcmd_Tornado_f (void);
+// ai_navigation.c: nodos de los bots para el recorrido del tornado
+int AI_NumNodes (void);
+void AI_NodeOrigin (int n, vec3_t out);
+int AI_FindClosestReachableNode (vec3_t origin, edict_t *passent, int range, int flagsmask);
 edict_t *CreateTargetChangeLevel (char *map);
 
 #endif /* __G_LOCAL_H__ */
