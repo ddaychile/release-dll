@@ -28,23 +28,40 @@ Las posiciones del texto están en las constantes `FFA_PANEL_*`, `FFA_TEXT_X`, `
 
 ## Killfeed (`kf_*.png`)
 
-El killfeed (`src/p_killfeed.c`) funciona en todos los modos de juego y se dibuja arriba a la izquierda, dentro del statusbar. Cada fila usa imágenes que carga el **cliente**: hay que copiarlas a `<carpeta del juego>/dday/pics/` del servidor y de los jugadores, o incluirlas en el pak. A diferencia de las de Free For All, el servidor **no** las registra con `gi.imageindex` (son 186 y el límite de imágenes del nivel es 256), así que el cliente no las descarga solo. Si faltan, el comportamiento depende del motor del cliente (sin verificar): lo esperable es que no dibuje ese fondo o ese icono y que el texto igual se vea.
+El killfeed (`src/p_killfeed.c`) funciona en todos los modos de juego y se dibuja arriba a la izquierda, dentro del statusbar. Viene apagado (`killfeed_style 0`): cada jugador lo prende con el comando `killfeed`.
 
-Una fila es `[bandera] killer  arma  [headshot]  [bandera] víctima`, sobre una placa. Sin killer (suicidio, entorno, granada propia) es `calavera  [bandera] víctima`.
+Las imágenes las carga el **cliente** y son demasiadas para registrarlas con `gi.imageindex` (el límite del nivel es 256), así que van en un pak que Q2PRO baja por HTTP: `tools/killfeed/make_pkz.sh <salida> [N]` arma `killfeed<N>.pkz` y `dday.filelist`, que lo lista: el pak se sirve en `<sv_downloadserver>dday/killfeed<N>.pkz` y la lista en `<sv_downloadserver>dday.filelist` (en la raíz: Q2PRO pide `<carpeta del juego>.filelist`). Q2PRO pide la lista solo cuando tiene que bajar algún archivo: por eso el DLL registra un testigo (`/pics/kf_v<N>.png`, `KF_WITNESS`) que está solo dentro del pak, nunca suelto en `pics/` del server. Si se cambia el pak, subir `N` en el script y en `KF_WITNESS`. Quien baja por UDP (sin HTTP) no recibe el pak: tiene que copiarlo a mano en `dday/`. Sin las imágenes, Q2PRO dibuja un cuadrito ajedrezado de 8 x 8 donde va cada imagen (los textos se ven igual).
+
+Una fila tiene el killer, el icono del arma y la víctima; según el estilo (ver la tabla de estilos más abajo) lleva banderas, marca de headshot y una o dos placas. Sin killer (suicidio, entorno, granada propia) es `calavera  víctima`.
 
 | Archivo | Tamaño | Uso |
 |---|---|---|
-| `kf_bg_<equipo>_<ancho>.png` | `<ancho>` de 48 a 344 en pasos de 8, x 14 px, PNG 32 bits con transparencia | Placa de la fila: el juego usa la más angosta en la que cabe. Equipo `a` (equipo 0, verde oliva), `x` (equipo 1, rojo ladrillo), `n` (sin equipo y Free For All, caqui). |
+| `kf_bg_<juego><equipo>_<ancho>.png` | `<ancho>` de 48 a 344 en pasos de 8, x 14 px, PNG 32 bits con transparencia | Placas de la fila. Equipo `a` (equipo 0), `x` (equipo 1), `n` (sin equipo y Free For All). Un juego por estilo: `kf_bg_v_<ancho>` (estilo 1, negra con alfa 120, sin equipo), `kf_bg_<equipo>_` (estilo 2, oscura teñida con franja del color del visor), `kf_bg_s<equipo>_` (estilo 3, verde / rojo sólidos), `kf_bg_t<equipo>_` (estilo 4, oscura teñida con franja de 7 px), `kf_bg_o<equipo>_` (estilo 5, las originales de Snako, copiadas del commit 1314b1c). Las demás se generan con `tools/killfeed/kf_plates.py`. El juego usa la más angosta en la que cabe la fila (o cada parte, en los estilos de dos placas). |
 | `kf_w_<icono>.png` | ancho variable x 14 px | Icono del arma a la mitad del tamaño del original (alto máximo 12 px, centrado en 14), en tono hueso. `<icono>` es el `item->icon` del arma. Hay uno por cada `w_*` salvo `w_sabre`, que mide 256 x 256. |
 | `kf_skull`, `kf_nade`, `kf_plane`, `kf_boom`, `kf_tank` | 12, 12, 30, 12 y 30 x 14 px | Calavera (suicidios, entorno y muertes sin icono propio), granadas, airstrike, explosivos/barriles/bombas y tanque. Dibujados a mano (formas vectoriales). |
 | `kf_hs.png` | 14 x 14 px | Marca de headshot, a la derecha del arma (la misma condición que el cue "Headshot!"). |
 | `kf_<facción>.png` | 12 x 14 px | Bandera de la facción del jugador (`usa usm gbr grm ita jpn pol rus`), a partir de `pics/teams/<facción>.pcx`. En Free For All no se dibujan: todos están en el mismo equipo. |
 
+Cada jugador elige el estilo con el comando `killfeed <número>` (`killfeed` solo muestra la lista). El server lo guarda en el userinfo del cliente (`set kf_style <número> u`, por stuffcmd): cada cambio de mapa recarga el DLL y reconecta a todos, y así el estilo vuelve en cada conexión. Para que quede fijo aunque cierre el juego, `set kf_style <número> u` en su `autoexec.cfg`. Quien no elige ve el de `killfeed_style` del server (1 por defecto). El server le manda a cada jugador su propio statusbar con el feed (configstring por unicast); el configstring del server queda con el statusbar del nivel sin feed. Al que tiene el killfeed apagado (0) le sigue llegando el obituario en texto.
+
+| Estilo | Fila | Nombres |
+|---|---|---|
+| 0 | sin killfeed, obituario en texto | |
+| 1 | como VisorDemos: `killer  arma[ HS][ TK]  víctima` sobre una placa negra, sin banderas | azul `#8bf` / rojo `#f86`; `HS` naranjo, `TK` rojo |
+| 2 | banderas, placa del equipo del killer y otra del equipo de la víctima, oscuras y teñidas | azul `#8bf` / rojo `#f86` |
+| 3 | banderas, dos placas sólidas verde / rojo | blancos |
+| 4 | banderas, una placa (equipo del killer) oscura teñida con franja de 7 px | verde `#9d5` / rojo `#f88` |
+| 5 | la original de Snako: banderas, una placa oscura del equipo del killer | blancos |
+| 6 | el kill feed de VisorDemos tal cual: `killer  verbo[ HS][ TK]  víctima` sobre la placa negra del estilo 1, con el verbo en texto ("sniped", "grenade", "suicide"... con las mismas reglas que `make_label` del visor) en vez del arma | azul `#8bf` / rojo `#f86`; verbo gris (rojo en un teamkill), `HS` naranjo, `TK` rojo |
+
+Los nombres de color usan el comando `color` del statusbar de Q2PRO (otros clientes lo ignoran y los dibujan en blanco). Como `color` también tiñe las imágenes, primero van las imágenes de todas las filas, después los textos agrupados por color (un solo `color` por grupo) y al final se vuelve a blanco para el statusbar del nivel.
+
+Los iconos (`kf_w_*`, banderas, calavera, etc.) van al doble de resolución: `pics/kf_<x>.png` mide el doble y `pics/kf_<x>.pcx` es el icono chico. Q2PRO dibuja el PNG con el tamaño del PCX (reemplazo en alta), así que en pantalla ocupan lo mismo y con el HUD escalado se ve el detalle; los clientes sin PNG usan el PCX. Se generan con `tools/killfeed/kf_icons_hd.py <carpeta dday del juego>` desde los iconos originales (`pics/w_*.pcx`, `pics/teams/*.pcx` de pak0.pak); los dibujados a mano, con Scale2x. Las placas no lo necesitan.
+
 El ancho de cada icono está en la tabla `kf_icons` de `src/p_killfeed.c`: el statusbar no puede medir imágenes, así que la posición de lo que va a su derecha se calcula con ese ancho. Si se cambia un icono por otro de otro ancho, o se agrega un arma, hay que actualizar la tabla. Un arma que no esté en la tabla se dibuja con la calavera.
 
-Los iconos de armas se generan a partir de los `pics/w_*.pcx` del juego (reducidos con promedio de área y pasados a tono hueso). El statusbar del engine tiene un límite de 1535 bytes: el killfeed va delante del statusbar del nivel y, si no cabe, se descartan las filas más viejas. Con nombres normales caben 3 filas.
+Los iconos de armas se generan a partir de los `pics/w_*.pcx` del juego (reducidos con promedio de área y pasados a tono hueso). El statusbar del engine tiene un límite de 1535 bytes: el killfeed va delante del statusbar del nivel y, si no cabe, al jugador se le mandan solo las filas más nuevas que caben (depende de su estilo: el 1 es el que menos ocupa).
 
-Los nombres van siempre en blanco (`string`): el color del equipo lo da la placa.
 
 ## Notas
 

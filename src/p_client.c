@@ -474,7 +474,7 @@ void ClientObituary (edict_t *self, edict_t *inflictor, edict_t *attacker)
 	const char	*message4;
 
 	qboolean	ff;
-	qboolean	kf;		// the death is on the killfeed: it is not printed to the clients
+	qboolean	kf = false;	// the death is on the killfeed: it is not printed to the clients that see it
 	edict_t *Tent;
 
 
@@ -607,7 +607,7 @@ void ClientObituary (edict_t *self, edict_t *inflictor, edict_t *attacker)
 		}
 		if (message)
 		{
-			kf = Killfeed_Add (self->client->last_wound_inflictor, self, mod, false);
+			kf = Killfeed_Add (self->client->last_wound_inflictor, self, mod, false, message, NULL);
 
 			//faf: if they were wounded before they got themselves killed, name who wounded them.
 			if (self->client->last_wound_inflictor)
@@ -622,10 +622,10 @@ void ClientObituary (edict_t *self, edict_t *inflictor, edict_t *attacker)
 					safe_cprintf(self, PRINT_HIGH, "%s %s %s %s).\n", self->client->pers.netname, message, message2, self->client->last_wound_inflictor->client->pers.netname);
 				else if (death_msg->value == 1 || death_msg->value == 3) // print to everybody
 				{
-					for (i = 1; i <= game.maxclients && !kf; i++)
+					for (i = 1; i <= game.maxclients; i++)
 					{
 						Tent = &g_edicts[i];
-						if (!Tent->inuse || !Tent->client)
+						if (!Tent->inuse || !Tent->client || (kf && Killfeed_Shows (Tent)))
 							continue;
 
 //						if (self->client->resp.team_on->index == Tent->client->resp.team_on->index)
@@ -672,10 +672,10 @@ void ClientObituary (edict_t *self, edict_t *inflictor, edict_t *attacker)
 					safe_cprintf(self, PRINT_HIGH, "%s %s.\n", self->client->pers.netname, message);
 				else if (death_msg->value == 1 || death_msg->value == 3) // print to everybody
 				{
-					for (i = 1; i <= game.maxclients && !kf; i++)
+					for (i = 1; i <= game.maxclients; i++)
 					{
 						Tent = &g_edicts[i];
-						if (!Tent->inuse || !Tent->client)
+						if (!Tent->inuse || !Tent->client || (kf && Killfeed_Shows (Tent)))
 							continue;
 
 						if (OnSameTeam(Tent,self)){
@@ -868,17 +868,21 @@ void ClientObituary (edict_t *self, edict_t *inflictor, edict_t *attacker)
 				message4 = "";
 				if (officer_bonus->value == 1 && attacker->client && attacker->client->resp.mos == OFFICER)
 					message4 = OfficerBonus(attacker, self);
-				kf = Killfeed_Add (attacker, self, mod, self->client->resp.deathblend == 1);	// 1: the head shot that plays the "Headshot!" cue
+				kf = Killfeed_Add (attacker, self, mod, self->client->resp.deathblend == 1, message, message2);	// 1: the head shot that plays the "Headshot!" cue
+
+				// the Officer who sees the killfeed gets no text obituary: he is told of his bonus apart
+				if (message4[0] && kf && Killfeed_Shows (attacker) && (death_msg->value == 1 || death_msg->value == 3))
+					safe_cprintf (attacker, PRINT_HIGH, "%s\n", message4 + 3);	// without the leading " - "
 
 				// Means of Death msgs now server customizable
 				if (death_msg->value == 0) // print to self only
 					safe_cprintf(self, PRINT_HIGH, "%s %s %s%s%s%s\n", self->client->pers.netname, message, attacker->client->pers.netname, message2, message3, message4);
 				else if (death_msg->value == 1 || death_msg->value == 3) // print to everybody
 				{
-					for (i = 1; i <= game.maxclients && !kf; i++)
+					for (i = 1; i <= game.maxclients; i++)
 					{
 						Tent = &g_edicts[i];
-						if (!Tent->inuse || !Tent->client)
+						if (!Tent->inuse || !Tent->client || (kf && Killfeed_Shows (Tent)))
 							continue;
 
 //						if (self->client->resp.team_on->index == Tent->client->resp.team_on->index)
@@ -2873,6 +2877,8 @@ void ClientBegin (edict_t *ent)
 	ent->client = game.clients + (ent - g_edicts - 1);
 	ent->client->resp.AlreadySpawned=false;
 
+	Killfeed_ClientBegin (ent);		// the client sends back the style of the killfeed it keeps
+
 	// kernel: CTB also needs this to clear structs at the beginning
 	if (deathmatch->value || ctb_mode->value)
 	{
@@ -2962,6 +2968,8 @@ void ClientUserinfoChanged (edict_t *ent, char *userinfo)
 	// set name
 	s = Info_ValueForKey (userinfo, "name");
 	strncpy (ent->client->pers.netname, s, sizeof(ent->client->pers.netname)-1);
+
+	Killfeed_Userinfo (ent, userinfo);	// "kfu": the style of the killfeed kept by the client
 
 	// set skin
 	s = Info_ValueForKey (userinfo, "skin");
@@ -3099,6 +3107,8 @@ qboolean ClientConnect (edict_t *ent, char *userinfo)
 {
 	static int Already_Done=0;
 	char	*value, *f, *ip;
+
+	Killfeed_ClientConnect (ent);
 
 	// check to see if they are on the banned IP list
 	value = Info_ValueForKey (userinfo, "ip");

@@ -770,6 +770,7 @@ extern	cvar_t	*invuln_medic;
 //extern	cvar_t	*teamgren;
 extern	cvar_t	*death_msg;
 extern	cvar_t	*killfeed_console;
+extern	cvar_t	*killfeed_style;
 extern	cvar_t	*level_wait;
 extern	cvar_t	*invuln_spawn;
 
@@ -972,6 +973,12 @@ void Think_Arty (edict_t *ent);
 //qboolean FindOnTeam(edict_t *ent);
 
 qboolean OnSameTeam(edict_t *self,edict_t *target);
+// g_utils.c: choices of each player kept in his client and by name in the server (see PlayerPref_Load)
+int PlayerPref_Load (char *file, char *name);
+void PlayerPref_Save (char *file, char *name, int value);
+int PlayerPref_Client (char *userinfo, char *ukey, int count);
+void PlayerPref_AskClient (edict_t *ent, char *ukey, char *cvar);
+void PlayerPref_SetClient (edict_t *ent, char *ukey, char *cvar, int value);
 qboolean G_IsFFA(void);
 // Free For All scoreboard pictures. The leading '/' makes them full paths: the client downloads the .png
 // itself (a plain name like "ffa_score" makes it ask for pics/ffa_score.pcx, which does not exist)
@@ -984,8 +991,14 @@ void FFA_JoinPlayer(edict_t *ent);
 void FFA_HudReset(void);
 // p_killfeed.c
 void Killfeed_SetBase(char *statusbar);
-qboolean Killfeed_Add(edict_t *killer, edict_t *victim, int mod, qboolean headshot);
+void Killfeed_UpdateBase(char *statusbar);
+qboolean Killfeed_Add(edict_t *killer, edict_t *victim, int mod, qboolean headshot, char *mid, char *tail);
 void Killfeed_Frame(void);
+void Killfeed_ClientConnect(edict_t *ent);
+void Killfeed_Userinfo(edict_t *ent, char *userinfo);
+void Killfeed_ClientBegin(edict_t *ent);
+void Killfeed_Cmd(edict_t *ent);
+qboolean Killfeed_Shows(edict_t *ent);
 void FFA_SpawnReset(void);
 void initialize_random_seed();	// p_classes.c
 void FFA_ForgetPlayer(edict_t *gone);
