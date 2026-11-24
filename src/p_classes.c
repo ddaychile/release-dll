@@ -54,7 +54,7 @@ void Load_Weapon (edict_t *ent, gitem_t	*item)
 	if (team_list[1] && !strcmp(item->dllname, team_list[1]->teamid))  //faf:  if its a team 1 weap...(usually grm)
 	{
 		if (item->position == LOC_PISTOL)
-			ent->client->mags[1].pistol_rnd = ammo_item->quantity;
+			ent->client->mags[item->mag_index].pistol_rnd = ammo_item->quantity;
 		else if (item->position == LOC_SUBMACHINEGUN)
 			ent->client->mags[1].submg_rnd = ammo_item->quantity;
 		else if (item->position == LOC_L_MACHINEGUN)
@@ -76,7 +76,7 @@ void Load_Weapon (edict_t *ent, gitem_t	*item)
 	else if (!strcmp(item->dllname, team_list[0]->teamid))  //usually allied weapons here...
 	{
 		if (item->position == LOC_PISTOL)
-			ent->client->mags[0].pistol_rnd = ammo_item->quantity;
+			ent->client->mags[item->mag_index].pistol_rnd = ammo_item->quantity;
 		else if (item->position ==  LOC_RIFLE)
 			ent->client->mags[0].rifle_rnd = ammo_item->quantity;
 		else if (item->position == LOC_SNIPER)
@@ -242,10 +242,12 @@ void Give_Class_Weapon(edict_t *ent)
 		ammo_item = FindItemInTeam(item->ammo, item->dllname);
 		if (ammo_item)
 		{
-			if (!strcmp(item->dllname, team_list[1]->teamid) && item->position == LOC_PISTOL)
-				ent->client->mags[1].pistol_rnd = ammo_item->quantity;
-			else if (!strcmp(item->dllname, team_list[0]->teamid) && item->position == LOC_PISTOL)
-				ent->client->mags[0].pistol_rnd = ammo_item->quantity;
+			// El cargador va al slot de equipo del arma (mag_index, que InitTeam fija al indice de equipo).
+			// Antes se elegia el slot comparando item->dllname con team_list; una pistola nueva que
+			// comparte item entre facciones (la Browning del Medic) lee por mag_index, asi que si no
+			// coincidian el arma aparecia descargada. Ahora init y lectura usan el mismo indice.
+			if (item->position == LOC_PISTOL)
+				ent->client->mags[item->mag_index].pistol_rnd = ammo_item->quantity;
 		}
 		else
 		{

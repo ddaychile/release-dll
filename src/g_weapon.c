@@ -2598,6 +2598,7 @@ void Weapon_Browning_Fire (edict_t *ent)
 	if (!ent->client->mags[mag_index].pistol_rnd)
 	{
 		ent->client->ps.gunframe = (ent->client->aim) ? guninfo->LastAFire + 1 : guninfo->LastFire + 1;
+		ent->client->aim = false; // igual que el Colt .45: salir del apuntado al quedar sin balas
 		ent->client->weaponstate = WEAPON_READY;
 
 		if (level.time >= ent->pain_debounce_time)

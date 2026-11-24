@@ -47,8 +47,8 @@ GunInfo_t usmguninfo[MAX_TEAM_GUNS];
 
 gitem_t usmitems[MAX_TEAM_ITEMS]=
 {
-	BROWNING_WEAPON_ITEM("usa"),
-	BROWNING_AMMO_ITEM("usa"),
+	BROWNING_WEAPON_ITEM("usm"),
+	BROWNING_AMMO_ITEM("usm"),
 /* Colt .45 becomes the standard issue weapon */
 	{
 		"weapon_colt45",
