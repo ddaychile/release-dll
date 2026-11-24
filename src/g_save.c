@@ -276,6 +276,7 @@ void InitGame (void)
 	invuln_medic		=	gi.cvar("invuln_medic",			"0",  0);//CVAR_SERVERINFO | CVAR_LATCH);
 //	teamgren			=	gi.cvar("teamgren",				"1",  CVAR_SERVERINFO | CVAR_LATCH);
 	death_msg			=	gi.cvar("death_msg",			"1",  CVAR_SERVERINFO);
+	killfeed_console	=	gi.cvar("killfeed_console",		"0",  0);
 	level_wait			=	gi.cvar("level_wait",			"20",  CVAR_SERVERINFO);
 	invuln_spawn		=	gi.cvar("invuln_spawn",			"3", 0);//CVAR_SERVERINFO);
 

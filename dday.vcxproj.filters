@@ -137,6 +137,9 @@
     <ClCompile Include="src\p_hud.c">
       <Filter>Source Files %28%2a.c%29</Filter>
     </ClCompile>
+    <ClCompile Include="src\p_killfeed.c">
+      <Filter>Source Files %28%2a.c%29</Filter>
+    </ClCompile>
     <ClCompile Include="src\p_menu.c">
       <Filter>Source Files %28%2a.c%29</Filter>
     </ClCompile>
