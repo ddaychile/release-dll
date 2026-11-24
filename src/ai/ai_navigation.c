@@ -43,6 +43,17 @@ int AI_FindCost(int from, int to, int movetypes)
 }
 
 
+// g_tornado.c: el tornado recorre el mapa por los nodos de los bots
+int AI_NumNodes (void)
+{
+	return nav.num_nodes;
+}
+
+void AI_NodeOrigin (int n, vec3_t out)
+{
+	VectorCopy (nodes[n].origin, out);
+}
+
 //==========================================
 // AI_FindClosestReachableNode
 // Find the closest node to the player within a certain range

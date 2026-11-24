@@ -420,6 +420,88 @@ void InitTeam (char *team, int i)
 		SetItemNames ();
 }
 
+// Free For All Gun Game: the items of a faction are only copied to the itemlist (InitTeam) when the faction is in
+// the map, so the Gun Game reads the ones of the other factions from their arrays and inserts the ones it uses.
+typedef struct
+{
+	char	*dll;		// dllname of the items (the Marines use the ones of the USA)
+	gitem_t	*items;
+	spawn_t	*spawns;
+	SMos_t	*mos;
+	int		*index;		// <faction>_index
+	int		slot;		// magazines used when the faction is not in the map: 0 allies, 1 axis
+} ffa_faction_t;
+
+static ffa_faction_t ffa_factions[] =
+{
+	{"usa", usaitems, sp_usa, USA_MOS_List, &usa_index, 0},
+	{"usa", usmitems, sp_usm, USM_MOS_List, &usm_index, 0},
+	{"gbr", gbritems, sp_gbr, GBR_MOS_List, &gbr_index, 0},
+	{"rus", rusitems, sp_rus, RUS_MOS_List, &rus_index, 0},
+	{"pol", politems, sp_pol, POL_MOS_List, &pol_index, 0},
+	{"grm", grmitems, sp_grm, GRM_MOS_List, &grm_index, 1},
+	{"ita", itaitems, sp_ita, ITA_MOS_List, &ita_index, 1},
+	{"jpn", jpnitems, sp_jpn, JPN_MOS_List, &jpn_index, 1}
+};
+
+#define FFA_NUM_FACTIONS	(sizeof(ffa_factions) / sizeof(ffa_factions[0]))
+
+int FFA_FactionCount (void)
+{
+	return FFA_NUM_FACTIONS;
+}
+
+char *FFA_FactionDll (int f)
+{
+	return ffa_factions[f].dll;
+}
+
+SMos_t *FFA_FactionMos (int f)
+{
+	return ffa_factions[f].mos;
+}
+
+// item of the array of the faction with that pickup name (NULL if it has none)
+gitem_t *FFA_FactionItem (int f, char *pickup_name)
+{
+	int		j;
+	gitem_t	*it;
+
+	if (!pickup_name)
+		return NULL;
+
+	for (j = 0; j < MAX_TEAM_ITEMS && ffa_factions[f].items[j].classname; j++)
+	{
+		it = &ffa_factions[f].items[j];
+		if (it->pickup_name && !Q_stricmp (it->pickup_name, pickup_name))
+			return it;
+	}
+
+	return NULL;
+}
+
+// copies an item of the array of the faction to the itemlist (if it is not there yet) with the magazines of the
+// slot of the faction: the one of its team when it is in the map, the one of its side when it is not (the weapon
+// code reads <faction>_index and Load_Weapon item->mag_index, both must be the same). Returns the itemlist item.
+gitem_t *FFA_InsertFactionItem (int f, gitem_t *src)
+{
+	gitem_t	*it;
+	int		slot = ffa_factions[f].slot;
+
+	if (team_list[0] && !strcmp (ffa_factions[f].dll, team_list[0]->teamid))
+		slot = 0;
+	else if (team_list[1] && !strcmp (ffa_factions[f].dll, team_list[1]->teamid))
+		slot = 1;
+
+	src->mag_index = slot;
+	it = InsertItem (src, &ffa_factions[f].spawns[src - ffa_factions[f].items]);
+	if (it)
+		it->mag_index = slot;
+	*ffa_factions[f].index = slot;
+
+	return it;
+}
+
 
 void SP_info_team_start(edict_t *ent)
 {

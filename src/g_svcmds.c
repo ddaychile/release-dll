@@ -65,6 +65,9 @@ void Svcmd_Teamswitch_f (void)
 	if (!ent->client)
 		return;
 
+	if (G_IsFFA())
+		return;
+
 	if (ent->client->resp.team_on)
 	{
 		team = (ent->client->resp.team_on->index+1)%2;
@@ -417,6 +420,10 @@ void SetupCampaign (qboolean restart)
 	FILE *check;
 
 	if (!*campaign->string)
+		return;
+
+	// Free For All: campaigns depend on team victories, so they are not used
+	if (G_IsFFA())
 		return;
 
 
@@ -825,6 +832,104 @@ void Svcmd_FreezeMode_f()
 	}
 }
 
+// Cachetada (anti-campeo): sonido para los cercanos (como los shouts), empujon corto y mensaje a todos
+static void Slap_Player (edict_t *p, qboolean camping)
+{
+	float	ang = random () * 2 * M_PI;
+
+	p->velocity[0] += cos (ang) * slap_push->value;
+	p->velocity[1] += sin (ang) * slap_push->value;
+	p->velocity[2] += slap_push->value * 0.5F;
+	p->groundentity = NULL;
+	VectorCopy (p->velocity, p->client->oldvelocity);	// que el empujon no cuente como caida
+
+	gi.sound (p, CHAN_VOICE, gi.soundindex ("misc/slap.wav"), 1, ATTN_NORM, 0);
+
+	if (slap_damage->value > 0 && p->health > slap_damage->value)
+		p->health -= (int)slap_damage->value;
+
+	if (camping)
+	{
+		// anuncio para todos: en el chat y al centro de la pantalla
+		gi.bprintf (PRINT_HIGH, "%s recibio una cachetada por campero\n", p->client->pers.netname);
+		centerprintall ("%s recibio una cachetada por campero\n", p->client->pers.netname);
+	}
+	else
+		gi.bprintf (PRINT_HIGH, "%s recibio una cachetada\n", p->client->pers.netname);
+}
+
+static qboolean Slap_Valid (edict_t *p)
+{
+	return p->inuse && p->client && p->health > 0 && p->deadflag == DEAD_NO && !p->client->limbo_mode
+		&& p->movetype != MOVETYPE_NOCLIP && p->client->resp.team_on && p->client->resp.mos != NONE;
+}
+
+// sv slap <id>
+void Svcmd_Slap_f (void)
+{
+	int		id;
+	edict_t	*p;
+
+	if (gi.argc () < 3)
+	{
+		gi.cprintf (NULL, PRINT_HIGH, "Uso: sv slap <player_id> (ver sv listplayers)\n");
+		return;
+	}
+	id = atoi (gi.argv (2));
+	if (id < 0 || id >= maxclients->value)
+	{
+		gi.cprintf (NULL, PRINT_HIGH, "ID de jugador no valido.\n");
+		return;
+	}
+	p = &g_edicts[id + 1];
+	if (!Slap_Valid (p))
+	{
+		gi.cprintf (NULL, PRINT_HIGH, "El jugador %d no esta vivo en juego.\n", id);
+		return;
+	}
+	Slap_Player (p, false);
+}
+
+// ffa_anticamp: cada segundo mide cuanto se movio cada jugador vivo del Gun Game; si en ffa_camp_secs no salio de un
+// radio de ffa_camp_dist da la primera cachetada y despues otra una cachetada cada 5 s hasta que se mueva
+void Anticamp_RunFrame (void)
+{
+	static vec3_t	anchor[MAX_CLIENTS];
+	static float	since[MAX_CLIENTS];		// desde cuando esta dentro del radio del ancla
+	static float	next_slap[MAX_CLIENTS];
+	int		i;
+
+	if (!ffa_anticamp->value || level.framenum % 10 != 0)
+		return;
+	if (!G_IsFFA () || !ffa_gungame->value || level.intermissiontime || level.time < FFA_LEVEL_WAIT + 5)
+		return;
+
+	for (i = 0; i < maxclients->value && i < MAX_CLIENTS; i++)
+	{
+		edict_t	*p = &g_edicts[i + 1];
+		vec3_t	d;
+
+		if (!Slap_Valid (p) || p->ai)
+		{
+			since[i] = 0;
+			continue;
+		}
+		VectorSubtract (p->s.origin, anchor[i], d);
+		if (!since[i] || VectorLength (d) > ffa_camp_dist->value)
+		{
+			VectorCopy (p->s.origin, anchor[i]);
+			since[i] = level.time;
+			next_slap[i] = 0;
+			continue;
+		}
+		if (level.time - since[i] >= ffa_camp_secs->value && level.time >= next_slap[i])
+		{
+			next_slap[i] = level.time + 5;
+			Slap_Player (p, true);
+		}
+	}
+}
+
 void Svcmd_NextMap(void)
 {
 	disable_mapvoting = true;
@@ -887,6 +992,12 @@ void	ServerCommand (void)
 		SVCmd_KillPlayer_f();
 	else if (Q_stricmp(cmd, "freeze") == 0)
 		Svcmd_FreezeMode_f();
+	else if (Q_stricmp(cmd, "slap") == 0)
+		Svcmd_Slap_f();
+	else if (Q_stricmp(cmd, "votecancel") == 0)
+		Svcmd_VoteCancel_f();
+	else if (Q_stricmp(cmd, "tornado") == 0)
+		Svcmd_Tornado_f();
 
 	else
 		safe_cprintf (NULL, PRINT_HIGH, "Unknown server command \"%s\"\n", cmd);

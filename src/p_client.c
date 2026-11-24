@@ -163,6 +163,23 @@ void KillingSpree(edict_t *attacker, edict_t *self) // Funcion principal
 	
 }
 
+static const char *OfficerBonus(edict_t *attacker, edict_t *self) // ZeRo - Reduccion del cooldown activo del ataque aéreo por cada kill del officer
+{
+    if (!attacker->client || !attacker->client->resp.team_on)
+        return "";
+
+    if (attacker == self || OnSameTeam(attacker, self))
+        return "";
+
+    if (attacker->client->resp.team_on->arty_time_restrict > level.time)
+    {
+        attacker->client->resp.team_on->arty_time_restrict -= 5;
+        return " - ** AIRSTRIKE COOLDOWN BONUS -5 SECONDS **";
+    }
+
+    return "";
+}
+
 //
 // Gross, ugly, disgustuing hack section
 //
@@ -454,8 +471,10 @@ void ClientObituary (edict_t *self, edict_t *inflictor, edict_t *attacker)
 	char		*message;
 	char		*message2;
 	char		*message3;
+	const char	*message4;
 
 	qboolean	ff;
+	qboolean	kf = false;	// the death is on the killfeed: it is not printed to the clients that see it
 	edict_t *Tent;
 
 
@@ -588,6 +607,8 @@ void ClientObituary (edict_t *self, edict_t *inflictor, edict_t *attacker)
 		}
 		if (message)
 		{
+			kf = Killfeed_Add (self->client->last_wound_inflictor, self, mod, false, message, NULL);
+
 			//faf: if they were wounded before they got themselves killed, name who wounded them.
 			if (self->client->last_wound_inflictor)
 			{
@@ -604,7 +625,7 @@ void ClientObituary (edict_t *self, edict_t *inflictor, edict_t *attacker)
 					for (i = 1; i <= game.maxclients; i++)
 					{
 						Tent = &g_edicts[i];
-						if (!Tent->inuse || !Tent->client)
+						if (!Tent->inuse || !Tent->client || (kf && Killfeed_Shows (Tent)))
 							continue;
 
 //						if (self->client->resp.team_on->index == Tent->client->resp.team_on->index)
@@ -654,7 +675,7 @@ void ClientObituary (edict_t *self, edict_t *inflictor, edict_t *attacker)
 					for (i = 1; i <= game.maxclients; i++)
 					{
 						Tent = &g_edicts[i];
-						if (!Tent->inuse || !Tent->client)
+						if (!Tent->inuse || !Tent->client || (kf && Killfeed_Shows (Tent)))
 							continue;
 
 						if (OnSameTeam(Tent,self)){
@@ -748,6 +769,9 @@ void ClientObituary (edict_t *self, edict_t *inflictor, edict_t *attacker)
 			case MOD_SUBMG:
 				message = "was gunned down by";
 				message2 = "'s submachinegun";
+				break;
+			case MOD_BROWNING:
+				message = "was browned by";
 				break;
 			case MOD_SNIPER:
 				message = "was sniped by";
@@ -844,15 +868,24 @@ void ClientObituary (edict_t *self, edict_t *inflictor, edict_t *attacker)
 				message3 = "";
 			if (message)
 			{
+				message4 = "";
+				if (officer_bonus->value == 1 && attacker->client && attacker->client->resp.mos == OFFICER)
+					message4 = OfficerBonus(attacker, self);
+				kf = Killfeed_Add (attacker, self, mod, self->client->resp.deathblend == 1, message, message2);	// 1: the head shot that plays the "Headshot!" cue
+
+				// the Officer who sees the killfeed gets no text obituary: he is told of his bonus apart
+				if (message4[0] && kf && Killfeed_Shows (attacker) && (death_msg->value == 1 || death_msg->value == 3))
+					safe_cprintf (attacker, PRINT_HIGH, "%s\n", message4 + 3);	// without the leading " - "
+
 				// Means of Death msgs now server customizable
 				if (death_msg->value == 0) // print to self only
-					safe_cprintf(self, PRINT_HIGH, "%s %s %s%s%s\n", self->client->pers.netname, message, attacker->client->pers.netname, message2, message3);
+					safe_cprintf(self, PRINT_HIGH, "%s %s %s%s%s%s\n", self->client->pers.netname, message, attacker->client->pers.netname, message2, message3, message4);
 				else if (death_msg->value == 1 || death_msg->value == 3) // print to everybody
 				{
 					for (i = 1; i <= game.maxclients; i++)
 					{
 						Tent = &g_edicts[i];
-						if (!Tent->inuse || !Tent->client)
+						if (!Tent->inuse || !Tent->client || (kf && Killfeed_Shows (Tent)))
 							continue;
 
 //						if (self->client->resp.team_on->index == Tent->client->resp.team_on->index)
@@ -865,7 +898,7 @@ void ClientObituary (edict_t *self, edict_t *inflictor, edict_t *attacker)
 						if (OnSameTeam(Tent,attacker)){
 							safe_cprintf (Tent, PRINT_MEDIUM,"\2%s", attacker->client->pers.netname);}
 						else{safe_cprintf (Tent, PRINT_MEDIUM,"%s", attacker->client->pers.netname);}
-							safe_cprintf (Tent, PRINT_MEDIUM,"%s%s\n", message2, message3);
+							safe_cprintf (Tent, PRINT_MEDIUM,"%s%s%s\n", message2, message3, message4);
 
 					}
 						if (death_msg->value == 3) //print to server console
@@ -873,7 +906,7 @@ void ClientObituary (edict_t *self, edict_t *inflictor, edict_t *attacker)
 							gi.cprintf (NULL, PRINT_MEDIUM,"%s", self->client->pers.netname);
 							gi.cprintf (NULL, PRINT_MEDIUM," %s ", message);
 							gi.cprintf (NULL, PRINT_MEDIUM,"%s", attacker->client->pers.netname);
-							gi.cprintf (NULL, PRINT_MEDIUM,"%s%s\n", message2, message3);
+							gi.cprintf (NULL, PRINT_MEDIUM,"%s%s%s\n", message2, message3, message4);
 						}
 				}
 				else if (death_msg->value == 2) // print to team
@@ -885,7 +918,7 @@ void ClientObituary (edict_t *self, edict_t *inflictor, edict_t *attacker)
 							continue;
 
 						if (self->client->resp.team_on->index == Tent->client->resp.team_on->index)
-							safe_cprintf(Tent, PRINT_MEDIUM, "%s %s %s%s%s\n", self->client->pers.netname, message, attacker->client->pers.netname, message2, message3);
+							safe_cprintf(Tent, PRINT_MEDIUM, "%s %s %s%s%s%s\n", self->client->pers.netname, message, attacker->client->pers.netname, message2, message3, message4);
 					}
 
 				}
@@ -930,6 +963,10 @@ void TossClientWeapon (edict_t *self)
 	if (self->client->weaponstate == WEAPON_DROPPING)
 		return;//faf:  fixes dropping 2 weaps with drop_shot
 
+	// Free For All Gun Game: the weapons only come from the ladder
+	if (G_IsFFA() && ffa_gg_on)
+		return;
+
 
 
 	item = self->client->pers.weapon;
@@ -939,7 +976,8 @@ void TossClientWeapon (edict_t *self)
 		((Q_stricmp (item->pickup_name, "Morphine")   == 0) ||
 		 (Q_stricmp (item->pickup_name, "Fists")      == 0) ||
 		 (Q_stricmp (item->pickup_name, "Sandbags")      == 0) ||
-		 (Q_stricmp (item->pickup_name, "Binoculars") == 0) ))
+		 (Q_stricmp (item->pickup_name, "Binoculars") == 0) ||
+		 (Q_stricmp (item->pickup_name, "Healthpack") == 0) ))
 		item = NULL;
 
 
@@ -1192,6 +1230,10 @@ void Drop_All_Knives(edict_t *self)
 	gitem_t *knife_item;
 	int knife_index, i, count;
 
+	// Free For All Gun Game: the knives of the last step are not dropped
+	if (G_IsFFA() && ffa_gg_on)
+		return;
+
 	knife_item = FindItem("Knife");
 	knife_index = ITEM_INDEX(knife_item);
 	count = self->client->pers.inventory[knife_index];
@@ -1253,7 +1295,7 @@ void player_die (edict_t *self, edict_t *inflictor, edict_t *attacker, int damag
 	
 	if (!self->deadflag)
 	{
-		self->leave_limbo_time = level.time + RI->value; //faf
+		self->leave_limbo_time = level.time + G_RespawnInterval(); //faf
 
 		self->client->respawn_time = level.time + 1.0;
 		//LookAtKiller (self, inflictor, attacker);
@@ -1301,6 +1343,9 @@ void player_die (edict_t *self, edict_t *inflictor, edict_t *attacker, int damag
 	self->client->invincible_framenum = 0;
 	self->client->breather_framenum = 0;
 	self->client->enviro_framenum = 0;
+
+	// the healthpacks he threw do not stay on the ground when the Medic dies
+	// his healthpacks stay on the ground (HEALTHPACK_LIFE); they are removed when he leaves
 
 	// clear inventory
 	memset(self->client->pers.inventory, 0, sizeof(self->client->pers.inventory));
@@ -2036,10 +2081,128 @@ void Find_Mission_Start_Point(edict_t *ent)
   find the entry position for the units to be spawned to when the mission begins
 */
 
+// Free For All spawn selection: distances are capped (a spot farther than this from everybody is as good as any
+// other, and with nobody in play every spot gets the cap) and a small random part breaks the remaining ties
+#define FFA_SPAWN_RANGE_CAP		16384
+#define FFA_SPAWN_TIE_JITTER	16
+
+// A spawn point used in the last seconds goes to the end of the list (it is only picked if there are not
+// enough other spots), so players that respawn together or in a row do not end up on the same spot
+#define FFA_SPAWN_RECENT_TIME		5		// seconds
+#define FFA_SPAWN_RECENT_PENALTY	100000
+#define FFA_SPOT_SLOTS				2048	// edict numbers that can be tracked
+
+static float ffa_spot_used[FFA_SPOT_SLOTS];	// level.time each spawn point was last used, 0 = not used in this level
+
+// called when a Free For All level starts
+void FFA_SpawnReset (void)
+{
+	memset (ffa_spot_used, 0, sizeof(ffa_spot_used));
+}
+
+// Free For All: distance from a spot to the nearest player that is actually in play
+// (not observer, not in limbo, not dead), ignoring the player that is about to spawn
+static float FFA_PlayersRangeFromSpot (edict_t *self, vec3_t spot_origin)
+{
+	edict_t	*player;
+	vec3_t	v;
+	int		n;
+	float	dist, best = FFA_SPAWN_RANGE_CAP;
+
+	for (n = 1; n <= maxclients->value; n++)
+	{
+		player = &g_edicts[n];
+
+		if (!player->inuse || !player->client || player == self)
+			continue;
+		if (player->flyingnun || player->client->limbo_mode || player->deadflag || player->health <= 0)
+			continue;
+
+		VectorSubtract (spot_origin, player->s.origin, v);
+		dist = VectorLength (v);
+		if (dist < best)
+			best = dist;
+	}
+
+	return best;
+}
+
+// Free For All: spawn spots are not tied to a team. Picks randomly among the 3 spots
+// farthest from any player, searching every reinforcement/deathmatch spot of the map.
+static edict_t *FFA_SelectSpawnPoint (edict_t *ent)
+{
+	static char *spotnames[] = {"info_player_deathmatch", "info_reinforcements_start", "info_reinforcements_nearest", NULL};
+	edict_t	*spot, *best[3];
+	float	bestdist[3], dist;
+	int		i, j, n, count, slot;
+
+	for (i = 0; i < 3; i++)
+	{
+		best[i] = NULL;
+		bestdist[i] = -2 * FFA_SPAWN_RECENT_PENALTY;	// below any score, even a penalized one
+	}
+
+	for (n = 0; spotnames[n]; n++)
+	{
+		spot = NULL;
+		while ((spot = G_Find (spot, FOFS(classname), spotnames[n])) != NULL)
+		{
+			// the small random part breaks the ties (for example when nobody is in play every spot is equally far)
+			dist = FFA_PlayersRangeFromSpot (ent, spot->s.origin) + random() * FFA_SPAWN_TIE_JITTER;
+
+			// used in the last seconds: send it to the end of the list
+			slot = spot - g_edicts;
+			if (slot >= 0 && slot < FFA_SPOT_SLOTS && ffa_spot_used[slot] > 0 &&
+				level.time - ffa_spot_used[slot] < FFA_SPAWN_RECENT_TIME)
+				dist -= FFA_SPAWN_RECENT_PENALTY;
+
+			for (i = 0; i < 3; i++)
+			{
+				if (dist > bestdist[i])
+				{
+					for (j = 2; j > i; j--)
+					{
+						best[j] = best[j-1];
+						bestdist[j] = bestdist[j-1];
+					}
+					best[i] = spot;
+					bestdist[i] = dist;
+					break;
+				}
+			}
+		}
+	}
+
+	for (count = 0; count < 3 && best[count]; count++);
+
+	if (!count)
+		return NULL;
+
+	spot = best[(int)(random() * count) % count];
+
+	slot = spot - g_edicts;
+	if (slot >= 0 && slot < FFA_SPOT_SLOTS)
+		ffa_spot_used[slot] = level.time;
+
+	return spot;
+}
+
 void Find_Mission_Start_Point(edict_t *ent, vec3_t origin, vec3_t angles)
 {
 	edict_t	*spot = NULL;
 	int team = ent->client->resp.team_on->index;
+
+	if (G_IsFFA())
+	{
+		spot = FFA_SelectSpawnPoint(ent);
+		if (spot)
+		{
+			VectorCopy (spot->s.origin, origin);
+			origin[2] += 9;
+			VectorCopy (spot->s.angles, angles);
+			return;
+		}
+	}
 
 	/*
 	while( (spot = G_Find (spot, FOFS(classname), ent->client->resp.team_on->mos[ent->client->resp.mos]->MOS_Spaw_Point))!=NULL)
@@ -2079,9 +2242,18 @@ void Find_Mission_Start_Point(edict_t *ent, vec3_t origin, vec3_t angles)
 
 
 
-	if (!spot) 
+	if (!spot)
 		spot = G_Find (spot, FOFS(classname),"info_player_start");
-	
+
+
+	// Free For All: no spawn point at all in the map, do not dereference NULL
+	if (!spot && G_IsFFA())
+	{
+		gi.dprintf ("Find_Mission_Start_Point: no spawn point found for %s, using the origin\n", ent->client->pers.netname);
+		VectorClear (origin);
+		VectorClear (angles);
+		return;
+	}
 
 	VectorCopy (spot->s.origin, origin);
 	origin[2] += 9;
@@ -2489,6 +2661,10 @@ void PutClientInServer (edict_t *ent)
 		ent->model = va("players/%s/tris.md2", ent->client->resp.team_on->playermodel);
 	else
 	{
+		// Free For All: the map may not define any team, keep a valid model instead of crashing
+		if (G_IsFFA() && !team_list[0])
+			ent->model = "players/usa/tris.md2";
+		else
 		ent->model = va("players/%s/tris.md2", team_list[0]->teamid);
 
 //faf: removed for team dll support		ent->model = "players/usa/tris.md2";
@@ -2683,6 +2859,7 @@ void ClientBeginDeathmatch (edict_t *ent)
 	AI_EnemyAdded(ent);
 	//[end]
 
+	Vote_ClientBegin (ent);	// le explica como votar (la primera vez que entra)
 
 
 	// make sure all view stuff is valid
@@ -2707,6 +2884,8 @@ void ClientBegin (edict_t *ent)
 	
 	ent->client = game.clients + (ent - g_edicts - 1);
 	ent->client->resp.AlreadySpawned=false;
+
+	Killfeed_ClientBegin (ent);		// the client sends back the style of the killfeed it keeps
 
 	// kernel: CTB also needs this to clear structs at the beginning
 	if (deathmatch->value || ctb_mode->value)
@@ -2797,6 +2976,8 @@ void ClientUserinfoChanged (edict_t *ent, char *userinfo)
 	// set name
 	s = Info_ValueForKey (userinfo, "name");
 	strncpy (ent->client->pers.netname, s, sizeof(ent->client->pers.netname)-1);
+
+	Killfeed_Userinfo (ent, userinfo);	// "kfu": the style of the killfeed kept by the client
 
 	// set skin
 	s = Info_ValueForKey (userinfo, "skin");
@@ -2935,6 +3116,8 @@ qboolean ClientConnect (edict_t *ent, char *userinfo)
 	static int Already_Done=0;
 	char	*value, *f, *ip;
 
+	Killfeed_ClientConnect (ent);
+
 	// check to see if they are on the banned IP list
 	value = Info_ValueForKey (userinfo, "ip");
 
@@ -3029,6 +3212,7 @@ void ClientDisconnect (edict_t *ent)
 		return;
 
 
+	Vote_ClientDisconnect (ent);
 
 	if (!level.intermissiontime)
 		Write_Player_Stats(ent);
@@ -3046,6 +3230,8 @@ void ClientDisconnect (edict_t *ent)
 	if(ent->client->pers.inventory[ITEM_INDEX(FindItemB(ITEM_BRIEFCASE))])
 		Drop_Briefcase(ent, FindItemB(ITEM_BRIEFCASE));
 
+	RemoveHealthpacks (ent);
+
 
 
 	// Remove them from team
@@ -3061,6 +3247,8 @@ void ClientDisconnect (edict_t *ent)
 	gi.WriteShort (ent-g_edicts);
 	gi.WriteByte (MZ_LOGOUT);
 	gi.multicast (ent->s.origin, MULTICAST_PVS);
+
+	FFA_ForgetPlayer (ent);
 
 	gi.unlinkentity (ent);
 
@@ -3312,19 +3500,224 @@ void SetWaterLevel (edict_t *ent)
 }
 	
 
+/*
+==============================================================================
+Votacion de fin de mapa por secciones (mapvoting_modes 1)
+
+El menu trae mapas en secciones (Normal, Gun Game, Free For All) y el
+mapa siguiente se juega en el modo de la opcion ganadora. Cada seccion tiene su cvar con
+la cantidad de mapas (mapvoting_normal 3, mapvoting_gungame 2, mapvoting_ffa 0): en 0 la
+seccion no aparece. Si nadie vota, sigue el modo actual con el proximo mapa de su rotacion.
+==============================================================================
+*/
+
+#define VOTE_SECONDS		15
+#define VOTE_SECONDS_MODES	20
+
+qboolean	vote_by_modes;					// la votacion abierta es la de secciones
+static int	vote_pending_mode = -1;			// modo ganador, se aplica en ExitLevel
+static char	vote_option_map[VOTE_OPTIONS][MAX_QPATH];
+static char	*vote_normal_maps[300];			// mapas de la seccion normal (votemaps.txt)
+
+int MapVote_CurrentMode (void)
+{
+	if (G_IsFFA ())
+		return (ffa_gungame && ffa_gungame->value) ? VMODE_GUNGAME : VMODE_FFA;
+	return VMODE_NORMAL;
+}
+
+int MapVote_Seconds (void)
+{
+	return vote_by_modes ? VOTE_SECONDS_MODES : VOTE_SECONDS;
+}
+
+const char *MapVote_ModeLabel (int vmode)
+{
+	switch (vmode)
+	{
+	case VMODE_GUNGAME:	return "Gun Game";
+	case VMODE_FFA:		return "Free For All";
+	}
+	return "normal";
+}
+
+// el proximo mapa se juega en ese modo (VMODE_*): lo usa tambien vote map para volver al modo normal
+void MapVote_SetPendingMode (int vmode)
+{
+	vote_pending_mode = vmode;
+}
+
+void MapVote_ApplyMode (void)
+{
+	int mode = vote_pending_mode;
+
+	if (mode < 0)
+		return;
+	vote_pending_mode = -1;
+	gi.cvar_forceset ("ffa", (mode == VMODE_GUNGAME || mode == VMODE_FFA) ? "1" : "0");
+	gi.cvar_forceset ("ffa_gungame", mode == VMODE_GUNGAME ? "1" : "0");
+	gi.cvar_forceset ("ffa_roulette", "0");
+}
+
+// cuantas veces atras se jugo el mapa (0 = el actual); 1000 si no esta entre los ultimos 20
+static int MapVote_Age (const char *map)
+{
+	int i;
+
+	for (i = 0; i < 20 && last_maps_played[i]; i++)
+		if (!Q_stricmp (last_maps_played[i], (char *)map))
+			return i;
+	return 1000;
+}
+
+static qboolean MapVote_Chosen (const char *map, int vmode)
+{
+	int i;
+
+	for (i = 0; i < votemaps_count; i++)
+		if (votemodes[i] == vmode && !Q_stricmp (votemaps[i], (char *)map))
+			return true;
+	return false;
+}
+
+static void MapVote_AddOption (const char *map, int vmode)
+{
+	Com_sprintf (vote_option_map[votemaps_count], MAX_QPATH, "%s", map);
+	votemaps[votemaps_count] = vote_option_map[votemaps_count];
+	votemodes[votemaps_count] = vmode;
+	votemaps_count++;
+}
+
+// agrega hasta 'want' mapas de la lista en el modo dado: primero los que hace mas que no se juegan
+// (entre los de igual antiguedad, al azar). Nunca el mismo mapa en el mismo modo que se acaba de jugar.
+static void MapVote_PickSection (const char **list, int n, int want, int vmode)
+{
+	int		i, best, added = 0, current = MapVote_CurrentMode ();
+	float	key, bestkey;
+
+	while (added < want && votemaps_count < VOTE_OPTIONS)
+	{
+		best = -1;
+		bestkey = -1;
+		for (i = 0; i < n; i++)
+		{
+			if (!list[i] || !list[i][0] || MapVote_Chosen (list[i], vmode))
+				continue;
+			if (vmode == current && !Q_stricmp ((char *)list[i], level.mapname))
+				continue;
+			key = MapVote_Age (list[i]) + random () * 0.5;
+			if (key > bestkey)
+			{
+				bestkey = key;
+				best = i;
+			}
+		}
+		if (best < 0)
+			return;		// no quedan mapas para esta seccion
+		MapVote_AddOption (list[best], vmode);
+		added++;
+	}
+}
+
+// mapas de la seccion normal: votemaps.txt (como la votacion clasica) o, si no existe, sv_maplist
+// (los nombres quedan dentro de *textp, que se libera con gi.TagFree despues de usarlos)
+static int MapVote_NormalMaps (char **textp)
+{
+	char	*text, *s;
+	int		n = 0;
+
+	text = ReadEntFile ("votemaps.txt");
+	if (!text && *sv_maplist->string && Q_stricmp (sv_maplist->string, "txt"))
+	{
+		text = gi.TagMalloc (strlen (sv_maplist->string) + 1, TAG_GAME);
+		strcpy (text, sv_maplist->string);
+	}
+	*textp = text;
+	if (!text)
+		return 0;
+
+	for (s = strtok (text, " \t\r\n,"); s && n < 300; s = strtok (NULL, " \t\r\n,"))
+	{
+		if (MapExists (s) && Vote_MapPlayable (s))
+			vote_normal_maps[n++] = s;
+		else
+			gi.dprintf ("WARNING: Map '%s' in votemaps.txt not found on server or broken!\n", s);
+	}
+	return n;
+}
+
+static qboolean Setup_Map_Vote_Modes (void)
+{
+	const char	*prepared[300];
+	char		*text = NULL;
+	int			n, want;
+
+	votemaps_count = 0;
+	srand ((unsigned)time (NULL));	// el juego se recarga en cada mapa: sin esto el sorteo sale siempre igual
+
+	// normal: el proximo de la rotacion va primero si se viene de un mapa normal
+	want = (int)mapvoting_normal->value;
+	n = MapVote_NormalMaps (&text);
+	if (want > 0 && n > 0)
+	{
+		if (MapVote_CurrentMode () == VMODE_NORMAL && level.nextmap[0] && !mapvoting_avoid_nextmap->value &&
+			Q_stricmp (level.nextmap, level.mapname) && MapExists (level.nextmap) && Vote_MapPlayable (level.nextmap))
+		{
+			MapVote_AddOption (level.nextmap, VMODE_NORMAL);
+			want--;
+		}
+		MapVote_PickSection ((const char **)vote_normal_maps, n, want, VMODE_NORMAL);
+	}
+	if (text)
+		gi.TagFree (text);	// las opciones ya se copiaron a vote_option_map
+
+	if ((want = (int)mapvoting_gungame->value) > 0)
+	{
+		n = Mode_PreparedMaps (VMODE_GUNGAME, prepared, 300);
+		MapVote_PickSection (prepared, n, want, VMODE_GUNGAME);
+	}
+	if ((want = (int)mapvoting_ffa->value) > 0)
+	{
+		n = Mode_PreparedMaps (VMODE_FFA, prepared, 300);
+		MapVote_PickSection (prepared, n, want, VMODE_FFA);
+	}
+
+	if (votemaps_count < 2)
+	{
+		gi.dprintf ("mapvoting_modes: menos de 2 mapas para votar, sin votacion\n");
+		return false;
+	}
+	return true;
+}
+
 void Count_Votes (void)
 {
 	int i;
 	int highestvotecount = 0;
 	int highmap = 0;
 	
-	for (i =0; i<5; i++)
+	for (i = 0; i < votemaps_count; i++)
 	{
 		if (mapvotes[i] > highestvotecount)
 		{
 			highestvotecount = mapvotes[i];
 			highmap = i;
 		}
+	}
+
+	if (vote_by_modes)
+	{
+		// nadie voto: sigue el modo actual con el proximo de su rotacion (level.changemap de EndDMLevel)
+		if (!highestvotecount)
+		{
+			safe_bprintf (PRINT_HIGH, "Nadie voto: sigue %s (%s).\n", level.changemap ? level.changemap : level.mapname,
+				MapVote_ModeLabel (MapVote_CurrentMode ()));
+			return;
+		}
+		level.changemap = votemaps[highmap];
+		vote_pending_mode = votemodes[highmap];
+		safe_bprintf (PRINT_HIGH, "Proximo mapa: %s (%s).\n", votemaps[highmap], MapVote_ModeLabel (votemodes[highmap]));
+		return;
 	}
 
 	level.changemap = votemaps[highmap];
@@ -3350,6 +3743,15 @@ qboolean Setup_Map_Vote (void)
 
 	qboolean changefirstmap;
 
+	vote_pending_mode = -1;
+	vote_by_modes = false;
+	if (mapvoting_modes->value && !ctb_mode->value && !level.campaign)
+	{
+		vote_by_modes = Setup_Map_Vote_Modes ();
+		return vote_by_modes;
+	}
+	votemaps_count = 0;
+	memset (votemodes, 0, sizeof(votemodes));
 
 	maps = ReadEntFile("votemaps.txt");
 
@@ -3492,6 +3894,7 @@ qboolean Setup_Map_Vote (void)
 	//if (level.nextmap)
 	//{
 	//}
+	votemaps_count = 4;
 	return true;
 }
 
@@ -3636,18 +4039,23 @@ void ClientThink (edict_t *ent, usercmd_t *ucmd)
 					ent->client->vote_started = true;
 				}
 			}
-			if (level.map_vote_time > 0)
+			if (level.map_vote_time > 0 && !level.exitintermission)	// se cuenta una sola vez
 			{
 				int num_clients = HumanPlayerCount();
 
-				if (level.time > level.map_vote_time + 15)
+				int total_votes = 0, v;
+
+				for (v = 0; v < votemaps_count; v++)
+					total_votes += mapvotes[v];
+
+				if (level.time > level.map_vote_time + MapVote_Seconds ())
 				{
 					Count_Votes ();
 					level.exitintermission = true;
 				}
 				else if (level.time > level.intermissiontime + 6.0 &&
 						 level.last_vote_time < level.time - 1 &&
-						 mapvotes[0]+mapvotes[1]+mapvotes[2]+mapvotes[3] >= num_clients)
+						 total_votes >= num_clients)
 				{
 					Count_Votes ();
 					level.exitintermission = true;
@@ -4395,6 +4803,14 @@ void ClientBeginServerFrame (edict_t *ent)
 
 	client = ent->client;
 
+	if (G_IsFFA())
+	{
+		FFA_JoinPlayer(ent);
+
+		if (ffa_gg_on)
+			FFA_GunGameThink(ent);
+	}
+
 //		gi.dprintf("    %i\n", ent->client->ps.gunframe);//faf test
 
 
@@ -4515,7 +4931,7 @@ void ClientBeginServerFrame (edict_t *ent)
 				M_ChooseMOS(ent);
 				client->latched_buttons = 0;
 			}
-			if (level.framenum > (10 * (int)(level_wait->value  + delay)) &&
+			if (level.framenum > (10 * (int)G_LobbyTime(delay)) &&
 			ent->leave_limbo_time < level.time - .1)
 			{
 				EndObserverMode(ent); //faf
@@ -4576,7 +4992,7 @@ void ClientBeginServerFrame (edict_t *ent)
 	if (ent->client->resp.team_on)
 		delay = ent->client->resp.team_on->delay;
 
-	if (level.framenum > (10 * (int)(level_wait->value  + delay))  &&
+	if (level.framenum > (10 * (int)G_LobbyTime(delay))  &&
 	(ent->client->limbo_mode) &&
 	(ent->leave_limbo_time < level.time) &&
 	(ent->client->menu == 0))  // so you dont spawn while choosing a class

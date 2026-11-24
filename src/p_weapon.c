@@ -256,6 +256,35 @@ qboolean Pickup_Weapon (edict_t *ent, edict_t *other)
 				ent->flags |= FL_RESPAWN;
 		}
 	}
+	else
+	{
+		// faf: fix - restaurar municion/cerrojo del arma TIRADA especifica que se toco,
+		// en vez de depender de guninfo (global, compartido, causaba recargas fantasma
+		// en jugadores random que tuvieran la misma arma en otra parte del mapa)
+		if (other->client)
+		{
+			int mi = item->mag_index;
+
+			switch (item->position)
+			{
+				case LOC_PISTOL:         other->client->mags[mi].pistol_rnd  = ent->count; break;
+				case LOC_RIFLE:          other->client->mags[mi].rifle_rnd   = ent->count; break;
+				case LOC_SNIPER:         other->client->mags[mi].sniper_rnd  = ent->count;
+				                         other->client->sniper_loaded[mi]   = ent->health ? true : false;
+				                         break;
+				case LOC_SUBMACHINEGUN:  other->client->mags[mi].submg_rnd   = ent->count; break;
+				case LOC_SUBMACHINEGUN2: other->client->mags[mi].submg2_rnd  = ent->count; break;
+				case LOC_L_MACHINEGUN:   other->client->mags[mi].lmg_rnd     = ent->count; break;
+				case LOC_H_MACHINEGUN:   other->client->mags[mi].hmg_rnd     = ent->count; break;
+				case LOC_ROCKET:         other->client->mags[mi].antitank_rnd= ent->count; break;
+				case LOC_SHOTGUN:        other->client->mags[mi].shotgun_rnd = ent->count; break;
+				default:
+					if (item->ammo && !strcmp(item->ammo, "flame_mag"))
+						other->client->flame_rnd = ent->count;
+					break;
+			}
+		}
+	}
 
 /*  BROKEN: Pick up flamethrower bug..
 	Using guninfo in this function crashes Quake2...
@@ -433,6 +462,10 @@ void ShowGun( edict_t *ent)
 	else if (ent->client->pers.weapon->classnameb == WEAPON_KATANA)
 	{
 		ent->s.modelindex2 = gi.modelindex ("players/jpn/w_katana.md2");
+	}
+	else if (ent->client->pers.weapon->classnameb == WEAPON_HEALTHPACK)
+	{
+		ent->s.modelindex2 = 0;	// nothing in the hands of the player model
 	}
 
 	else if (ent->client->pers.weapon->classnameb == WEAPON_SABRE)
@@ -677,6 +710,8 @@ void Use_Weapon (edict_t *ent, gitem_t *item)
 			item_rounds = ent->client->mags[0].antitank_rnd;
 		else if (!strcmp(item->ammo, "m1903_mag"))
 			item_rounds = ent->client->mags[0].sniper_rnd;
+		else if (!strcmp(item->ammo, "browning_mag"))
+			item_rounds = ent->client->mags[item->mag_index].pistol_rnd;
 		else if (!strcmp(item->ammo, "flame_mag"))
 			item_rounds = ent->client->flame_rnd;
 
@@ -742,7 +777,7 @@ void Drop_Weapon (edict_t *ent, gitem_t *item)
 
 	        //faf:  changed a bit for team dll support:
 
-	if (!strcmp(item->dllname, team_list[1]->teamid))  //faf: if team 1 weap... usually axis
+	if (team_list[1] && !strcmp(item->dllname, team_list[1]->teamid))  //faf: if team 1 weap... usually axis
 	{
 		if (item->position == LOC_PISTOL)
 		{
@@ -846,10 +881,18 @@ void Drop_Weapon (edict_t *ent, gitem_t *item)
 		ent->client->flame_rnd = 0;
 	}
 
-	if (item->guninfo)
-		item->guninfo->rnd_count = item_rounds;
-
-	Drop_Item (ent, item);
+	// faf: fix - ya NO se guarda en guninfo (global, compartido por todos los
+	// jugadores que usan este tipo de arma). Se guarda en el edict tirado
+	// especifico, y se restaura directo al recogerlo en Pickup_Weapon.
+	{
+		edict_t *dropped = Drop_Item (ent, item);
+		if (dropped)
+		{
+			dropped->count = item_rounds;
+			// reusamos "health" (sin uso en un arma tirada) para el estado del cerrojo del sniper
+			dropped->health = (item->position == LOC_SNIPER) ? ent->client->sniper_loaded[item->mag_index] : 0;
+		}
+	}
 
 	ent->client->pers.inventory[index] = 0;
 }
@@ -2397,6 +2440,262 @@ void Weapon_Bandage(edict_t *ent)
 	static int		fire_frames[] = {6};
 
 	Weapon_Generic(ent,3,8,48,52,48,48,0,0,0,pause_frames,fire_frames,Weapon_Bandage_Use);
+}
+
+
+/*
+======================================================================
+
+HEALTHPACK
+
+The Medic selects it (use special) and throws it with fire. A teammate that touches the pack, or the Medic himself
+after HEALTHPACK_OWNER_DELAY seconds, recovers HEALTHPACK_HEAL health and is cured of bleeding and leg wounds, as
+with the syringe.
+Packs belong to the Medic that threw them: they stay HEALTHPACK_LIFE seconds, also after he dies, and are removed
+when he leaves (RemoveHealthpacks). He has at most HEALTHPACK_MAX_PER_MEDIC on the ground: a new one removes his oldest.
+
+======================================================================
+*/
+
+// true when there are enough free entities to spawn a pack (the server stops when it runs out of them)
+static qboolean Healthpack_EdictsLeft (void)
+{
+	int		i, left;
+
+	left = game.maxentities - globals.num_edicts;
+	for (i = game.maxclients + 1; i < globals.num_edicts; i++)
+	{
+		if (!g_edicts[i].inuse)
+			left++;
+	}
+
+	return (left >= HEALTHPACK_EDICT_MARGIN);
+}
+
+static void healthpack_touch (edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *surf)
+{
+	if (!other->client)
+		return;
+
+	// the Medic can take his own packs too, but not as they leave his hand
+	if (other == ent->owner && level.time < ent->timestamp + HEALTHPACK_OWNER_DELAY)
+		return;
+
+	if (other->health < 1 || other->deadflag || other->flyingnun)
+		return;
+
+	// only the teammates of the Medic (the team is saved in the pack when it is thrown)
+	if (!other->client->resp.team_on || other->client->resp.team_on->index != ent->obj_owner)
+		return;
+
+	// whoever has full health and no wounds leaves it for somebody else (HEALTH_MAX as the syringe does,
+	// not max_health, which is not reliable for every client)
+	if (other->health >= HEALTH_MAX && !other->wound_location && !other->die_time)
+		return;
+
+	// it also cures the bleeding and the limp, as the syringe does
+	other->wound_location = 0;
+	other->die_time = 0;
+
+	other->health += HEALTHPACK_HEAL;
+	if (other->health > HEALTH_MAX)
+		other->health = HEALTH_MAX;
+
+	if (other->health == HEALTH_MAX)
+		other->client->last_wound_inflictor = NULL;
+
+	WeighPlayer (other);	// speed without the leg wound
+	if (other->ai)
+		other->ai->med_heal_time = level.time;
+
+	safe_cprintf (other, PRINT_HIGH, "You recovered health with a healthpack.\n");
+	if (ent->owner && ent->owner->inuse && ent->owner->client && ent->owner != other)
+		safe_cprintf (ent->owner, PRINT_HIGH, "%s recovered health with your healthpack.\n", other->client->pers.netname);
+	gi.sound (other, CHAN_ITEM, gi.soundindex ("items/pkup.wav"), 1, ATTN_NORM, 0);
+
+	G_FreeEdict (ent);
+}
+
+// green sparks over the pack for HEALTHPACK_FX_TIME seconds after it is thrown, so it is easy to see that it
+// heals; then it stays as a plain crate until it is removed (HEALTHPACK_LIFE)
+static void healthpack_think (edict_t *ent)
+{
+	vec3_t	pos, up;
+
+	if (level.time >= ent->timestamp + HEALTHPACK_LIFE)
+	{
+		G_FreeEdict (ent);
+		return;
+	}
+
+	if (level.time >= ent->timestamp + HEALTHPACK_FX_TIME)
+	{
+		ent->nextthink = ent->timestamp + HEALTHPACK_LIFE;
+		return;
+	}
+
+	VectorCopy (ent->s.origin, pos);
+	pos[2] += 8;
+	VectorSet (up, 0, 0, 1);
+
+	gi.WriteByte (svc_temp_entity);
+	gi.WriteByte (TE_LASER_SPARKS);
+	gi.WriteByte (20);
+	gi.WritePosition (pos);
+	gi.WriteDir (up);
+	gi.WriteByte (0xd0);	// green of the palette (the color of the slime)
+	gi.multicast (pos, MULTICAST_PVS);
+
+	ent->nextthink = level.time + 0.2;
+}
+
+// throws a pack in the direction the Medic is aiming; returns false if it could not be thrown
+static qboolean Healthpack_Throw (edict_t *ent)
+{
+	edict_t	*pack;
+	vec3_t	forward, right, offset, start;
+	trace_t	tr;
+
+	if (level.time < ent->client->next_healthpack_time)
+		return false;
+
+	if (!ent->client->resp.team_on || !Healthpack_EdictsLeft())
+	{
+		safe_cprintf (ent, PRINT_HIGH, "You cannot throw a healthpack now.\n");
+		return false;
+	}
+
+	// his packs stay after he dies: at most HEALTHPACK_MAX_PER_MEDIC on the ground, the oldest goes
+	{
+		edict_t	*e, *oldest = NULL;
+		int		i, n = 0;
+
+		for (i = game.maxclients + 1; i < globals.num_edicts; i++)
+		{
+			e = &g_edicts[i];
+			if (!e->inuse || e->classnameb != HEALTHPACK || e->owner != ent)
+				continue;
+			n++;
+			if (!oldest || e->timestamp < oldest->timestamp)
+				oldest = e;
+		}
+		if (n >= HEALTHPACK_MAX_PER_MEDIC && oldest)
+			G_FreeEdict (oldest);
+	}
+
+	AngleVectors (ent->client->v_angle, forward, right, NULL);
+	VectorSet (offset, 8, 8, ent->viewheight - 8);
+	P_ProjectSource (ent->client, ent->s.origin, offset, forward, right, start);
+
+	pack = G_Spawn ();
+	pack->classname = "healthpack";
+	pack->classnameb = HEALTHPACK;
+	pack->owner = ent;
+	pack->obj_owner = ent->client->resp.team_on->index;
+	pack->movetype = MOVETYPE_TOSS;
+	pack->solid = SOLID_TRIGGER;
+	VectorSet (pack->mins, -7, -7, -7);
+	VectorSet (pack->maxs, 7, 7, 7);
+	gi.setmodel (pack, "models/items/healthpack/tris.md2");
+
+	// keep the pack out of the walls
+	tr = gi.trace (ent->s.origin, pack->mins, pack->maxs, start, ent, MASK_SOLID);
+	VectorCopy (tr.endpos, pack->s.origin);
+	pack->s.angles[YAW] = random() * 360;
+	pack->s.effects |= EF_ROTATE;	// it spins on the ground (drawn by the client), as the pickups do
+
+	// the area that picks it up is wider than the crate (like the dropped items) and reaches above it, so a
+	// teammate that walks near it recovers health; its bottom stays at the crate so that it rests on the floor
+	VectorSet (pack->mins, -26, -26, -7);
+	VectorSet (pack->maxs, 26, 26, 25);
+
+	VectorScale (forward, 500, pack->velocity);
+	pack->velocity[2] += 200;
+
+	pack->touch = healthpack_touch;
+	pack->timestamp = level.time;
+	pack->think = healthpack_think;
+	pack->nextthink = level.time + 0.3;
+	gi.linkentity (pack);
+
+	ent->client->next_healthpack_time = level.time + HEALTHPACK_DELAY;
+
+	gi.sound (ent, CHAN_WEAPON, gi.soundindex ("weapons/tnt/toss.wav"), 1, ATTN_NORM, 0);
+
+	// part of the wave animation, as when a grenade is thrown
+	if (ent->stanceflags == STANCE_STAND)
+	{
+		ent->client->anim_priority = ANIM_WAVE;
+		ent->s.frame = 116;
+		ent->client->anim_end = 121;
+	}
+	else if (ent->stanceflags == STANCE_DUCK)
+	{
+		ent->client->anim_priority = ANIM_WAVE;
+		ent->s.frame = 169;
+		ent->client->anim_end = 172;
+	}
+	else if (ent->stanceflags == STANCE_CRAWL)
+	{
+		ent->client->anim_priority = ANIM_WAVE;
+		ent->s.frame = 222;
+		ent->client->anim_end = 225;
+	}
+
+	return true;
+}
+
+// removes the packs thrown by a Medic (he dies, leaves the game, changes team...)
+void RemoveHealthpacks (edict_t *owner)
+{
+	int		i;
+	edict_t	*ent;
+
+	for (i = game.maxclients + 1; i < globals.num_edicts; i++)
+	{
+		ent = &g_edicts[i];
+
+		if (ent->inuse && ent->classnameb == HEALTHPACK && ent->owner == owner)
+			G_FreeEdict (ent);
+	}
+}
+
+void Weapon_Healthpack_Use (edict_t *ent)
+{
+	gitem_t	*item = ent->client->pers.weapon;
+
+	ent->client->ps.gunframe++;
+
+	if (!Healthpack_Throw (ent))
+		return;
+
+	ent->client->pers.inventory[ITEM_INDEX(item)]--;
+
+	// no packs left: back to the syringe once the throw animation is over
+	if (ent->client->pers.inventory[ITEM_INDEX(item)] < 1)
+		ent->client->newweapon = FindItem ("Morphine");
+}
+
+void Weapon_Healthpack (edict_t *ent)
+{
+	static int		pause_frames[] = {0};
+	static int		fire_frames[] = {6, 0};
+
+	ent->client->crosshair = false;
+
+	// during the delay between two throws the animation does not start (nothing would be thrown);
+	// a throw that is already playing is not interrupted
+	if (ent->client->weaponstate != WEAPON_FIRING && level.time < ent->client->next_healthpack_time)
+	{
+		ent->client->buttons &= ~BUTTON_ATTACK;
+		ent->client->latched_buttons &= ~BUTTON_ATTACK;
+	}
+
+	Weapon_Generic(ent,
+		3,  8, 45,
+		45, 45, 49,
+		0,  0,  0,
+		pause_frames, fire_frames, Weapon_Healthpack_Use);
 }
 
 

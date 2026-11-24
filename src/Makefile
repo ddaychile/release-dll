@@ -30,7 +30,7 @@ ARCH := $(shell uname -m | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ -e s/arm.*/ar
 #ARCH=i386
 #ARCH=x86_64
 CC=gcc
-BASE_CFLAGS=-Wall -fcommon -Dstricmp=strcasecmp
+BASE_CFLAGS=-Wall -fcommon -std=gnu99 -Dstricmp=strcasecmp
 
 #CFLAGS_RELEASE=$(BASE_CFLAGS) -S
 
@@ -90,9 +90,11 @@ GAME_OBJS =	\
 	g_spawn.o \
 	g_svcmds.o \
 	g_target.o \
+	g_tornado.o \
 	g_trigger.o \
 	g_turret.o \
 	g_utils.o \
+	g_vote.o \
 	g_weapon.o \
 	m_actor.o \
 	m_civilian.o \
@@ -103,6 +105,7 @@ GAME_OBJS =	\
 	p_client.o \
 	p_generic_wep.o \
 	p_hud.o \
+	p_killfeed.o \
 	p_menu.o \
 	p_observer.o \
 	p_trail.o \
@@ -173,9 +176,13 @@ g_save.o: g_save.c g_local.h g_defines.h q_shared.h game.h p_menu.h \
  g_maps.h
 g_spawn.o: g_spawn.c g_local.h g_defines.h q_shared.h game.h p_menu.h \
  g_maps.h
+g_vote.o: g_vote.c g_local.h g_defines.h q_shared.h game.h \
+ p_menu.h g_maps.h x_fire.h
 g_svcmds.o: g_svcmds.c g_local.h g_defines.h q_shared.h game.h \
  p_menu.h g_maps.h
 g_target.o: g_target.c g_local.h g_defines.h q_shared.h game.h \
+ p_menu.h g_maps.h
+g_tornado.o: g_tornado.c g_local.h g_defines.h q_shared.h game.h \
  p_menu.h g_maps.h
 g_trigger.o: g_trigger.c g_local.h g_defines.h q_shared.h game.h \
  p_menu.h g_maps.h
@@ -199,6 +206,8 @@ p_client.o: p_client.c g_local.h g_defines.h q_shared.h game.h \
 p_generic_wep.o: p_generic_wep.c g_local.h g_defines.h q_shared.h \
  game.h p_menu.h g_maps.h m_player.h
 p_hud.o: p_hud.c g_local.h g_defines.h q_shared.h game.h p_menu.h \
+ g_maps.h
+p_killfeed.o: p_killfeed.c g_local.h g_defines.h q_shared.h game.h p_menu.h \
  g_maps.h
 p_menu.o: p_menu.c g_local.h g_defines.h q_shared.h game.h p_menu.h \
  g_maps.h

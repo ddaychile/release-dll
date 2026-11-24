@@ -139,6 +139,8 @@ void SP_misc_flag_brit (edict_t *ent);
 
 spawn_t sp_gbr[MAX_TEAM_ITEMS] =
 {
+	{ "weapon_browning", SP_item_weapon_browning },
+	{ "ammo_browning", SP_item_ammo_browning },
 	{ "weapon_webley", SP_item_weapon_webley },
 	{ "weapon_enfield", SP_item_weapon_enfield },
 	{ "weapon_sten", SP_item_weapon_sten },

@@ -33,6 +33,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "game.h"
 #include "p_observer.h"
 #include "q_shared.h"
+#include <errno.h>
 
 void change_stance(edict_t *self, int stance);
 void ClientUserinfoChanged (edict_t *ent, char *userinfo);
@@ -632,8 +633,192 @@ void ClientSetMaxSpeed (edict_t *ent, qboolean sync);
 void ClientCvarSync (edict_t *ent, qboolean dump);
 
 
+// Free For All: teamless mode, nobody is a teammate of anybody
+qboolean G_IsFFA(void)
+{
+	return (ffa && ffa->value && deathmatch->value && !ctb_mode->value);
+}
+
+// Free For All: nobody may keep a reference to a player that leaves. The slot is reused by the next
+// player or bot, which would be credited the kills of the one that left (see Killed in g_combat.c)
+void FFA_ForgetPlayer (edict_t *gone)
+{
+	edict_t	*other;
+	int		i;
+
+	if (!G_IsFFA())
+		return;
+
+	for (i = 1; i <= maxclients->value; i++)
+	{
+		other = &g_edicts[i];
+
+		if (other->client && other->client->last_wound_inflictor == gone)
+			other->client->last_wound_inflictor = NULL;
+	}
+}
+
+// Seconds of lobby at the start of the level (level_wait plus the extra delay of the team);
+// Free For All has its own fixed time and no team delay
+float G_LobbyTime(float team_delay)
+{
+	if (G_IsFFA())
+		return FFA_LEVEL_WAIT;
+
+	return level_wait->value + team_delay;
+}
+
+// Seconds before a dead player can come back (RI); Free For All has its own fixed time
+float G_RespawnInterval(void)
+{
+	if (G_IsFFA())
+		return FFA_RESPAWN_INTERVAL;
+
+	return RI->value;
+}
+
+/*
+Choices of each player (hitmarkers, killfeed) kept in two places:
+- in his client: "seta <cvar> <n>" (in his config.cfg when he quits, with Q2PRO) and the userinfo <ukey> = "x<n>".
+  When he comes in, PlayerPref_AskClient sends "set <ukey> x$<cvar> u": the client puts its cvar in place of $<cvar>
+  (not between quotes: it would not), "x" alone if it has none. The choice goes with him to every server and after a
+  change of name.
+- in the server, by name (not case sensitive) in dday/<file>, a line "<n> <name>" each: for the clients that do not
+  keep it (r1q2, 3.20, another PC).
+The one of the client goes first. <n> is one digit.
+*/
+
+// opens <homedir, basedir or .>/dday/<file> (the first one that works); path: where
+static FILE *PlayerPref_Open (char *file, char *mode, char *path, size_t size)
+{
+	char	*bases[3];
+	FILE	*f;
+	int		i;
+
+	bases[0] = sys_homedir ? sys_homedir->string : NULL;
+	bases[1] = sys_basedir ? sys_basedir->string : NULL;
+	bases[2] = ".";
+
+	for (i = 0; i < 3; i++)
+	{
+		if (!bases[i] || !*bases[i])
+			continue;
+		if (snprintf (path, size, "%s/%s/%s", bases[i], GAMEVERSION, file) >= (int)size)
+			continue;
+		if ((f = fopen (path, mode)) != NULL)
+			return f;
+	}
+	return NULL;
+}
+
+// a line of the file without its end; false if it is not "<n> <name>"
+static qboolean PlayerPref_ParseLine (char *line, int *value, char **name)
+{
+	line[strcspn (line, "\r\n")] = 0;
+	if (line[0] < '0' || line[0] > '9' || line[1] != ' ' || !line[2])
+		return false;
+	*value = line[0] - '0';
+	*name = line + 2;
+	return true;
+}
+
+// the choice of that name in the file, -1 if it has none
+int PlayerPref_Load (char *file, char *name)
+{
+	char	path[256], line[128], *n;
+	FILE	*f;
+	int		v, value = -1;
+
+	if (!name || !name[0] || !(f = PlayerPref_Open (file, "r", path, sizeof(path))))
+		return -1;
+	while (fgets (line, sizeof(line), f))
+	{
+		if (PlayerPref_ParseLine (line, &v, &n) && !Q_stricmp (n, name))
+		{
+			value = v;
+			break;
+		}
+	}
+	fclose (f);
+	return value;
+}
+
+// writes the file again with the choice of that name (value < 0: without it), to a .tmp and renamed, never half
+// written
+void PlayerPref_Save (char *file, char *name, int value)
+{
+	char	path[256], tmp[256 + 4], line[128], *n;
+	FILE	*in, *out;
+	int		v;
+
+	if (!name || !name[0] || value > 9)
+		return;
+
+	in = PlayerPref_Open (file, "r", path, sizeof(path));
+	if (in)
+	{
+		Com_sprintf (tmp, sizeof(tmp), "%s.tmp", path);
+		out = fopen (tmp, "w");
+	}
+	else if ((out = PlayerPref_Open (va ("%s.tmp", file), "w", tmp, sizeof(tmp))) != NULL)
+	{
+		Com_sprintf (path, sizeof(path), "%s", tmp);
+		path[strlen (path) - 4] = 0;
+	}
+	if (!out)
+	{
+		if (in)
+			fclose (in);
+		gi.dprintf ("PlayerPref: no se pudo escribir dday/%s (%s)\n", file, strerror (errno));
+		return;
+	}
+
+	if (in)
+	{
+		while (fgets (line, sizeof(line), in))
+		{
+			if (PlayerPref_ParseLine (line, &v, &n) && Q_stricmp (n, name))
+				fprintf (out, "%d %s\n", v, n);
+		}
+		fclose (in);
+	}
+	if (value >= 0)
+		fprintf (out, "%d %s\n", value, name);
+
+	if (fclose (out) || rename (tmp, path))
+		gi.dprintf ("PlayerPref: no se pudo guardar dday/%s (%s)\n", file, strerror (errno));
+}
+
+// the choice the client brings in its userinfo <ukey> ("x<n>", n < count), -1 if none
+int PlayerPref_Client (char *userinfo, char *ukey, int count)
+{
+	char	*s = Info_ValueForKey (userinfo, ukey);
+
+	if (s[0] != 'x' || s[1] < '0' || s[1] >= '0' + count || s[1] > '9' || s[2])
+		return -1;
+	return s[1] - '0';
+}
+
+// when he comes in: if his userinfo has no <ukey> yet, the client is asked for the choice it keeps in <cvar> (a
+// client that does not know "$<cvar>" sends it as it is, taken as none)
+void PlayerPref_AskClient (edict_t *ent, char *ukey, char *cvar)
+{
+	if (!ent->client || ent->ai || Info_ValueForKey (ent->client->pers.userinfo, ukey)[0])
+		return;
+	stuffcmd (ent, va ("set %s x$%s u\n", ukey, cvar));
+}
+
+// the choice to the client: <ukey> for this connection and the next servers, <cvar> in his config.cfg
+void PlayerPref_SetClient (edict_t *ent, char *ukey, char *cvar, int value)
+{
+	stuffcmd (ent, va ("set %s x%d u\nseta %s %d\n", ukey, value, cvar, value));
+}
+
 qboolean OnSameTeam(edict_t *self,edict_t *target)
 {
+	if (G_IsFFA())
+		return false;
+
 	if (!self ||
 		!target ||
 		!self->client ||

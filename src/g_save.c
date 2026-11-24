@@ -127,6 +127,7 @@ field_t fields[] = {
 	{"lip", STOFS(lip), F_INT, FFL_SPAWNTEMP},
 	{"distance", STOFS(distance), F_INT, FFL_SPAWNTEMP},
 	{"height", STOFS(height), F_INT, FFL_SPAWNTEMP},
+	{"nofalldamage", STOFS(nofalldamage), F_INT, FFL_SPAWNTEMP},
 	{"noise", STOFS(noise), F_LSTRING, FFL_SPAWNTEMP},
 	{"pausetime", STOFS(pausetime), F_FLOAT, FFL_SPAWNTEMP},
 	{"item", STOFS(item), F_LSTRING, FFL_SPAWNTEMP},
@@ -156,11 +157,10 @@ field_t fields[] = {
 
 	{"fullbright",FOFS(groundentity_linkcount),F_INT},
 	{"fog",FOFS(teleport_time),F_FLOAT},
-	{"obj_origin", FOFS(obj_origin), F_VECTOR}
+	{"obj_origin", FOFS(obj_origin), F_VECTOR},
 
-	
-	
-
+	// fin de la lista: sin esto un campo desconocido del mapa (p. ej. "focus" en dday1) recorre memoria ajena
+	{NULL, 0, F_INT}
 };
 
 // -------- just for savegames ----------
@@ -276,6 +276,8 @@ void InitGame (void)
 	invuln_medic		=	gi.cvar("invuln_medic",			"0",  0);//CVAR_SERVERINFO | CVAR_LATCH);
 //	teamgren			=	gi.cvar("teamgren",				"1",  CVAR_SERVERINFO | CVAR_LATCH);
 	death_msg			=	gi.cvar("death_msg",			"1",  CVAR_SERVERINFO);
+	killfeed_console	=	gi.cvar("killfeed_console",		"0",  0);
+	killfeed_style		=	gi.cvar("killfeed_style",		"0",  0);
 	level_wait			=	gi.cvar("level_wait",			"20",  CVAR_SERVERINFO);
 	invuln_spawn		=	gi.cvar("invuln_spawn",			"3", 0);//CVAR_SERVERINFO);
 
@@ -344,6 +346,7 @@ void InitGame (void)
 
 	exbattleinfo =  gi.cvar ("exbattleinfo", "0", 0); // ZeRo
 	random_class = gi.cvar ("random_class", "0", 0); // ZeRo
+	officer_bonus = gi.cvar ("officer_bonus", "0", 0); // ZeRo
 	mauser_only = gi.cvar ("mauser_only", "0", 0);
 	swords = gi.cvar ("swords", "0", 0);
 	sniper_only = gi.cvar ("sniper_only", "0", 0);
@@ -351,6 +354,10 @@ void InitGame (void)
 	airstrikes = gi.cvar ("airstrikes", "1", 0);
 	mapvoting = gi.cvar ("mapvoting", "0", 0);
 	mapvoting_avoid_nextmap = gi.cvar ("mapvoting_avoid_nextmap", "0", 0);// kernel: to skip nextmap when voting
+	mapvoting_modes = gi.cvar ("mapvoting_modes", "0", 0);
+	mapvoting_normal = gi.cvar ("mapvoting_normal", "3", 0);
+	mapvoting_gungame = gi.cvar ("mapvoting_gungame", "2", 0);
+	mapvoting_ffa = gi.cvar ("mapvoting_ffa", "0", 0);
 	constant_play = gi.cvar ("constant_play", "0", 0);
 
 	ctc = gi.cvar ("ctc", "0", 0);
@@ -366,6 +373,7 @@ void InitGame (void)
 	fullbright = gi.cvar ("fullbright", "0", 0);
 
 	stats = gi.cvar ("stats", "0", CVAR_LATCH);
+	Vote_Init ();
 
 	// pbowens: reduce lag by manipulating userinfo on server basis
 //	crosshair	= gi.cvar ("crosshair", "0", CVAR_USERINFO); 
@@ -405,8 +413,19 @@ void InitGame (void)
 
 	// kernel: make dday faster again
 	fast_arty = gi.cvar("fast_arty", "0", 0);
+	tornado          = gi.cvar("tornado", "0", 0);            // 1 = tornado automatico en tornado_maps
+	tornado_maps     = gi.cvar("tornado_maps", "tebessa tebessa2", 0);
+	tornado_gungame  = gi.cvar("tornado_gungame", "0", 0);    // 1 = tambien automatico en el Gun Game de tornado_maps (aunque tornado sea 0)
+	tornado_interval = gi.cvar("tornado_interval", "150", 0); // maximo de segundos entre tornados (minimo: la mitad)
+	tornado_time     = gi.cvar("tornado_time", "40", 0);      // segundos que dura
+	tornado_radius   = gi.cvar("tornado_radius", "300", 0);
+	tornado_height   = gi.cvar("tornado_height", "1000", 0);
+	tornado_speed    = gi.cvar("tornado_speed", "160", 0);
+	tornado_lift     = gi.cvar("tornado_lift", "400", 0);
+	tornado_fling    = gi.cvar("tornado_fling", "900", 0);
+	tornado_spins    = gi.cvar("tornado_spins", "2", 0);      // vueltas arriba antes de soltarlo
 	fast_bleeding = gi.cvar("fast_bleeding", "0", 0);
-	fast_sniper = gi.cvar("fast_sniper", "0", 0);
+	fast_sniper = gi.cvar("fast_sniper", "1", 0);
 
 	// kernel: spawn retention for tournament mode
 	tournament = gi.cvar("tournament", "0", CVAR_SERVERINFO);
@@ -416,6 +435,21 @@ void InitGame (void)
 
 	// kernel: modes for CTB: (0 disabled, 1 one briefcase, 2 many briefcases)
 	ctb_mode = gi.cvar("ctb_mode", "0", CVAR_LATCH);
+	ffa = gi.cvar("ffa", "0", CVAR_SERVERINFO|CVAR_LATCH);
+	ffa_roulette = gi.cvar("ffa_roulette", "0", CVAR_LATCH);
+	ffa_gungame = gi.cvar("ffa_gungame", "0", CVAR_LATCH);
+	ffa_gg_steps = gi.cvar("ffa_gg_steps", "29", 0);
+	ffa_gg_deaths = gi.cvar("ffa_gg_deaths", "0", 0);
+	ffa_gg_factions = gi.cvar("ffa_gg_factions", "1", 0);
+	ffa_gg_snd_up = gi.cvar("ffa_gg_snd_up", "ffa/gg_up2.wav", 0);
+	ffa_gg_snd_down = gi.cvar("ffa_gg_snd_down", "misc/menu3.wav", 0);
+	ffa_gg_victory_vol = gi.cvar("ffa_gg_victory_vol", "0.5", 0);
+	ffa_gg_leader_level = gi.cvar("ffa_gg_leader_level", "0", 0);
+	ffa_anticamp = gi.cvar("ffa_anticamp", "1", 0);
+	ffa_camp_secs = gi.cvar("ffa_camp_secs", "6", 0);
+	ffa_camp_dist = gi.cvar("ffa_camp_dist", "150", 0);
+	slap_push = gi.cvar("slap_push", "320", 0);
+	slap_damage = gi.cvar("slap_damage", "0", 0);
 
 	// kernel: time to display the MOTD at beginning of level
 	motd_time = gi.cvar("motd_time", "10", 0);
@@ -451,7 +485,7 @@ void InitGame (void)
 
 	AI_Init();//JABot
 
-    mapvotes[0]=mapvotes[1]=mapvotes[2]=mapvotes[3]=mapvotes[4]=0;
+    memset (mapvotes, 0, sizeof(mapvotes));
 
 }
 
@@ -1055,4 +1089,3 @@ void ReadLevel (char *filename)
 				ent->nextthink = level.time + ent->delay;
 	}
 }
-

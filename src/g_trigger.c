@@ -462,6 +462,156 @@ void SP_trigger_push (edict_t *self)
 /*
 ==============================================================================
 
+trigger_jumppad
+
+==============================================================================
+*/
+
+// la plataforma (models/objects/jumppad, de tools/assets/gen_jumppad.py): cuadrada, con el origen al centro del piso
+#define JUMPPAD_SIDE	256
+#define JUMPPAD_HEIGHT	10
+#define JUMPPAD_RING	91		// radio del anillo de la textura, de donde salen las particulas
+#define JUMPPAD_SIDE_SMALL	96	// spawnflags 1: plataforma chica (models/objects/jumppad_small)
+#define JUMPPAD_SMALL	1
+#define JUMPPAD_DIAGONAL	2	// spawnflags 2: lanza a 45 grados hacia "angle" en vez de recto hacia arriba
+
+static int jumppad_sound;
+
+void trigger_jumppad_touch (edict_t *self, edict_t *other, cplane_t *plane, csurface_t *surf)
+{
+	if (!other->client || other->health <= 0 || other->movetype == MOVETYPE_NOCLIP)
+		return;
+	if (self->spawnflags & JUMPPAD_DIAGONAL)
+	{
+		vec3_t	dir;
+
+		if (other->velocity[2] >= self->speed * 0.35)
+			return;		// ya va subiendo
+		// 45 grados hacia "angle": speed es la velocidad total, mitad (0.707) arriba y mitad hacia adelante;
+		// la velocidad con la que entro se reemplaza para que siempre salga igual
+		dir[0] = cos (self->s.angles[YAW] * M_PI / 180);
+		dir[1] = sin (self->s.angles[YAW] * M_PI / 180);
+		other->velocity[0] = dir[0] * self->speed * 0.7071F;
+		other->velocity[1] = dir[1] * self->speed * 0.7071F;
+		other->velocity[2] = self->speed * 0.7071F;
+	}
+	else
+	{
+		if (other->velocity[2] >= self->speed * 0.5)
+			return;		// ya va subiendo (sigue dentro del trigger los primeros frames)
+
+		// solo hacia arriba: la velocidad horizontal se mantiene, el que entra corriendo sale en esa direccion
+		other->velocity[2] = self->speed;
+	}
+	other->groundentity = NULL;
+	VectorCopy (other->velocity, other->client->oldvelocity);	// que el lanzamiento no cuente como caida
+
+	if (other->fly_sound_debounce_time < level.time)
+	{
+		other->fly_sound_debounce_time = level.time + 1;
+		gi.sound (other, CHAN_AUTO, jumppad_sound, 1, ATTN_NORM, 0);
+	}
+}
+
+// la plataforma alterna sus dos texturas (anillo apagado / encendido)
+void jumppad_pulse (edict_t *self)
+{
+	self->s.skinnum ^= 1;
+	self->nextthink = level.time + 0.5;
+}
+
+/*QUAKED trigger_jumppad (.5 .5 .5) (-128 -128 0) (128 128 10)
+Jump pad: una plataforma solida de 256x256 y 10 de alto (se sube caminando) que lanza hacia arriba al que la
+pisa. Es una entidad de punto, asi que se puede agregar desde un .ent sin tocar el mapa.
+"origin"	centro de la plataforma, a ras de piso
+"spawnflags"	1 = plataforma chica (96x96), 2 = flecha plana (no solida) que lanza a 45 grados hacia "angle" (speed = velocidad total, default 800 = ~800 de alcance)
+"angle"		giro de la plataforma (solo se ve; la caja de colision no gira, conviene 0 o multiplos de 90)
+"speed"		velocidad hacia arriba (default 1000; con gravedad 800 sube unas speed*speed/1600 unidades)
+*/
+void SP_trigger_jumppad (edict_t *self)
+{
+	int		i;
+	float	h = JUMPPAD_SIDE / 2;
+	float	ring = JUMPPAD_RING;
+	edict_t	*pad, *fx;
+	char	*model = "models/objects/jumppad/tris.md2";
+
+	if (self->spawnflags & JUMPPAD_SMALL)
+	{
+		h = JUMPPAD_SIDE_SMALL / 2;
+		ring = JUMPPAD_RING * (float)JUMPPAD_SIDE_SMALL / JUMPPAD_SIDE;
+		model = "models/objects/jumppad_small/tris.md2";
+	}
+	if (self->spawnflags & JUMPPAD_DIAGONAL)
+	{
+		h = 40;		// la flecha (models/objects/jumppad_arrow) gira con "angle": un cuadrado que cubre la punta
+		model = "models/objects/jumppad_arrow/tris.md2";
+	}
+	if (!self->speed)
+		self->speed = (self->spawnflags & JUMPPAD_DIAGONAL) ? 800 : 1000;
+
+	// el trigger: sobre la plataforma, un poco mas chico para no lanzar al que solo la roza por el costado
+	self->solid = SOLID_TRIGGER;
+	self->movetype = MOVETYPE_NONE;
+	self->svflags = SVF_NOCLIENT;
+	if (self->spawnflags & JUMPPAD_DIAGONAL)
+	{
+		// la flecha no es solida (es una marca en el piso): el trigger parte del piso
+		VectorSet (self->mins, -h, -h, 0);
+		VectorSet (self->maxs, h, h, 48);
+	}
+	else
+	{
+		VectorSet (self->mins, -h + 8, -h + 8, JUMPPAD_HEIGHT);
+		VectorSet (self->maxs, h - 8, h - 8, JUMPPAD_HEIGHT + 32);
+	}
+	self->touch = trigger_jumppad_touch;
+	gi.linkentity (self);
+
+	jumppad_sound = gi.soundindex ("misc/jumppad.wav");
+
+	// la plataforma: solida, se para encima
+	pad = G_Spawn ();
+	pad->classname = "jumppad";
+	VectorCopy (self->s.origin, pad->s.origin);
+	pad->s.angles[YAW] = self->s.angles[YAW];	// en el diagonal la flecha apunta hacia "angle"
+	pad->s.modelindex = gi.modelindex (model);
+	pad->movetype = MOVETYPE_NONE;
+	if (self->spawnflags & JUMPPAD_DIAGONAL)
+	{
+		pad->solid = SOLID_NOT;		// marca en el piso (10 de alto), se pisa sin chocar
+	}
+	else
+	{
+		pad->solid = SOLID_BBOX;
+		VectorSet (pad->mins, -h, -h, 0);
+		VectorSet (pad->maxs, h, h, JUMPPAD_HEIGHT);
+	}
+	pad->think = jumppad_pulse;
+	pad->nextthink = level.time + 0.5;
+	gi.linkentity (pad);
+
+	// 9 fuentes de particulas: el centro y 8 sobre el anillo
+	for (i = 0; i < ((self->spawnflags & JUMPPAD_DIAGONAL) ? 1 : 9); i++)
+	{
+		fx = G_Spawn ();
+		fx->classname = "jumppad_fx";
+		VectorCopy (self->s.origin, fx->s.origin);
+		if (i > 0)
+		{
+			fx->s.origin[0] += ring * cos (i * M_PI / 4);
+			fx->s.origin[1] += ring * sin (i * M_PI / 4);
+		}
+		fx->s.origin[2] += JUMPPAD_HEIGHT + 8;
+		fx->s.effects = EF_TELEPORTER;
+		gi.linkentity (fx);
+	}
+}
+
+
+/*
+==============================================================================
+
 trigger_hurt
 
 ==============================================================================

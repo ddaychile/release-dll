@@ -622,6 +622,9 @@ void func_explosive_objective_explode (edict_t *self, edict_t *inflictor, edict_
 
 	G_UseTargets (self, attacker);
 
+	// Free For All: no objectives, the brush just breaks without scoring or announcements
+	if (!G_IsFFA())
+	{
 	// hack for 2 team games
 
 	if (self->obj_owner != 99) {
@@ -658,6 +661,7 @@ void func_explosive_objective_explode (edict_t *self, edict_t *inflictor, edict_
 		 team_list[otherteam]->kills < team_list[otherteam]->need_kills))
 		gi.sound(self, CHAN_NO_PHS_ADD,
 				 gi.soundindex(va("%s/objectives/touch_cap.wav", team_list[otherteam]->teamid)), 1, 0, 0);
+	}
 
 //		gi.dprintf ("pts:%i  ndpts:%i  kills:%i  ndkills:%i\n",team_list[(self->obj_owner+1)%2]->score,team_list[(self->obj_owner+1)%2]->need_points,
 //team_list[(self->obj_owner+1)%2]->kills,team_list[(self->obj_owner+1)%2]->need_kills);
@@ -693,7 +697,9 @@ void func_explosive_objective_spawn (edict_t *self, edict_t *other, edict_t *act
 
 void SP_func_explosive_objective (edict_t *self)
 {
-	self->classnameb = FUNC_EXPLOSIVE_OBJECTIVE;
+	// Free For All: it is not an objective, so bots and the objectives list ignore it
+	if (!G_IsFFA())
+		self->classnameb = FUNC_EXPLOSIVE_OBJECTIVE;
 
 	self->movetype = MOVETYPE_PUSH;
 

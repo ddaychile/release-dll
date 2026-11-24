@@ -108,6 +108,7 @@ void SP_trigger_once (edict_t *ent);
 void SP_trigger_multiple (edict_t *ent);
 void SP_trigger_relay (edict_t *ent);
 void SP_trigger_push (edict_t *ent);
+void SP_trigger_jumppad (edict_t *ent);
 void SP_trigger_hurt (edict_t *ent);
 void SP_trigger_key (edict_t *ent);
 void SP_trigger_counter (edict_t *ent);
@@ -259,6 +260,7 @@ spawn_t spawns[MAX_EDICTS] = {
 	{"trigger_multiple", SP_trigger_multiple},
 	{"trigger_relay", SP_trigger_relay},
 	{"trigger_push", SP_trigger_push},
+	{"trigger_jumppad", SP_trigger_jumppad},
 	{"trigger_hurt", SP_trigger_hurt},
 	{"trigger_key", SP_trigger_key},
 	{"trigger_counter", SP_trigger_counter},
@@ -434,6 +436,21 @@ ED_CallSpawn
 Finds the spawn function for the entity and calls it
 ===============
 */
+// Free For All has no objectives: these entities only exist for objective scoring/missions
+static char *ffa_skipped_classnames[] =
+{
+	"objective_touch",
+	"objective_touch_ent",
+	"objective_area",
+	"timed_objective_touch",
+	"objective_flag",
+	"objective_VIP",
+	"misc_civilian",
+	"spawn_protect",	// spawn areas kill whoever is not of the owner team, there are no teams here
+	"weapon_sandbag",	// the sandbags item shares the knife slot but it is not a usable weapon here
+	NULL
+};
+
 void ED_CallSpawn (edict_t *ent)
 {
 	spawn_t	*s;
@@ -444,6 +461,18 @@ void ED_CallSpawn (edict_t *ent)
 	{
 		gi.dprintf ("ED_CallSpawn: NULL classname\n");
 		return;
+	}
+
+	if (G_IsFFA())
+	{
+		for (i = 0; ffa_skipped_classnames[i]; i++)
+		{
+			if (!strcmp(ffa_skipped_classnames[i], ent->classname))
+			{
+				G_FreeEdict (ent);
+				return;
+			}
+		}
 	}
 
 	// check item spawn functions
@@ -890,6 +919,23 @@ char *LoadEntFile(char *mapname, char *entities)
 	}
 
 
+	// Free For All: ents/<map>_ffa.ent replaces the normal ent file when it exists (it can add spawn points
+	// that only exist in FFA); without it the normal file is used. Team deathmatch never reads it.
+	if (G_IsFFA())
+	{
+		sprintf(entfilename, "ents/%s_ffa.ent", mapname);
+		for (i = 0; entfilename[i]; i++)
+			entfilename[i] = tolower(entfilename[i]);
+
+		newentities = ReadEntFile(entfilename);
+
+		if (newentities)
+		{
+			gi.dprintf("%s_ffa.ent Loaded (Free For All)\n", mapname);
+			return(newentities);
+		}
+	}
+
 	sprintf(entfilename, "ents/%s.ent", mapname);
 	// convert string to all lowercase (for Linux)
 	for (i = 0; entfilename[i]; i++)
@@ -1107,7 +1153,10 @@ void SpawnEntities2 (char *mapname, char *entities, char *spawnpoint)
 
 	gi.FreeTags (TAG_LEVEL);
 
-
+	// Free For All: the teams live in TAG_LEVEL memory that was just freed, do not keep the old pointers
+	// (a map without teams would otherwise leave dangling ones)
+	if (G_IsFFA())
+		memset (team_list, 0, sizeof(team_list));
 
 	memset (&level, 0, sizeof(level));
 	memset (g_edicts, 0, game.maxentities * sizeof (g_edicts[0]));
@@ -1123,11 +1172,8 @@ void SpawnEntities2 (char *mapname, char *entities, char *spawnpoint)
 	inhibit = 0;
 
 	// kernel: clear the counts for the next map ballot
-	mapvotes[0] = 0;
-	mapvotes[1] = 0;
-	mapvotes[2] = 0;
-	mapvotes[3] = 0;
-	mapvotes[4] = 0;
+	memset (mapvotes, 0, sizeof(mapvotes));
+	Vote_Reset ();
 
 	InitItems ();
 
@@ -1202,6 +1248,10 @@ void SpawnEntities2 (char *mapname, char *entities, char *spawnpoint)
 	}
 #endif
 
+	// Free For All: the weapon of the match is drawn and the items of the map cleaned before the item teams are
+	// linked (the teams of the map entities must not point to freed pickups)
+	FFA_RouletteInit ();
+
 	G_FindTeams ();
 
 
@@ -1209,6 +1259,9 @@ void SpawnEntities2 (char *mapname, char *entities, char *spawnpoint)
 
 	//pbowens: this is actually very handy
 	gi.dprintf("server map: %s\n", mapname);
+
+	if (G_IsFFA() && !team_list[0])
+		gi.dprintf("WARNING: Free For All needs team_list[0] (info_team_start) as loadout provider; map %s defines no team, players cannot enter the game\n", mapname);
 
 	LoadCampFile();
 
@@ -1251,6 +1304,703 @@ void SpawnEntities2 (char *mapname, char *entities, char *spawnpoint)
 
 #endif
 
+
+// Free For All: true only when its own statusbar was built (see SP_worldspawn), TeamStats checks it
+qboolean ffa_statusbar_active = false;
+
+// Free For All roulette: the class (and so the weapon) that everybody uses in the match, drawn at the start of the level
+int		ffa_mos = SNIPER;
+char	*ffa_weapon_name = NULL;
+static int		ffa_weapon_pos = LOC_SNIPER;
+static char		*ffa_weapon_ammo = NULL;
+
+int		ffa_team = 0;	// index of team_list that provides the faction (skin and weapons) of the weapon of the match
+int		ffa_pistol = 0;	// the weapon of the match is the pistol of the class (a pistol match)
+
+// the rand() of the C library gives almost the same values for seeds that are close in time (the level changes
+// of a server are), so the weapon is drawn with a hash of the clock instead
+static unsigned int FFA_Hash (unsigned int x)
+{
+	x ^= x >> 16;
+	x *= 0x7feb352dU;
+	x ^= x >> 15;
+	x *= 0x846ca68bU;
+	x ^= x >> 16;
+	return x;
+}
+
+// Free For All Gun Game: the ladder of weapons, one step per kill; the knife is always the last step
+qboolean	ffa_gg_on = false;
+gitem_t		*ffa_ladder[FFA_GG_MAX_STEPS];
+int			ffa_ladder_mags[FFA_GG_MAX_STEPS];
+int			ffa_ladder_len = 0;
+edict_t		*ffa_gg_winner = NULL;
+int			ffa_gg_banner = 0;
+
+#define FFA_GG_POOL		160		// Free For All Gun Game: weapons of the pool (the ones of the 8 factions, repeated ones once)
+#define FFA_GG_RESERVE	40	// models, sounds and images that are left free for what the game registers later
+#define FFA_GG_SPARE	8	// weapons loaded beyond the steps of the ladder, so the order has some choice
+
+typedef struct
+{
+	gitem_t		*item;
+	int			mags;
+	int			fac;			// faction of the class that has the weapon (g_ents.c)
+	qboolean	ins;			// item of the array of the faction: it is copied to the itemlist if the weapon is used
+	qboolean	inmap;			// weapon of one of the two factions of the map (already loaded by InitTeam)
+} ffa_gg_entry_t;
+
+// highest index of the models, sounds and images the Gun Game has registered: they are given in order, so it
+// tells how many are used (the ones that are already registered do not increase it)
+static int	ffa_gg_mdl, ffa_gg_snd, ffa_gg_img;
+
+static void FFA_GGModel (char *name)
+{
+	int		i = gi.modelindex (name);
+
+	if (i > ffa_gg_mdl)
+		ffa_gg_mdl = i;
+}
+
+static void FFA_GGSound (char *name)
+{
+	int		i = gi.soundindex (name);
+
+	if (i > ffa_gg_snd)
+		ffa_gg_snd = i;
+}
+
+static void FFA_GGImage (char *name)
+{
+	int		i = gi.imageindex (name);
+
+	if (i > ffa_gg_img)
+		ffa_gg_img = i;
+}
+
+// registers what PrecacheItem registers for the item (without its ammo)
+static void FFA_GGPrecacheItem (gitem_t *it)
+{
+	char	*s, *start;
+	char	data[MAX_QPATH];
+	int		len;
+
+	if (it->pickup_sound)
+		FFA_GGSound (it->pickup_sound);
+	if (it->world_model)
+		FFA_GGModel (it->world_model);
+	if (it->view_model)
+		FFA_GGModel (it->view_model);
+	if (it->icon)
+		FFA_GGImage (it->icon);
+
+	s = it->precaches;
+	while (s && *s)
+	{
+		start = s;
+		while (*s && *s != ' ')
+			s++;
+
+		len = s - start;
+		if (len >= MAX_QPATH || len < 5)
+			break;
+		memcpy (data, start, len);
+		data[len] = 0;
+		if (*s)
+			s++;
+
+		if (!strcmp (data + len - 3, "md2") || !strcmp (data + len - 3, "sp2"))
+			FFA_GGModel (data);
+		else if (!strcmp (data + len - 3, "wav"))
+			FFA_GGSound (data);
+		else if (!strcmp (data + len - 3, "pcx"))
+			FFA_GGImage (data);
+	}
+}
+
+// registers the weapon, its ammo, the model other players see in its hands (as ShowGun) and its scope, so a
+// weapon of a faction that is not in the map is complete when the level starts
+static void FFA_GGPrecacheWeapon (gitem_t *it, gitem_t *ammo)
+{
+	FFA_GGPrecacheItem (it);
+	if (ammo && ammo != it)
+		FFA_GGPrecacheItem (ammo);
+
+	if (it->classnameb == WEAPON_KATANA)
+		FFA_GGModel ("players/jpn/w_katana.md2");
+	else if (it->classnameb == WEAPON_SABRE)
+		FFA_GGModel ("players/pol/w_sabre.md2");
+	else if (it->icon)
+	{
+		if (it->position == LOC_KNIFE || it->position == LOC_FLAME)
+			FFA_GGModel (va ("players/usa/%s.md2", it->icon));
+		else if (it->dllname)
+			FFA_GGModel (va ("players/%s/%s.md2", it->dllname, it->icon));
+	}
+
+	if (it->position == LOC_SNIPER && it->dllname)
+		FFA_GGImage (va ("scope_%s", it->dllname));
+}
+
+// kind of weapon for the order of the ladder: the two submachine guns count as one
+static int FFA_GGType (gitem_t *item)
+{
+	return (item->position == LOC_SUBMACHINEGUN2) ? LOC_SUBMACHINEGUN : item->position;
+}
+
+// faction group: the Marines and the USA are one (they share the dllname)
+static int FFA_GGGroup (int f)
+{
+	int		g;
+
+	for (g = 0; g < f; g++)
+	{
+		if (!strcmp (FFA_FactionDll (g), FFA_FactionDll (f)))
+			return g;
+	}
+
+	return f;
+}
+
+// can the weapon be the next step? pass 0: another type and another faction than the previous step; pass 1: another
+// type; pass 2: any. The last weapon before the knife is not a sword (passes 0 and 1).
+static qboolean FFA_GGAllowed (ffa_gg_entry_t *e, int pass, int prev_type, int prev_group, qboolean last)
+{
+	if (pass >= 2)
+		return true;
+
+	if (prev_type >= 0 && FFA_GGType (e->item) == prev_type)
+		return false;
+
+	if (last && e->item->position == LOC_KNIFE)
+		return false;
+
+	if (pass == 0 && prev_group >= 0 && FFA_GGGroup (e->fac) == prev_group)
+		return false;
+
+	return true;
+}
+
+static qboolean FFA_GGInMap (char *dll)
+{
+	int		t;
+
+	for (t = 0; t < 2; t++)
+	{
+		if (team_list[t] && !strcmp (dll, team_list[t]->teamid))
+			return true;
+	}
+
+	return false;
+}
+
+// Builds the ladder of the Gun Game with the weapons of the classes of the factions (the Engineer rockets, the
+// machine guns, the flamethrower, the pistols and the swords included), in a random order that changes every
+// level, and the knife at the end. With ffa_gg_factions 1 they are the 8 factions, also the ones that are not in
+// the map (their weapons are copied to the itemlist and precached here, while the level loads, as long as there
+// are models, sounds, images and items left); with 0 only the ones of the two teams of the map. ffa_gg_steps
+// limits the number of weapons before the knife (0 = all of them). Then the items of the map are cleaned: the
+// weapons are only given by the ladder.
+// Returns false (and the normal roulette runs) when the Gun Game is off or there is no weapon.
+static qboolean FFA_GunGameInit (void)
+{
+	ffa_gg_entry_t	pool[FFA_GG_POOL], lad[FFA_GG_MAX_STEPS];
+	char			used[FFA_GG_POOL];
+	gitem_t			*item, *ammo;
+	SMos_t			*mos;
+	int				mags, steps, want, prev_type, prev_group, f;
+	char			*name, *dll;
+	unsigned int	seed;
+	edict_t			*ent;
+	qboolean		all, in_map, ins;
+	int				c, w, i, j, k, n = 0;
+
+	if (!ffa_gungame || !ffa_gungame->value)
+		return false;
+
+	all = !ffa_gg_factions || ffa_gg_factions->value;
+
+	for (f = 0; f < FFA_FactionCount (); f++)
+	{
+		dll = FFA_FactionDll (f);
+		in_map = FFA_GGInMap (dll);
+		if (!in_map && !all)
+			continue;
+
+		mos = FFA_FactionMos (f);
+
+		for (c = 1; c < NUM_CLASSES; c++)
+		{
+			for (w = 0; w < 2; w++)
+			{
+				name = w ? mos[c].weapon2 : mos[c].weapon1;
+				if (!name || !name[0])
+					continue;
+
+				// read from the array of the faction, also for the ones in the map: the copy of the itemlist is
+				// updated with the magazines of the slot of the faction in this map (it can be from another map);
+				// the items that are not in the arrays (the sword, the flamethrower) come from the itemlist
+				item = FFA_FactionItem (f, name);
+				ins = (item != NULL);
+				if (!item)
+					item = FindItemInTeam (name, dll);
+				if (!item || !(item->flags & IT_WEAPON))
+					continue;
+
+				// weapons that are also ammo are thrown and gone (molotov): they cannot be a step
+				if (item->flags & IT_AMMO)
+					continue;
+
+				if (item->position != LOC_PISTOL && item->position != LOC_RIFLE &&
+					item->position != LOC_SUBMACHINEGUN && item->position != LOC_SUBMACHINEGUN2 &&
+					item->position != LOC_L_MACHINEGUN && item->position != LOC_H_MACHINEGUN &&
+					item->position != LOC_SNIPER && item->position != LOC_ROCKET &&
+					item->position != LOC_SHOTGUN && item->position != LOC_KNIFE)
+					continue;
+
+				// the knife is the last step and the fists are not a weapon of the ladder; the other melee
+				// weapons (katana, sabre) have no ammo
+				if (item->position == LOC_KNIFE)
+				{
+					if (!item->classname || !strcmp (item->classname, "weapon_knife") || !strcmp (item->classname, "weapon_fists"))
+						continue;
+				}
+				else if (!item->ammo)
+					continue;
+
+				// the item must belong to the faction (the lookup falls back to any faction)
+				if (!item->dllname || strcmp (item->dllname, dll))
+					continue;
+
+				// the same weapon can be in several classes and in the Marines and the USA; two factions can also
+				// carry the same weapon under the same name (the PIAT, the Mauser 98ks): it is a step only once
+				for (j = 0; j < n; j++)
+				{
+					if (!strcmp (pool[j].item->classname, item->classname) &&
+						((!pool[j].item->dllname && !item->dllname) ||
+						 (pool[j].item->dllname && item->dllname && !strcmp (pool[j].item->dllname, item->dllname))))
+						break;
+					if (pool[j].item->pickup_name && item->pickup_name && !Q_stricmp (pool[j].item->pickup_name, item->pickup_name))
+						break;
+				}
+				if (j < n || n >= FFA_GG_POOL)
+					continue;
+
+				if (item->position == LOC_KNIFE)
+					mags = 0;
+				else if (w)
+					mags = (item->position == LOC_PISTOL) ? FFA_PISTOL_MAGS : mos[c].ammo2;
+				else
+					mags = mos[c].ammo1;
+
+				pool[n].item = item;
+				pool[n].mags = mags;
+				pool[n].fac = f;
+				pool[n].ins = ins;
+				pool[n].inmap = in_map;
+				n++;
+			}
+		}
+	}
+
+	if (!n)
+		return false;
+
+	gi.dprintf ("Gun Game: %i weapons in the pool\n", n);
+
+	steps = ffa_gg_steps ? (int)ffa_gg_steps->value : 0;
+	want = n;
+	if (steps > 0 && steps < want)
+		want = steps;
+	if (want > FFA_GG_MAX_STEPS - 1)
+		want = FFA_GG_MAX_STEPS - 1;
+
+	seed = FFA_Hash ((unsigned int)time (NULL) ^ FFA_Hash ((unsigned int)clock ()));
+
+	// models, sounds and images already in use (the files exist in the base game; nothing else registers them)
+	ffa_gg_mdl = gi.modelindex ("models/monsters/parasite/segment/tris.md2");
+	ffa_gg_snd = gi.soundindex ("boss3/bs3idle1.wav");
+	ffa_gg_img = gi.imageindex ("i_fixme");
+
+	// sounds of the cues (level up, level down, victory); the victory one is the anthem of the faction of the players
+	FFA_GGSound (ffa_gg_snd_up->string);
+	FFA_GGSound (ffa_gg_snd_down->string);
+	if (team_list[0])
+		FFA_GGSound (va ("%s/victory.wav", team_list[0]->teamid));
+
+	// banner of the lobby (stat 2 of the HUD)
+	FFA_GGImage (FFA_PIC_GG);
+	ffa_gg_banner = gi.imageindex (FFA_PIC_GG);
+
+	// banner of the end of the match (drawn by the scoreboard)
+	FFA_GGImage (FFA_PIC_GG_WIN);
+
+	// The weapons are registered before the order is drawn, so the ladder is drawn only among the ones that fit (the
+	// game also registers models, sounds and images later, and the clients cannot have more than MAX_MODELS,
+	// MAX_SOUNDS and MAX_IMAGES). The ones of the two factions of the map go first: InitTeam already loaded them, so
+	// they cost (almost) nothing. Then the ones of the other factions, in random order, while there is room and
+	// until there are some more than the steps (FFA_GG_SPARE). In a map with many models of its own (dday5) the
+	// ladder keeps all the weapons of the map and as many of the others as fit, instead of stopping at the first
+	// weapon that does not fit.
+	{
+		int			order[FFA_GG_POOL], m = 0, others, kept = 0, left_out = 0;
+		char		keep[FFA_GG_POOL];
+		qboolean	full = false;
+		ffa_gg_entry_t	*e;
+
+		for (i = 0; i < n; i++)
+		{
+			if (pool[i].inmap)
+				order[m++] = i;
+		}
+		others = m;
+		for (i = 0; i < n; i++)
+		{
+			if (!pool[i].inmap)
+				order[m++] = i;
+		}
+		for (i = n - 1; i > others; i--)
+		{
+			seed = FFA_Hash (seed + (unsigned int)i);
+			j = others + (int)(seed % (unsigned int)(i - others + 1));
+			k = order[i];
+			order[i] = order[j];
+			order[j] = k;
+		}
+
+		memset (keep, 0, sizeof (keep));
+		for (j = 0; j < n; j++)
+		{
+			e = &pool[order[j]];
+
+			if (!e->inmap)
+			{
+				if (full)
+				{
+					left_out++;
+					continue;
+				}
+				if (kept >= want + FFA_GG_SPARE)
+					break;
+				if (e->ins && game.num_items + 2 >= MAX_ITEMS - 8)
+				{
+					full = true;
+					left_out++;
+					continue;
+				}
+			}
+
+			ammo = e->ins ? FFA_FactionItem (e->fac, e->item->ammo) : NULL;
+			FFA_GGPrecacheWeapon (e->item, ammo);
+
+			// over the limit: the files of this weapon are already registered, but it is left out (and so are the
+			// rest of the other factions; the ones of the map are needed anyway)
+			if (!e->inmap && (ffa_gg_mdl > MAX_MODELS - FFA_GG_RESERVE || ffa_gg_snd > MAX_SOUNDS - FFA_GG_RESERVE ||
+				ffa_gg_img > MAX_IMAGES - FFA_GG_RESERVE))
+			{
+				full = true;
+				left_out++;
+				continue;
+			}
+
+			if (e->ins)
+			{
+				if (ammo)
+					FFA_InsertFactionItem (e->fac, ammo);
+				item = FFA_InsertFactionItem (e->fac, e->item);
+				if (!item)
+				{
+					left_out++;
+					continue;
+				}
+				e->item = item;
+			}
+
+			keep[order[j]] = 1;
+			kept++;
+		}
+
+		// only the weapons that were loaded stay in the pool
+		for (i = 0, m = 0; i < n; i++)
+		{
+			if (keep[i])
+				pool[m++] = pool[i];
+		}
+		n = m;
+
+		// only when the ladder is shorter than the steps asked for (ffa_gg_steps)
+		if (left_out && n < want)
+			gi.dprintf ("Gun Game: %i weapons of other factions left out (no room for more items, models, sounds or images: items %i/%i, models %i/%i, sounds %i/%i, images %i/%i)\n",
+						left_out, game.num_items, MAX_ITEMS, ffa_gg_mdl, MAX_MODELS, ffa_gg_snd, MAX_SOUNDS, ffa_gg_img, MAX_IMAGES);
+	}
+
+	if (!n)
+		return false;
+
+	if (want > n)
+		want = n;
+
+	// the steps are picked one by one at random. The faction is picked first (so the ones with more weapons do
+	// not take over the ladder) and then one of its weapons. The type of weapon (pistol, rifle...) never repeats
+	// from one step to the next, nor the faction when there is another option; the last weapon before the knife is
+	// not a sword either. If there is nothing left that complies, the rules are relaxed (pass 1, then 2).
+	memset (used, 0, sizeof (used));
+	prev_type = -1;
+	prev_group = -1;
+
+	for (k = 0; k < want; k++)
+	{
+		int		gcount[16], nfac = 0, pass, g = 0, r;
+
+		for (pass = 0; pass < 3; pass++)
+		{
+			memset (gcount, 0, sizeof (gcount));
+			nfac = 0;
+			for (i = 0; i < n; i++)
+			{
+				if (!used[i] && FFA_GGAllowed (&pool[i], pass, prev_type, prev_group, k == want - 1))
+					gcount[FFA_GGGroup (pool[i].fac)]++;
+			}
+			for (g = 0; g < FFA_FactionCount (); g++)
+			{
+				if (gcount[g])
+					nfac++;
+			}
+			if (nfac)
+				break;
+		}
+		if (!nfac)
+			break;
+
+		seed = FFA_Hash (seed + (unsigned int)(2 * k + 1));
+		r = seed % nfac;
+		for (g = 0; g < FFA_FactionCount (); g++)
+		{
+			if (gcount[g] && r-- == 0)
+				break;
+		}
+
+		seed = FFA_Hash (seed + (unsigned int)(2 * k + 2));
+		r = seed % gcount[g];
+		for (i = 0; i < n; i++)
+		{
+			if (!used[i] && FFA_GGAllowed (&pool[i], pass, prev_type, prev_group, k == want - 1) &&
+				FFA_GGGroup (pool[i].fac) == g && r-- == 0)
+				break;
+		}
+
+		used[i] = 1;
+		lad[k] = pool[i];
+		prev_type = FFA_GGType (pool[i].item);
+		prev_group = g;
+	}
+	n = k;
+
+	if (!n)
+		return false;
+
+	// the names of the items of the other factions for the clients
+	if (team_list[0] && team_list[1])
+		SetItemNames ();
+
+	for (i = 0; i < n; i++)
+	{
+		ffa_ladder[i] = lad[i].item;
+		ffa_ladder_mags[i] = lad[i].mags;
+	}
+	ffa_ladder[n] = FindItem ("Knife");
+	ffa_ladder_mags[n] = 0;
+	if (!ffa_ladder[n])
+		return false;
+
+	ffa_ladder_len = n + 1;
+	ffa_gg_on = true;
+
+	// everybody is an Infantry of the first team (skin, speed and weight are the same for all the steps)
+	ffa_mos = INFANTRY;
+	ffa_team = 0;
+	ffa_pistol = 0;
+
+	gi.dprintf ("Gun Game ladder (%i steps):", ffa_ladder_len);
+	for (i = 0; i < ffa_ladder_len; i++)
+		gi.dprintf (" %s%s", ffa_ladder[i]->pickup_name, (i < ffa_ladder_len - 1) ? "," : "\n");
+
+	// items of the map: only the knife stays
+	for (i = game.maxclients + 1; i < globals.num_edicts; i++)
+	{
+		ent = &g_edicts[i];
+
+		// only the pickups of the map (monsters, turrets and key triggers also have an item)
+		if (!ent->inuse || !ent->item || !ent->classname || strcmp (ent->classname, ent->item->classname))
+			continue;
+
+		if ((ent->item->flags & (IT_WEAPON | IT_AMMO)) && strcmp (ent->item->classname, "weapon_knife"))
+			G_FreeEdict (ent);
+	}
+
+	return true;
+}
+
+// Draws the weapon of the match among the weapons of the classes (INFANTRY, OFFICER, L_GUNNER, H_GUNNER, SNIPER
+// and SPECIAL; the Engineer, the Medic and the Flamethrower are not in the pool) of the factions of the two teams
+// of the map. Weapons that are not a gun (melee, rocket, flame, as the katana of the Japanese Special) or that
+// repeat another weapon are left out, and the weapon of the previous match is not drawn again when there are
+// more. Then the items of the map are cleaned: only the chosen weapon of that faction, its ammo and the knife stay.
+void FFA_RouletteInit (void)
+{
+	static int	pool[] = {INFANTRY, OFFICER, L_GUNNER, H_GUNNER, SNIPER, SPECIAL};
+	static char	last_weapon[64] = "";
+	int			valid[16], valid_team[16], valid_pistol[16], allowed[16], roll_image[16];
+	gitem_t		*items[16], *item;
+	edict_t		*ent;
+	int			i, j, t, m, n = 0;
+
+	if (!G_IsFFA())
+		return;
+
+	// nothing of the previous level stays
+	ffa_mos = SNIPER;
+	ffa_team = 0;
+	ffa_pistol = 0;
+	FFA_RouletteSetup (0, NULL, 0, NULL);
+	ffa_weapon_name = NULL;
+	ffa_weapon_pos = LOC_SNIPER;
+	ffa_weapon_ammo = NULL;
+	ffa_gg_on = false;
+	ffa_ladder_len = 0;
+	ffa_gg_winner = NULL;
+	ffa_gg_banner = 0;
+
+	if (!team_list[0])
+		return;
+
+	if (FFA_GunGameInit ())
+		return;
+
+	// Free For All clasico (ffa_roulette 0, por defecto): todos Sniper de la faccion del primer equipo, sin sorteo
+	// ni ruleta, y en el mapa solo quedan los rifles de francotirador y el cuchillo (como antes del sorteo)
+	if (!ffa_roulette || !ffa_roulette->value)
+	{
+		for (i = game.maxclients + 1; i < globals.num_edicts; i++)
+		{
+			ent = &g_edicts[i];
+
+			// only the pickups of the map (monsters, turrets and key triggers also have an item)
+			if (!ent->inuse || !ent->item || !ent->classname || strcmp (ent->classname, ent->item->classname))
+				continue;
+
+			if ((ent->item->flags & IT_WEAPON) && ent->item->position != LOC_SNIPER && ent->item->position != LOC_KNIFE)
+				G_FreeEdict (ent);
+		}
+		return;
+	}
+
+	for (t = 0; t < 2; t++)
+	{
+		if (!team_list[t])
+			continue;
+
+		for (i = 0; i < 6; i++)
+		{
+			item = FindItemInTeam (team_list[t]->mos[pool[i]]->weapon1, team_list[t]->teamid);
+
+			if (!item || !item->ammo || !(item->flags & IT_WEAPON))
+				continue;
+			if (item->position == LOC_KNIFE || item->position == LOC_ROCKET || item->position == LOC_FLAME)
+				continue;
+			// the item must belong to the faction of the team (the lookup falls back to any faction)
+			if (!item->dllname || strcmp (item->dllname, team_list[t]->teamid))
+				continue;
+
+			for (j = 0; j < n; j++)
+			{
+				if (items[j] == item)
+					break;
+			}
+			if (j < n)
+				continue;
+
+			valid[n] = pool[i];
+			valid_team[n] = t;
+			valid_pistol[n] = 0;
+			items[n] = item;
+			n++;
+		}
+
+		// the pistol of the Officer of the faction: a pistol match (it is the only weapon of everybody)
+		item = FindItemInTeam (team_list[t]->mos[OFFICER]->weapon2, team_list[t]->teamid);
+
+		if (item && item->ammo && (item->flags & IT_WEAPON) && item->position == LOC_PISTOL &&
+			item->dllname && !strcmp (item->dllname, team_list[t]->teamid))
+		{
+			for (j = 0; j < n; j++)
+			{
+				if (items[j] == item)
+					break;
+			}
+			if (j == n)
+			{
+				valid[n] = OFFICER;
+				valid_team[n] = t;
+				valid_pistol[n] = 1;
+				items[n] = item;
+				n++;
+			}
+		}
+	}
+
+	if (!n)
+		return;
+
+	// every weapon has the same chance, except the one of the previous match
+	m = 0;
+	for (j = 0; j < n; j++)
+	{
+		if (n < 2 || Q_stricmp (items[j]->pickup_name, last_weapon))
+			allowed[m++] = j;
+	}
+
+	j = allowed[FFA_Hash ((unsigned int)time (NULL) ^ FFA_Hash ((unsigned int)clock ())) % m];
+	ffa_mos = valid[j];
+	ffa_team = valid_team[j];
+	ffa_pistol = valid_pistol[j];
+	strncpy (last_weapon, items[j]->pickup_name, sizeof(last_weapon) - 1);
+	last_weapon[sizeof(last_weapon) - 1] = 0;
+	ffa_weapon_pos = items[j]->position;
+	ffa_weapon_ammo = items[j]->ammo;
+	ffa_weapon_name = items[j]->pickup_name;
+
+	// the roulette that is shown during the lobby wait: the icons of all the weapons of the draw
+	for (i = 0; i < n; i++)
+		roll_image[i] = gi.imageindex (va (FFA_PIC_ROLL, items[i]->icon));
+	FFA_RouletteSetup (n, roll_image, j, ffa_weapon_name);
+
+	// items of the map: the chosen weapon of its faction, its ammo and the knife
+	for (i = game.maxclients + 1; i < globals.num_edicts; i++)
+	{
+		ent = &g_edicts[i];
+
+		// only the pickups of the map (monsters, turrets and key triggers also have an item)
+		if (!ent->inuse || !ent->item || !ent->classname || strcmp (ent->classname, ent->item->classname))
+			continue;
+
+		if (ent->item->flags & IT_WEAPON)
+		{
+			if (ent->item->position == LOC_KNIFE)
+				continue;
+			if (ent->item->position == ffa_weapon_pos && ent->item->dllname &&
+				!strcmp (ent->item->dllname, team_list[ffa_team]->teamid))
+				continue;
+
+			G_FreeEdict (ent);
+		}
+		else if ((ent->item->flags & IT_AMMO) && ent->item->pickup_name &&
+				 Q_stricmp (ent->item->pickup_name, ffa_weapon_ammo))
+		{
+			G_FreeEdict (ent);
+		}
+	}
+}
 
 char *dday_statusbar =
 "yb	-24 "
@@ -1451,7 +2201,7 @@ char *dday_statusbar =
 	"yt 158 "
 	"xr -70 "
 	"pic 31 "
-"end if "
+"endif "
 
 
 // respawn timer
@@ -1545,7 +2295,74 @@ void SP_worldspawn (edict_t *ent)
 	gi.configstring (CS_MAXCLIENTS, va("%i", (int)(maxclients->value) ) );
 
 	// status bar program
-	gi.configstring (CS_STATUSBAR, dday_statusbar);
+	ffa_statusbar_active = false;
+	if (G_IsFFA())
+	{
+		// Free For All: the team KILLS/POINTS block is replaced by the top scorer and your own frags
+		static char ffa_statusbar[4096];
+		char *stats_start = strstr (dday_statusbar, "yt 17 ");
+		char *stats_end = strstr (dday_statusbar, "if 30 ");
+
+		FFA_HudReset ();
+		FFA_SpawnReset ();
+
+		// rand() is never seeded by the game: after every full restart ('map') the DLL starts with the same
+		// sequence, so the spawn tie-breaks would repeat identically. Seed it once per level.
+		initialize_random_seed ();
+
+		// no winner carried over from a previous match (the DLL is not always reloaded between maps)
+		Last_Team_Winner = 99;
+
+		if (stats_start && stats_end && stats_start < stats_end &&
+			strlen (dday_statusbar) + 512 < sizeof (ffa_statusbar))
+		{
+			strncpy (ffa_statusbar, dday_statusbar, stats_start - dday_statusbar);
+			ffa_statusbar[stats_start - dday_statusbar] = 0;
+			strcat (ffa_statusbar,
+				// Gun Game: the leader and the step of the player instead of the top scorer and his frags
+				(ffa_gungame && ffa_gungame->value) ? "yt 17 xr -149 string2 \"LEADER\" " : "yt 17 xr -165 string2 \"TOP SCORER\" ");
+			strcat (ffa_statusbar,
+				"yt 30 xr -196 stat_string 22 "
+				"yt 41 xr -150 num 3 24 ");
+			strcat (ffa_statusbar,
+				(ffa_gungame && ffa_gungame->value) ? "yt 70 xr -132 string2 \"LEVEL\" " : "yt 70 xr -124 string2 \"YOU\" ");
+			strcat (ffa_statusbar,
+				"yt 82 xr -150 num 3 23 "
+				// weapon roulette: stat 2 is the image index of the banner of the weapon (320 x 112, the frame of
+				// the winner banner with the icon inside). It is drawn before the announcement texts, so these
+				// stay over it: the name of the weapon is the bottom text of the announcement (stat 27, y 78),
+				// which falls under the plate of the icon
+				"if 2 "
+				"	xv 0 yv 6 pic 2 ");
+			// Gun Game: stat 2 is the banner of the mode (pics/ffa_gungame.png, 320 x 112, with its own text)
+			strcat (ffa_statusbar,
+				(ffa_gungame && ffa_gungame->value) ? "" : "	xv 84 yv 40 string2 \"WEAPON OF THE MATCH\" ");
+			strcat (ffa_statusbar,
+				"endif "
+				// announcements (stat 25 is the big number, 26 and 27 the texts above and below it)
+				// (separate ifs: nested ones are not skipped correctly by the client)
+				"if 26 "
+				"	xv 64 yv 30 stat_string 26 "
+				"endif "
+				"if 25 "
+				"	xv 126 yv 42 num 3 25 "
+				"endif "
+				"if 27 "
+				"	xv 64 yv 78 stat_string 27 "
+				"endif ");
+			strcat (ffa_statusbar, stats_end);
+			Killfeed_SetBase (ffa_statusbar);
+			ffa_statusbar_active = true;
+		}
+		else
+		{
+			// the original team statusbar is used, FFA_HudStats must not write its stats (see TeamStats)
+			gi.dprintf ("WARNING: the Free For All statusbar could not be built (markers not found in dday_statusbar), using the team one\n");
+			Killfeed_SetBase (dday_statusbar);
+		}
+	}
+	else
+		Killfeed_SetBase (dday_statusbar);
 
 	//---------------
 
@@ -1565,6 +2382,12 @@ void SP_worldspawn (edict_t *ent)
 
 	// pbowens: scoreboard
 	gi.imageindex ("scorehead");
+	if (G_IsFFA())
+	{
+		// Free For All scoreboard panel and winner banner, so the clients load/download them
+		gi.imageindex (FFA_PIC_SCORE);
+		gi.imageindex (FFA_PIC_WINNER);
+	}
 	gi.imageindex ("scoreleft");
 	gi.imageindex ("scoreright");
 
@@ -1582,6 +2405,8 @@ void SP_worldspawn (edict_t *ent)
 	gi.imageindex ("s_80");
 	gi.imageindex ("s_90");
 	gi.imageindex ("s_100");
+
+	level.nofalldamage = (st.nofalldamage != 0);
 
 	if (!st.gravity)
 		gi.cvar_set("sv_gravity", "800");
@@ -1803,6 +2628,7 @@ void SP_worldspawn (edict_t *ent)
 
 	// pbowens: precache these here b/c players use them
 	PrecacheItem ( FindItem("Morphine")		);
+	PrecacheItem ( FindItem("Healthpack")	);
 	PrecacheItem ( FindItem("Helmet")		);
 	PrecacheItem ( FindItem("Fists")		);
 	PrecacheItem ( FindItem("Binoculars")	);

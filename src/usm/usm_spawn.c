@@ -89,6 +89,8 @@ void SP_misc_banner_usa (edict_t *ent);
 
 spawn_t sp_usm[MAX_TEAM_ITEMS] =
 {
+	{ "weapon_browning", SP_item_weapon_browning },
+	{ "ammo_browning", SP_item_ammo_browning },
 	{ "weapon_colt45", SP_item_weapon_colt45 },
 	{ "weapon_m1", SP_item_weapon_m1 },
 	{ "weapon_shotgun", SP_item_weapon_shotgun },

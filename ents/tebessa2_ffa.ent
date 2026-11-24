@@ -1,0 +1,133 @@
+{
+"nextmap" ""
+"message" "City of Tebessa\nmodificado por: RmN"
+"_sun_ambient" "9"
+"_sun_diffade" "5"
+"_sun_diffuse" "5"
+"_sun_angle" "245 -45"
+"_sun_color" "234 239 163"
+"_sun_light" "300"
+"sky" "des"
+"classname" "worldspawn"
+}
+{
+"obj_owner" "1"
+"angle" "360"
+"origin" "1734.4 1728.4 -31.4"
+"classname" "info_reinforcements_start"
+}
+{
+"obj_owner" "0"
+"angle" "360"
+"origin" "-1264.9 -1050.6 -31.1"
+"classname" "info_reinforcements_start"
+}
+{
+"kills" "75"
+"message" "Company Bravo As"
+"count" "1"
+"dll" "usa"
+"obj_owner" "0"
+"angle" "360"
+"origin" "280.3 -245.3 110.5"
+"classname" "info_team_start"
+}
+{
+"kills" "75"
+"message" "Rommel's Skull"
+"count" "1"
+"dll" "grm"
+"obj_owner" "1"
+"angle" "360"
+"origin" "157.6 -262.8 54.8"
+"classname" "info_team_start"
+}
+{
+"angle" "360"
+"origin" "136.5 -246.3 256.5"
+"classname" "info_player_start"
+}
+{
+"obj_owner" "0"
+"origin" "-1184 591 -32"
+"angle" "69"
+"classname" "info_reinforcements_start"
+}
+{
+"obj_owner" "0"
+"origin" "-1496 1424 -32"
+"angle" "278"
+"classname" "info_reinforcements_start"
+}
+{
+"obj_owner" "0"
+"origin" "-4 1787 -32"
+"angle" "227"
+"classname" "info_reinforcements_start"
+}
+{
+"obj_owner" "0"
+"origin" "-184 991 -32"
+"angle" "264"
+"classname" "info_reinforcements_start"
+}
+{
+"obj_owner" "0"
+"origin" "173 707 -32"
+"angle" "320"
+"classname" "info_reinforcements_start"
+}
+{
+"obj_owner" "0"
+"origin" "173 1310 -32"
+"angle" "35"
+"classname" "info_reinforcements_start"
+}
+{
+"obj_owner" "0"
+"origin" "173 1787 -32"
+"angle" "314"
+"classname" "info_reinforcements_start"
+}
+{
+"obj_owner" "0"
+"origin" "1622 1204 -32"
+"angle" "253"
+"classname" "info_reinforcements_start"
+}
+{
+"obj_owner" "0"
+"origin" "1181 458 51"
+"angle" "292"
+"classname" "info_reinforcements_start"
+}
+{
+"obj_owner" "0"
+"origin" "1672 -1347 -32"
+"angle" "169"
+"classname" "info_reinforcements_start"
+}
+{
+"obj_owner" "0"
+"origin" "896 -1487 -32"
+"angle" "117"
+"classname" "info_reinforcements_start"
+}
+{
+"obj_owner" "0"
+"origin" "-379 -709 -32"
+"angle" "83"
+"classname" "info_reinforcements_start"
+}
+{
+"obj_owner" "0"
+"origin" "-255 -1487 -32"
+"angle" "120"
+"classname" "info_reinforcements_start"
+}
+{
+"obj_owner" "0"
+"origin" "-1060 -1487 -32"
+"angle" "59"
+"classname" "info_reinforcements_start"
+}

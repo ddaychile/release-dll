@@ -460,7 +460,7 @@ void Cmd_DDHelp_f(edict_t *ent)
 		" shout xxx   - Play xxx.wav in your team shout directory\n"
 		" binds       - This dialog\n"
 		"Edit your autoexec.cfg in your dday folder to bind these commands to the keys you want.\n"
-		"To vote, type \"Vote yes\" or \"Vote map xxx\" in the console.\n" 
+		"To vote, type \"vote map xxx\", \"vote yes\" or \"vote no\" in the console.\n" 
 		"To open the console, hit the key above the TAB key on your keyboard.\n"
 
 	);
@@ -516,6 +516,7 @@ qboolean Cmd_Scope_f(edict_t *ent)
 
 	if (!ent->client->pers.weapon ||
  		 ent->client->pers.weapon->classnameb == WEAPON_SANDBAGS ||
+		 ent->client->pers.weapon->classnameb == WEAPON_HEALTHPACK ||
  	//	 ent->client->pers.weapon->position== LOC_GRENADES ||
 //bcass start - TNT
 		 ent->client->pers.weapon->position== LOC_TNT)
@@ -1255,17 +1256,36 @@ void Cmd_Use_f (edict_t *ent)
 			Cmd_Scope_f(ent);
 			return;
 		}
-		else if (Q_stricmp(s,"weapon1")==0) 
+		else if (Q_stricmp(s,"weapon1")==0)
 		{
-			it = FindItemInTeam(ent->client->resp.team_on->mos[ent->client->resp.mos]->weapon1,
-					ent->client->resp.team_on->teamid);
+			if (G_IsFFA() && ffa_gg_on && ffa_ladder_len > 0)
+			{
+				// Free For All Gun Game: the primary weapon is the one of the step of the player (the weapon of
+				// his class is not in the ladder), so the key of the primary weapon brings it back. As in the
+				// rest of the game the knives go on the melee key (1) and the pistols on the secondary one (2):
+				// here only the other weapons
+				it = FFA_GunGameWeapon (ent);
+				if (it->position == LOC_PISTOL || it->position == LOC_KNIFE)
+					it = ent->client->pers.weapon;
+			}
+			else
+				it = FindItemInTeam(ent->client->resp.team_on->mos[ent->client->resp.mos]->weapon1,
+						ent->client->resp.team_on->teamid);
 			if (!it)
 				it = ent->client->pers.weapon;
 		}
-		else if (Q_stricmp(s,"weapon2")==0) 
+		else if (Q_stricmp(s,"weapon2")==0)
 		{
-			it = FindItemInTeam(ent->client->resp.team_on->mos[ent->client->resp.mos]->weapon2,
-					ent->client->resp.team_on->teamid);
+			if (G_IsFFA() && ffa_gg_on && ffa_ladder_len > 0)
+			{
+				// Free For All Gun Game: the secondary key brings back the weapon of the step only if it is a pistol
+				it = FFA_GunGameWeapon (ent);
+				if (it->position != LOC_PISTOL)
+					it = ent->client->pers.weapon;
+			}
+			else
+				it = FindItemInTeam(ent->client->resp.team_on->mos[ent->client->resp.mos]->weapon2,
+						ent->client->resp.team_on->teamid);
 			if (!it)
 				it = ent->client->pers.weapon;
 		}
@@ -1395,6 +1415,10 @@ void Cmd_Drop_f (edict_t *ent)
 	char		*s;
 
 	if (ent->client->limbo_mode || ent->deadflag == DEAD_DEAD)
+		return;
+
+	// Free For All Gun Game: the weapons only come from the ladder
+	if (G_IsFFA() && ffa_gg_on)
 		return;
 
 	if (!ent->client->resp.team_on || !ent->client->resp.mos || ent->client->grenade || ent->client->grenade_index )
@@ -2434,6 +2458,10 @@ void Cmd_Say_f (edict_t *ent, qboolean team, qboolean arg0, qboolean saved)
 	char		text[2048];
 	gclient_t	*cl;
 	char teamname[5];
+
+	// Free For All: there are no teams, so team chat is public chat
+	if (G_IsFFA())
+		team = false;
 
 	if (ent->client->resp.team_on)
 	{
@@ -3493,6 +3521,16 @@ void ClientCommand (edict_t *ent)
 	else if (Q_stricmp(cmd, "timeleft") == 0)
 	{
 		Cmd_ShowTimeLeft_f(ent);
+		return;
+	}
+	else if (Q_stricmp(cmd, "killfeed") == 0)	// style of the killfeed of the player (p_killfeed.c)
+	{
+		Killfeed_Cmd(ent);
+		return;
+	}
+	else if (Q_stricmp(cmd, "vote") == 0)
+	{
+		Cmd_Vote_f(ent);
 		return;
 	}
 

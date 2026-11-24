@@ -308,7 +308,7 @@ void P_ExplosionEffects (edict_t *player)
 	if (player->client->dmgef_intensity < 0) // negative numbers are
 		player->client->dmgef_intensity = 50;
 
-	intensity = (int)(player->client->dmgef_intensity / 10);
+	intensity = (int)(player->client->dmgef_intensity / 15); // faf: bajado de /10 a /15 para suavizar el remezon
 	//gi.dprintf("P_ExplosionEffects::intensity: %i\n",intensity);
 
 	if (frame <= (SWAY_BREAK * SWAY_MULTI) + SWAY_START) { // start/finish view kicks & color blend
@@ -908,9 +908,9 @@ void SV_CalcBlend (edict_t *ent)
 
 
 	// fade into lobby
-	if (level.framenum < ((int)level_wait->value * 10))
+	if (level.framenum < ((int)G_LobbyTime(0) * 10))
 	{
-		SV_AddBlend (0.0, 0.0, 0.0, (1.0 - (float)(level.framenum / (level_wait->value * 10.0))), ent->client->ps.blend);
+		SV_AddBlend (0.0, 0.0, 0.0, (1.0 - (float)(level.framenum / (G_LobbyTime(0) * 10.0))), ent->client->ps.blend);
 	}
 
 	// fade to black if dead
@@ -1103,6 +1103,14 @@ void P_FallingDamage (edict_t *ent)
 	if (ent->movetype == MOVETYPE_NOCLIP)
 		return;
 
+	// tornado: el que va en el tornado o salio volando de el cae sin dano (g_tornado.c)
+	if (ent->client->tornado_safe_until > level.time)
+	{
+		if (ent->groundentity && !ent->client->tornado)
+			ent->client->tornado_safe_until = 0;	// ya aterrizo
+		return;
+	}
+
 	if ((ent->client->oldvelocity[2] < 0) && (ent->velocity[2] > ent->client->oldvelocity[2]) && (!ent->groundentity))
 	{
 		delta = ent->client->oldvelocity[2];
@@ -1146,7 +1154,8 @@ void P_FallingDamage (edict_t *ent)
 		ent->client->fall_value = 40;
 	ent->client->fall_time = level.time + FALL_TIME;
 
-	if (ent->client->landed && delta > 30)
+	// "nofalldamage" en el worldspawn (p. ej. gg_rats): la caida no hace dano ni al de abajo
+	if (ent->client->landed && delta > 30 && !level.nofalldamage)
 	{
 		if (ent->health > 0)
 		{
@@ -1278,7 +1287,8 @@ void P_ShowID (edict_t *ent)
 				 (ent->client->resp.show_id &&
 				  ent->client->resp.team_on && ent->client->resp.mos &&
 				  tr.ent->client->resp.team_on && tr.ent->client->resp.mos &&
-				  ent->client->resp.team_on->index == tr.ent->client->resp.team_on->index))
+				  ent->client->resp.team_on->index == tr.ent->client->resp.team_on->index &&
+				  !G_IsFFA()))
 		{
 			ent->client->ps.stats[STAT_IDENT] = 1;
 			ent->client->ps.stats[STAT_IDENT_PLAYER] = CS_PLAYERSKINS + (tr.ent - g_edicts - 1);	
@@ -1539,6 +1549,28 @@ void P_WorldEffects (void)
 	}
 }
 
+// Gun Game: highest step among the players in game (cached once per frame)
+static int GG_TopLevel (void)
+{
+	static int	frame = -1, top = 0;
+	int			i;
+	edict_t		*other;
+
+	if (frame == level.framenum)
+		return top;
+	frame = level.framenum;
+	top = 0;
+	for (i = 0; i < game.maxclients; i++)
+	{
+		other = g_edicts + 1 + i;
+		if (!other->inuse || !other->client || !other->client->resp.team_on)
+			continue;
+		if (other->client->resp.ffa_level > top)
+			top = other->client->resp.ffa_level;
+	}
+	return top;
+}
+
 /*
 ===============
 G_SetClientEffects
@@ -1601,6 +1633,19 @@ ent->s.renderfx &= ~RF_IR_VISIBLE;
 		remaining = ent->client->invincible_framenum - level.framenum;
 		if (remaining > 30 || (remaining & 4) )
 			ent->s.effects |= EF_PENT;
+	}
+
+	// Gun Game: the leader(s), from step ffa_gg_leader_level on, glow gold (shell + yellow light); only visible when seen
+	if (ffa_gg_on && ffa_gg_leader_level && ffa_gg_leader_level->value > 0 && G_IsFFA()
+		&& ent->client->resp.team_on && ent->client->resp.ffa_level >= (int)ffa_gg_leader_level->value
+		&& ent->client->resp.ffa_level >= GG_TopLevel ())
+	{
+		ent->s.effects |= EF_HYPERBLASTER;
+		if (level.framenum % 16 < 8)	// slow blink: ~0.8 s on, ~0.8 s off (the light stays on)
+		{
+			ent->s.effects |= EF_COLOR_SHELL;
+			ent->s.renderfx |= (RF_SHELL_RED|RF_SHELL_GREEN);
+		}
 	}
 
 	// show cheaters!!!

@@ -60,6 +60,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define	svc_temp_entity		3
 #define	svc_layout			4
 #define	svc_inventory		5
+#define	svc_sound			9
 
 //==================================================================
 
@@ -311,9 +312,13 @@ typedef struct
 	int		sniper_bolt_frame;	
 
 	// OTHER
-	int	  rnd_count;					//Hack to get the right # of rounds in the clip currently loaded (for dropping/picking up the weapon)
+		int	  rnd_count;					//Hack to get the right # of rounds in the clip currently loaded (for dropping/picking up the weapon)
+		qboolean chamber_loaded;			//Hack igual que rnd_count, pero para saber si el cerrojo estaba cargado al soltar el arma
+
+	int	  hip_spread;					//Hip fire spread of the weapon (0 = the default hip spread of fire_gun)
 
 } GunInfo_t;
+
 
 
 typedef struct gitem_s
@@ -475,6 +480,8 @@ typedef struct
 	int 		allied_sandbags;
 	int 		axis_sandbags;
 
+	qboolean	nofalldamage;	// "nofalldamage" "1" en el worldspawn: en este mapa la caida no hace dano
+	float		tornado_next;	// g_tornado.c: cuando aparece el proximo tornado automatico
 } level_locals_t;
 
 
@@ -490,6 +497,7 @@ typedef struct
 	float		skyrotate;
 	vec3_t		skyaxis;
 	char		*nextmap;
+	int			nofalldamage;	// worldspawn: sin dano de caida en el mapa
 
 
 	int			lip;
@@ -664,6 +672,7 @@ extern	int	body_armor_index;
 #define	MOD_BOTTLE			53
 #define	MOD_TANKHIT			54
 #define	MOD_SHOTGUN2		55
+#define	MOD_BROWNING		56	// Browning Hi-Power (the Medic's automatic pistol)
 
 extern	int	meansOfDeath;
 
@@ -684,6 +693,39 @@ extern	cvar_t	*deathmatch;
 
 extern	cvar_t	*coop;
 extern	cvar_t	*ctb_mode; // kernel: selects mode for CTB (0 disabled, 1 one briefcase, 2 many briefcases)
+extern	cvar_t	*ffa; // Free For All mode (0 disabled, 1 enabled)
+extern	qboolean	ffa_statusbar_active; // Free For All statusbar built (g_spawn.c)
+extern	int		ffa_mos;			// Free For All: class (weapon) of every player in this match, drawn at the start of the level
+extern	int		ffa_team;			// Free For All: team_list index of the faction of that weapon (skin and loadout of everybody)
+extern	int		ffa_pistol;			// Free For All: the weapon of the match is the pistol of the class (a pistol match)
+#define FFA_PISTOL_MAGS		6		// Free For All: pistol magazines in a pistol match (the class gives 2 or 3 in team games)
+extern	char	*ffa_weapon_name;	// Free For All: pickup name of that weapon
+void FFA_RouletteInit (void);		// g_spawn.c
+extern	cvar_t	*ffa_roulette;		// Free For All: 1 = un arma sorteada por mapa (con ruleta); 0 = todos Sniper (clasico, por defecto)
+extern	cvar_t	*ffa_gungame;		// Free For All Gun Game: every kill gives the killer the next weapon of a ladder (0 disabled, 1 enabled)
+extern	cvar_t	*ffa_gg_steps;		// Free For All Gun Game: weapons of the ladder before the knife (default 29: 30 steps with the knife; 0 = all the weapons)
+extern	cvar_t	*ffa_gg_factions;	// Free For All Gun Game: weapons of the ladder from all the factions (1, default) or only from the two of the map (0)
+extern	cvar_t	*ffa_gg_deaths;		// Free For All Gun Game: deaths in a row that make a player go down one weapon (0 = a fifth of the steps, negative = no demotion)
+#define FFA_GG_MAX_STEPS	64		// Free For All Gun Game: size of the ladder (the knife included)
+extern	qboolean	ffa_gg_on;		// Free For All Gun Game is active in this level (the ladder was built)
+extern	gitem_t	*ffa_ladder[FFA_GG_MAX_STEPS];	// Free For All Gun Game: weapon of each step, the knife is the last
+extern	int		ffa_ladder_mags[FFA_GG_MAX_STEPS];	// Free For All Gun Game: spare magazines given with each weapon
+extern	int		ffa_ladder_len;		// Free For All Gun Game: number of steps
+extern	int		ffa_gg_banner;		// Free For All Gun Game: image index of the banner of the lobby (pics/ffa_gungame.png), 0 = none
+extern	edict_t	*ffa_gg_winner;		// Free For All Gun Game: the player who killed with the last weapon
+void FFA_GunGameGive (edict_t *ent);	// p_classes.c: gives the weapon of the step of the player
+gitem_t *FFA_GunGameWeapon (edict_t *ent);	// p_classes.c: weapon of the step of the player
+void FFA_GunGameThink (edict_t *ent);	// p_classes.c: gives the weapon of a new step, once per frame and outside the weapon code
+void FFA_GunGameKill (edict_t *killer, edict_t *victim, int mod);	// p_classes.c: a kill of the player, promotes or wins
+void FFA_GunGameDeath (edict_t *victim, qboolean suicide, int mod);	// p_classes.c: a death of the player, may demote
+extern	cvar_t	*ffa_gg_snd_up;		// Free For All Gun Game: sound (path in the sound folder) of the player who goes up a step
+extern	cvar_t	*ffa_gg_snd_down;	// Free For All Gun Game: sound of the player who goes down a step
+extern	cvar_t	*ffa_gg_victory_vol;	// Free For All Gun Game: volume (0 to 1, default 0.5) of the victory anthem of the end of the match
+extern	cvar_t	*ffa_gg_leader_level;	// Free For All Gun Game: from this step on the leader(s) get a gold aura + light (0 = off)
+void FFA_RouletteSetup (int count, int *images, int winner, char *name);	// p_hud.c
+#define FFA_DEFAULT_FRAGLIMIT	30	// Free For All frags to win when the server fraglimit is 0
+#define FFA_LEVEL_WAIT			10	// Free For All seconds of lobby at the start of the level
+#define FFA_RESPAWN_INTERVAL	3	// Free For All seconds to respawn after dying
 
 extern	cvar_t	*dmflags;
 
@@ -731,6 +773,8 @@ extern	cvar_t	*spawn_camp_time;
 extern	cvar_t	*invuln_medic;
 //extern	cvar_t	*teamgren;
 extern	cvar_t	*death_msg;
+extern	cvar_t	*killfeed_console;
+extern	cvar_t	*killfeed_style;
 extern	cvar_t	*level_wait;
 extern	cvar_t	*invuln_spawn;
 
@@ -763,6 +807,7 @@ extern cvar_t  *ent_files;
 
 extern cvar_t  *exbattleinfo; // ZeRo - Activa datos de batalla adicionales: headshots, helmet saves y killing spree. Valores sobre 2 determinan las kills necesarias para la racha.
 extern cvar_t  *random_class; // ZeRo
+extern cvar_t  *officer_bonus; // ZeRo - Activa el bonus de cooldown para los airstrikes del officer. Cada kill resta 5 segundos.
 extern cvar_t  *sniper_only;
 extern cvar_t  *mauser_only;
 extern cvar_t  *swords;
@@ -771,6 +816,10 @@ extern cvar_t  *airstrikes;
 extern cvar_t  *nohud;
 extern cvar_t  *mapvoting;
 extern cvar_t  *mapvoting_avoid_nextmap; // kernel: to skip nextmap check when selecting maps to vote
+extern cvar_t  *mapvoting_modes;	// 1 = votacion final por secciones (normal / Gun Game / FFA)
+extern cvar_t  *mapvoting_normal;	// mapas de cada seccion (0 = la seccion no aparece)
+extern cvar_t  *mapvoting_gungame;
+extern cvar_t  *mapvoting_ffa;
 extern cvar_t  *constant_play; //for testing
 extern cvar_t  *serverimg; 
 
@@ -820,6 +869,17 @@ extern cvar_t *limit_flamer;
 
 // kernel: make dday faster again
 extern cvar_t *fast_arty;
+extern cvar_t *tornado;            // 1 = tornado de broma automatico en los mapas de tornado_maps (sv tornado lo llama a mano)
+extern cvar_t *tornado_maps;       // mapas con tornado automatico, separados por espacio ("*" = todos)
+extern cvar_t *tornado_gungame;    // 1 = tornado automatico tambien en el Gun Game (ffa_gungame) de tornado_maps
+extern cvar_t *tornado_interval;   // maximo de segundos entre tornados (minimo: la mitad)
+extern cvar_t *tornado_time;       // segundos que dura cada tornado
+extern cvar_t *tornado_radius;     // radio en que agarra a los jugadores
+extern cvar_t *tornado_height;     // alto del embudo (hasta donde sube a los jugadores)
+extern cvar_t *tornado_speed;      // velocidad con que anda por el mapa
+extern cvar_t *tornado_lift;       // velocidad de subida del jugador
+extern cvar_t *tornado_fling;      // fuerza con que lo lanza al soltarlo
+extern cvar_t *tornado_spins;      // vueltas que da arriba antes de soltarlo
 extern cvar_t *fast_bleeding;
 extern cvar_t *fast_sniper;
 
@@ -932,6 +992,50 @@ void Think_Arty (edict_t *ent);
 //qboolean FindOnTeam(edict_t *ent);
 
 qboolean OnSameTeam(edict_t *self,edict_t *target);
+// g_utils.c: choices of each player kept in his client and by name in the server (see PlayerPref_Load)
+int PlayerPref_Load (char *file, char *name);
+void PlayerPref_Save (char *file, char *name, int value);
+int PlayerPref_Client (char *userinfo, char *ukey, int count);
+void PlayerPref_AskClient (edict_t *ent, char *ukey, char *cvar);
+void PlayerPref_SetClient (edict_t *ent, char *ukey, char *cvar, int value);
+qboolean G_IsFFA(void);
+// g_vote.c: mapas de cada modo (FFA / Gun Game: ents/<mapa>_ffa.ent)
+const char *Mode_NextMap (const char *current);	// proximo mapa de la rotacion del modo, NULL fuera de esos modos
+const char *Mode_Label (void);					// "Gun Game" o "Free For All"
+int Mode_PreparedMaps (int vmode, const char **out, int max);	// mapas preparados para un modo (VMODE_*)
+qboolean Vote_MapPlayable (const char *map);	// el .bsp carga y tiene spawns de D-Day
+
+// votacion de fin de mapa por secciones (mapvoting_modes 1): cada opcion lleva el modo en que se juega
+int MapVote_CurrentMode (void);		// modo de la partida que se esta jugando (VMODE_*)
+int MapVote_Seconds (void);			// duracion de la votacion de fin de mapa
+void MapVote_SetPendingMode (int vmode);	// el proximo mapa se juega en ese modo (VMODE_*)
+const char *MapVote_ModeLabel (int vmode);	// "normal", "Gun Game" o "Free For All"
+void MapVote_ApplyMode (void);		// deja los cvars del modo ganador justo antes de cambiar de mapa (ExitLevel)
+// Free For All scoreboard pictures. The leading '/' makes them full paths: the client downloads the .png
+// itself (a plain name like "ffa_score" makes it ask for pics/ffa_score.pcx, which does not exist)
+#define FFA_PIC_SCORE	"/pics/ffa_score.png"
+#define FFA_PIC_WINNER	"/pics/ffa_winner.png"
+#define FFA_PIC_GG		"/pics/ffa_gungame.png"		// Gun Game: banner of the lobby
+#define FFA_PIC_GG_WIN	"/pics/ffa_gungame_win.png"	// Gun Game: banner of the winner
+#define FFA_PIC_ROLL	"/pics/ffa_%s.png"			// weapon roulette: banner of each weapon (icon of the weapon)
+void FFA_JoinPlayer(edict_t *ent);
+void FFA_HudReset(void);
+// p_killfeed.c
+void Killfeed_SetBase(char *statusbar);
+void Killfeed_UpdateBase(char *statusbar);
+qboolean Killfeed_Add(edict_t *killer, edict_t *victim, int mod, qboolean headshot, char *mid, char *tail);
+void Killfeed_Frame(void);
+void Killfeed_ClientConnect(edict_t *ent);
+void Killfeed_Userinfo(edict_t *ent, char *userinfo);
+void Killfeed_ClientBegin(edict_t *ent);
+void Killfeed_Cmd(edict_t *ent);
+qboolean Killfeed_Shows(edict_t *ent);
+void FFA_SpawnReset(void);
+void initialize_random_seed();	// p_classes.c
+void FFA_ForgetPlayer(edict_t *gone);
+void FFA_ShowAnnouncement(char *top_text, int number, char *bottom_text);
+float G_LobbyTime(float team_delay);
+float G_RespawnInterval(void);
 
 
 
@@ -1405,6 +1509,14 @@ typedef struct
 
 	int			points; // kernel: to count points in coop mode
 
+	int			ffa_kills;		// Free For All: kills made by this player
+	int			ffa_deaths;		// Free For All: every death, suicides included
+	int			ffa_milestone;	// Free For All: last announced multiple of 10 frags
+	int			ffa_warned;		// Free For All: 1 = "5 frags away" announced, 2 = "1 frag away" announced
+	int			ffa_level;		// Free For All Gun Game: step of the ladder of this player
+	int			ffa_streak;		// Free For All Gun Game: deaths in a row without a kill
+	int			ffa_pending;	// Free For All Gun Game: the weapon of the new step is given at the next frame
+
 } client_respawn_t;
 
 
@@ -1519,6 +1631,8 @@ struct gclient_s
 	int			breather_sound;
 
 	int			machinegun_shots;	// for weapon raising
+	int			browning_shots;		// Browning Hi-Power: shots of the current burst (spread)
+	int			browning_last_frame;	// Browning Hi-Power: level.framenum of its last shot
 
 	// animation vars
 	int			anim_end;
@@ -1595,6 +1709,11 @@ struct gclient_s
 //faf	float		arty_time_fire;
 //	float		arty_time_restrict;
 	edict_t     *airstrike;//faf
+	edict_t     *tornado;            // tornado que lo lleva (NULL si ninguno)
+	float       tornado_catch_time;  // cuando lo agarro
+	float       tornado_top_time;    // cuando llego arriba y empezo a dar vueltas (0 = subiendo)
+	float       tornado_free_time;   // hasta cuando no lo puede volver a agarrar
+	float       tornado_safe_until;  // sin dano por caida hasta aterrizar (o hasta este tiempo)
 
 	float		jump_stamina;
 	qboolean	jump_push;
@@ -1628,6 +1747,7 @@ struct gclient_s
 	float		jump_pause_time;
 
 	edict_t     *last_wound_inflictor;
+	int			last_wound_ffa_level;	// Gun Game: step of last_wound_inflictor when he hurt him (a bleed-out wins only from the last step)
 
 	int			sidestep_anim;
 	int			last_sidestep_anim;
@@ -1642,6 +1762,8 @@ struct gclient_s
 	float		unscopetime;//faf
 
 	float       last_fire_time;//faf
+
+	float       next_healthpack_time;	// Medic: level.time when he can throw the next healthpack
 
 	qboolean    tank_hit;//faf
 
@@ -1945,6 +2067,13 @@ TeamS_t *team_list[MAX_TEAMS];
 
 void InitMOS_List(TeamS_t *team,SMos_t *mos_list);
 
+// Free For All Gun Game: items and class loadouts of the factions, also the ones that are not in the map (g_ents.c)
+int FFA_FactionCount (void);
+char *FFA_FactionDll (int f);
+SMos_t *FFA_FactionMos (int f);
+gitem_t *FFA_FactionItem (int f, char *pickup_name);
+gitem_t *FFA_InsertFactionItem (int f, gitem_t *src);
+
 extern int Last_Team_Winner;
 
 extern qboolean	frame_output;
@@ -1981,6 +2110,27 @@ extern int jpn_index;
 #define PISTOL_SPREAD 10 // valor era 40 hans
 #define LMG_SPREAD 10 // Valor para test era 20 (Original 80)- ZeRo
 #define HMG_SPREAD 10 // Valor para test (Original 100)- ZeRo
+#define LMG_BLOOM_STEP 12	// spread aimed extra por disparo sostenido (BAR/MP43)
+#define LMG_BLOOM_KICK 0.12	// grados de recoil vertical por disparo sostenido (BAR/MP43)
+
+// Medic healthpack: a pack the Medic throws, any teammate that touches it recovers health
+#define HEALTHPACK_HEAL			25		// health that a teammate recovers
+#define HEALTHPACK_DELAY		3		// seconds between two throws
+#define HEALTHPACK_LIFE			180		// seconds a pack stays on the ground (also after its Medic dies)
+#define HEALTHPACK_MAX_PER_MEDIC	6		// packs of one Medic on the ground at once: a new one removes his oldest
+#define HEALTHPACK_FX_TIME		5		// seconds it throws green sparks after it is thrown, then it is just the crate
+#define HEALTHPACK_OWNER_DELAY	1		// seconds before the Medic who threw a pack can take it himself
+#define HEALTHPACK_EDICT_MARGIN	64		// free entities that must be left to throw a pack
+
+// Browning Hi-Power: automatic pistol of the Medic (all factions)
+#define BROWNING_DAMAGE			17
+#define BROWNING_MAG			10
+#define BROWNING_FIRE_DELAY		2		// frames between shots (5 shots per second)
+#define BROWNING_SPREAD			20		// aimed spread of the first shot
+#define BROWNING_SPREAD_STEP	15		// extra aimed spread for every shot while the trigger is held
+#define BROWNING_BURST_GAP		3		// frames without shooting after which the spread goes back to the first shot
+#define BROWNING_HIP_SPREAD		200		// hip spread (fire_gun uses 600 by default)
+#define BROWNING_HEAD_BONUS		120		// % of damage of a head hit, which then counts as a chest hit
 
 
 
@@ -2072,6 +2222,7 @@ typedef enum
 	WEAPON_MORPHINE,
 	WEAPON_FLAMETHROWER,
 	WEAPON_COLT45,
+	WEAPON_BROWNING,
 	WEAPON_M1,
 	WEAPON_THOMPSON,
 	WEAPON_BAR,
@@ -2126,6 +2277,7 @@ typedef enum
 	AMMO_TNT,
 	AMMO_NAPALM,
 	AMMO_COLT45,
+	AMMO_BROWNING,
 	AMMO_M1,
 	AMMO_THOMPSON,
 	AMMO_BAR,
@@ -2198,7 +2350,9 @@ typedef enum
 	AIRSTRIKE,
 	AIRSTRIKE_CALLED,
 	PLANE,
-	BOMB
+	BOMB,
+	WEAPON_HEALTHPACK,
+	HEALTHPACK
 } classnameb_t;
 
 typedef enum
@@ -2215,10 +2369,14 @@ qboolean no_objectives_left;
 qboolean dropnodes;
 
 
-char	*votemaps[5];
-int		mapvotes[5];
+#define VOTE_OPTIONS	8
+enum { VMODE_NORMAL, VMODE_GUNGAME, VMODE_FFA };
+char	*votemaps[VOTE_OPTIONS];
+int		mapvotes[VOTE_OPTIONS];
+int		votemodes[VOTE_OPTIONS];	// VMODE_* de cada opcion (todas normal en la votacion clasica)
+int		votemaps_count;				// opciones de la votacion actual (4 en la clasica, hasta 8 por secciones)
 
-#define MAX_TEAM_ITEMS 19
+#define MAX_TEAM_ITEMS 21
 #define NUM_CLASSES 10
 #define MAX_TEAM_GUNS 8
 
@@ -2242,9 +2400,80 @@ void Update_Campaign_Info (void);
 void WriteCampaignTxt(void);
 void SetupCampaign (qboolean restart);
 int PlayerCountForTeam (int team_number);
+void Weapon_Healthpack (edict_t *ent);
+void RemoveHealthpacks (edict_t *owner);
 void Weapon_Generic (edict_t *ent, int FRAME_ACTIVATE_LAST, int FRAME_LFIRE_LAST, int FRAME_LIDLE_LAST, int FRAME_RELOAD_LAST, int FRAME_LASTRD_LAST,
 					 int FRAME_DEACTIVATE_LAST, int FRAME_RAISE_LAST,int FRAME_AFIRE_LAST, int FRAME_AIDLE_LAST,
 					 int *pause_frames, int *fire_frames, void (*fire)(edict_t *ent));
+
+// Browning Hi-Power (g_weapon.c): the same item and gun info for every faction, only dllname changes.
+// Its entries go first in the item list and in the spawn list of each faction (they are paired by position).
+void Weapon_Browning (edict_t *ent);
+void Weapon_Browning_Fire (edict_t *ent);
+void SP_item_weapon_browning (edict_t *self);
+void SP_item_ammo_browning (edict_t *self);
+extern GunInfo_t browning_guninfo;
+
+#define BROWNING_WEAPON_ITEM(dll) \
+	{ \
+		"weapon_browning", \
+		WEAPON_BROWNING, \
+		Pickup_Weapon, \
+		Use_Weapon, \
+		Drop_Weapon, \
+		Weapon_Browning, \
+		"misc/w_pkup.wav", \
+		"models/weapons/usa/g_colt45/tris.md2", 0, \
+		"models/weapons/usa/v_colt45/tris.md2", \
+		"w_colt45", \
+		"Browning Hi-Power", \
+		0, \
+		1, \
+		"browning_mag", \
+		IT_WEAPON, \
+		NULL, \
+		0, \
+		LOC_PISTOL, \
+		2, \
+		1, \
+		5000, \
+		100, \
+		"usa/colt45/fire.wav usa/colt45/reload.wav usa/colt45/unload.wav", \
+		dll, \
+		&browning_guninfo, \
+		0 \
+	}
+
+#define BROWNING_AMMO_ITEM(dll) \
+	{ \
+		"ammo_browning", \
+		AMMO_BROWNING, \
+		Pickup_Ammo, \
+		NULL, \
+		Drop_Ammo, \
+		NULL, \
+		"misc/am_pkup.wav", \
+		"models/items/ammo/pistols/tris.md2", 0, \
+		NULL, \
+		"a_colt45", \
+		"browning_mag", \
+		3, \
+		BROWNING_MAG, \
+		NULL, \
+		IT_AMMO, \
+		NULL, \
+		AMMO_TYPE_PISTOL, \
+		0, \
+		0, \
+		0.25, \
+		0, \
+		0, \
+		"", \
+		dll, \
+		NULL, \
+		0 \
+	}
+
 gitem_t	*FindNextPickup (edict_t *ent, int location);
 gitem_t	*FindItemB(classnameb_t classnameb);
 void SelectSpawnPoint (edict_t *ent, vec3_t origin, vec3_t angles);
@@ -2267,5 +2496,32 @@ void SP_objective_flag (edict_t *self);
 void briefcase_warn (edict_t *ent);//faf;  ctb code
 qboolean Pickup_Briefcase (edict_t *ent, edict_t *other); 
 void Drop_Briefcase (edict_t *ent, gitem_t *item);
+// g_svcmds.c: cachetada anti-campeo del Gun Game
+extern	cvar_t	*ffa_anticamp;		// 1 (default) = quien se queda quieto ffa_camp_secs en el Gun Game recibe cachetadas (0 = off)
+extern	cvar_t	*ffa_camp_secs;
+extern	cvar_t	*ffa_camp_dist;
+extern	cvar_t	*slap_push;			// fuerza del empujon de la cachetada
+extern	cvar_t	*slap_damage;		// dano de la cachetada (0 = ninguno)
+void Svcmd_Slap_f (void);
+void Anticamp_RunFrame (void);
+
+// g_vote.c: votacion de los jugadores durante la partida (vote map / vote yes)
+void Vote_Init (void);
+void Vote_Reset (void);
+void Vote_RunFrame (void);
+void Vote_ClientDisconnect (edict_t *ent);
+void Vote_ClientBegin (edict_t *ent);
+void Cmd_Vote_f (edict_t *ent);
+void Svcmd_VoteCancel_f (void);
+
+// g_tornado.c: tornado de broma que levanta a los jugadores (sin dano por caida)
+edict_t *Tornado_Spawn (edict_t *anchor);
+void Tornado_RunFrame (void);
+void Svcmd_Tornado_f (void);
+// ai_navigation.c: nodos de los bots para el recorrido del tornado
+int AI_NumNodes (void);
+void AI_NodeOrigin (int n, vec3_t out);
+int AI_FindClosestReachableNode (vec3_t origin, edict_t *passent, int range, int flagsmask);
+edict_t *CreateTargetChangeLevel (char *map);
 
 #endif /* __G_LOCAL_H__ */
