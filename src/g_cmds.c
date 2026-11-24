@@ -460,7 +460,7 @@ void Cmd_DDHelp_f(edict_t *ent)
 		" shout xxx   - Play xxx.wav in your team shout directory\n"
 		" binds       - This dialog\n"
 		"Edit your autoexec.cfg in your dday folder to bind these commands to the keys you want.\n"
-		"To vote, type \"Vote yes\" or \"Vote map xxx\" in the console.\n" 
+		"To vote, type \"vote map xxx\", \"vote yes\" or \"vote no\" in the console.\n" 
 		"To open the console, hit the key above the TAB key on your keyboard.\n"
 
 	);
@@ -3526,6 +3526,11 @@ void ClientCommand (edict_t *ent)
 	else if (Q_stricmp(cmd, "killfeed") == 0)	// style of the killfeed of the player (p_killfeed.c)
 	{
 		Killfeed_Cmd(ent);
+		return;
+	}
+	else if (Q_stricmp(cmd, "vote") == 0)
+	{
+		Cmd_Vote_f(ent);
 		return;
 	}
 

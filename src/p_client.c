@@ -2856,6 +2856,7 @@ void ClientBeginDeathmatch (edict_t *ent)
 	AI_EnemyAdded(ent);
 	//[end]
 
+	Vote_ClientBegin (ent);	// le explica como votar (la primera vez que entra)
 
 
 	// make sure all view stuff is valid
@@ -3208,6 +3209,7 @@ void ClientDisconnect (edict_t *ent)
 		return;
 
 
+	Vote_ClientDisconnect (ent);
 
 	if (!level.intermissiontime)
 		Write_Player_Stats(ent);
@@ -3495,19 +3497,224 @@ void SetWaterLevel (edict_t *ent)
 }
 	
 
+/*
+==============================================================================
+Votacion de fin de mapa por secciones (mapvoting_modes 1)
+
+El menu trae mapas en secciones (Normal, Gun Game, Free For All) y el
+mapa siguiente se juega en el modo de la opcion ganadora. Cada seccion tiene su cvar con
+la cantidad de mapas (mapvoting_normal 3, mapvoting_gungame 2, mapvoting_ffa 0): en 0 la
+seccion no aparece. Si nadie vota, sigue el modo actual con el proximo mapa de su rotacion.
+==============================================================================
+*/
+
+#define VOTE_SECONDS		15
+#define VOTE_SECONDS_MODES	20
+
+qboolean	vote_by_modes;					// la votacion abierta es la de secciones
+static int	vote_pending_mode = -1;			// modo ganador, se aplica en ExitLevel
+static char	vote_option_map[VOTE_OPTIONS][MAX_QPATH];
+static char	*vote_normal_maps[300];			// mapas de la seccion normal (votemaps.txt)
+
+int MapVote_CurrentMode (void)
+{
+	if (G_IsFFA ())
+		return (ffa_gungame && ffa_gungame->value) ? VMODE_GUNGAME : VMODE_FFA;
+	return VMODE_NORMAL;
+}
+
+int MapVote_Seconds (void)
+{
+	return vote_by_modes ? VOTE_SECONDS_MODES : VOTE_SECONDS;
+}
+
+const char *MapVote_ModeLabel (int vmode)
+{
+	switch (vmode)
+	{
+	case VMODE_GUNGAME:	return "Gun Game";
+	case VMODE_FFA:		return "Free For All";
+	}
+	return "normal";
+}
+
+// el proximo mapa se juega en ese modo (VMODE_*): lo usa tambien vote map para volver al modo normal
+void MapVote_SetPendingMode (int vmode)
+{
+	vote_pending_mode = vmode;
+}
+
+void MapVote_ApplyMode (void)
+{
+	int mode = vote_pending_mode;
+
+	if (mode < 0)
+		return;
+	vote_pending_mode = -1;
+	gi.cvar_forceset ("ffa", (mode == VMODE_GUNGAME || mode == VMODE_FFA) ? "1" : "0");
+	gi.cvar_forceset ("ffa_gungame", mode == VMODE_GUNGAME ? "1" : "0");
+	gi.cvar_forceset ("ffa_roulette", "0");
+}
+
+// cuantas veces atras se jugo el mapa (0 = el actual); 1000 si no esta entre los ultimos 20
+static int MapVote_Age (const char *map)
+{
+	int i;
+
+	for (i = 0; i < 20 && last_maps_played[i]; i++)
+		if (!Q_stricmp (last_maps_played[i], (char *)map))
+			return i;
+	return 1000;
+}
+
+static qboolean MapVote_Chosen (const char *map, int vmode)
+{
+	int i;
+
+	for (i = 0; i < votemaps_count; i++)
+		if (votemodes[i] == vmode && !Q_stricmp (votemaps[i], (char *)map))
+			return true;
+	return false;
+}
+
+static void MapVote_AddOption (const char *map, int vmode)
+{
+	Com_sprintf (vote_option_map[votemaps_count], MAX_QPATH, "%s", map);
+	votemaps[votemaps_count] = vote_option_map[votemaps_count];
+	votemodes[votemaps_count] = vmode;
+	votemaps_count++;
+}
+
+// agrega hasta 'want' mapas de la lista en el modo dado: primero los que hace mas que no se juegan
+// (entre los de igual antiguedad, al azar). Nunca el mismo mapa en el mismo modo que se acaba de jugar.
+static void MapVote_PickSection (const char **list, int n, int want, int vmode)
+{
+	int		i, best, added = 0, current = MapVote_CurrentMode ();
+	float	key, bestkey;
+
+	while (added < want && votemaps_count < VOTE_OPTIONS)
+	{
+		best = -1;
+		bestkey = -1;
+		for (i = 0; i < n; i++)
+		{
+			if (!list[i] || !list[i][0] || MapVote_Chosen (list[i], vmode))
+				continue;
+			if (vmode == current && !Q_stricmp ((char *)list[i], level.mapname))
+				continue;
+			key = MapVote_Age (list[i]) + random () * 0.5;
+			if (key > bestkey)
+			{
+				bestkey = key;
+				best = i;
+			}
+		}
+		if (best < 0)
+			return;		// no quedan mapas para esta seccion
+		MapVote_AddOption (list[best], vmode);
+		added++;
+	}
+}
+
+// mapas de la seccion normal: votemaps.txt (como la votacion clasica) o, si no existe, sv_maplist
+// (los nombres quedan dentro de *textp, que se libera con gi.TagFree despues de usarlos)
+static int MapVote_NormalMaps (char **textp)
+{
+	char	*text, *s;
+	int		n = 0;
+
+	text = ReadEntFile ("votemaps.txt");
+	if (!text && *sv_maplist->string && Q_stricmp (sv_maplist->string, "txt"))
+	{
+		text = gi.TagMalloc (strlen (sv_maplist->string) + 1, TAG_GAME);
+		strcpy (text, sv_maplist->string);
+	}
+	*textp = text;
+	if (!text)
+		return 0;
+
+	for (s = strtok (text, " \t\r\n,"); s && n < 300; s = strtok (NULL, " \t\r\n,"))
+	{
+		if (MapExists (s) && Vote_MapPlayable (s))
+			vote_normal_maps[n++] = s;
+		else
+			gi.dprintf ("WARNING: Map '%s' in votemaps.txt not found on server or broken!\n", s);
+	}
+	return n;
+}
+
+static qboolean Setup_Map_Vote_Modes (void)
+{
+	const char	*prepared[300];
+	char		*text = NULL;
+	int			n, want;
+
+	votemaps_count = 0;
+	srand ((unsigned)time (NULL));	// el juego se recarga en cada mapa: sin esto el sorteo sale siempre igual
+
+	// normal: el proximo de la rotacion va primero si se viene de un mapa normal
+	want = (int)mapvoting_normal->value;
+	n = MapVote_NormalMaps (&text);
+	if (want > 0 && n > 0)
+	{
+		if (MapVote_CurrentMode () == VMODE_NORMAL && level.nextmap[0] && !mapvoting_avoid_nextmap->value &&
+			Q_stricmp (level.nextmap, level.mapname) && MapExists (level.nextmap) && Vote_MapPlayable (level.nextmap))
+		{
+			MapVote_AddOption (level.nextmap, VMODE_NORMAL);
+			want--;
+		}
+		MapVote_PickSection ((const char **)vote_normal_maps, n, want, VMODE_NORMAL);
+	}
+	if (text)
+		gi.TagFree (text);	// las opciones ya se copiaron a vote_option_map
+
+	if ((want = (int)mapvoting_gungame->value) > 0)
+	{
+		n = Mode_PreparedMaps (VMODE_GUNGAME, prepared, 300);
+		MapVote_PickSection (prepared, n, want, VMODE_GUNGAME);
+	}
+	if ((want = (int)mapvoting_ffa->value) > 0)
+	{
+		n = Mode_PreparedMaps (VMODE_FFA, prepared, 300);
+		MapVote_PickSection (prepared, n, want, VMODE_FFA);
+	}
+
+	if (votemaps_count < 2)
+	{
+		gi.dprintf ("mapvoting_modes: menos de 2 mapas para votar, sin votacion\n");
+		return false;
+	}
+	return true;
+}
+
 void Count_Votes (void)
 {
 	int i;
 	int highestvotecount = 0;
 	int highmap = 0;
 	
-	for (i =0; i<5; i++)
+	for (i = 0; i < votemaps_count; i++)
 	{
 		if (mapvotes[i] > highestvotecount)
 		{
 			highestvotecount = mapvotes[i];
 			highmap = i;
 		}
+	}
+
+	if (vote_by_modes)
+	{
+		// nadie voto: sigue el modo actual con el proximo de su rotacion (level.changemap de EndDMLevel)
+		if (!highestvotecount)
+		{
+			safe_bprintf (PRINT_HIGH, "Nadie voto: sigue %s (%s).\n", level.changemap ? level.changemap : level.mapname,
+				MapVote_ModeLabel (MapVote_CurrentMode ()));
+			return;
+		}
+		level.changemap = votemaps[highmap];
+		vote_pending_mode = votemodes[highmap];
+		safe_bprintf (PRINT_HIGH, "Proximo mapa: %s (%s).\n", votemaps[highmap], MapVote_ModeLabel (votemodes[highmap]));
+		return;
 	}
 
 	level.changemap = votemaps[highmap];
@@ -3533,6 +3740,15 @@ qboolean Setup_Map_Vote (void)
 
 	qboolean changefirstmap;
 
+	vote_pending_mode = -1;
+	vote_by_modes = false;
+	if (mapvoting_modes->value && !ctb_mode->value && !level.campaign)
+	{
+		vote_by_modes = Setup_Map_Vote_Modes ();
+		return vote_by_modes;
+	}
+	votemaps_count = 0;
+	memset (votemodes, 0, sizeof(votemodes));
 
 	maps = ReadEntFile("votemaps.txt");
 
@@ -3675,6 +3891,7 @@ qboolean Setup_Map_Vote (void)
 	//if (level.nextmap)
 	//{
 	//}
+	votemaps_count = 4;
 	return true;
 }
 
@@ -3819,18 +4036,23 @@ void ClientThink (edict_t *ent, usercmd_t *ucmd)
 					ent->client->vote_started = true;
 				}
 			}
-			if (level.map_vote_time > 0)
+			if (level.map_vote_time > 0 && !level.exitintermission)	// se cuenta una sola vez
 			{
 				int num_clients = HumanPlayerCount();
 
-				if (level.time > level.map_vote_time + 15)
+				int total_votes = 0, v;
+
+				for (v = 0; v < votemaps_count; v++)
+					total_votes += mapvotes[v];
+
+				if (level.time > level.map_vote_time + MapVote_Seconds ())
 				{
 					Count_Votes ();
 					level.exitintermission = true;
 				}
 				else if (level.time > level.intermissiontime + 6.0 &&
 						 level.last_vote_time < level.time - 1 &&
-						 mapvotes[0]+mapvotes[1]+mapvotes[2]+mapvotes[3] >= num_clients)
+						 total_votes >= num_clients)
 				{
 					Count_Votes ();
 					level.exitintermission = true;

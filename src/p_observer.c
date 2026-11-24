@@ -1485,14 +1485,31 @@ void M_View_Credits_ITA (edict_t *ent, pmenu_t *p, int choice)
 	PMenu_Open(ent, ent->client->menu_cur, -1, sizeof(ent->client->menu_cur) / sizeof(pmenu_t));
 }
 
+extern qboolean vote_by_modes;
+static int vote_line_option[MENU_MAX];		// linea del menu -> opcion (votacion por secciones)
+
 void VoteMap (edict_t *ent, pmenu_t *p, int choice) 
 {
 	PMenu_Close(ent);
 
+	if (vote_by_modes)
+	{
+		static const char *suffix[] = { "", " (Gun Game)", " (FFA)" };
+
+		if (choice < 0 || choice >= MENU_MAX || vote_line_option[choice] < 0)
+			return;
+		choice = vote_line_option[choice];
+		safe_bprintf (PRINT_HIGH, "1 voto para %s%s.\n", votemaps[choice], suffix[votemodes[choice]]);
+	}
+	else
+	{
 	choice = (choice - 7)/2;
+	if (choice < 0 || choice >= votemaps_count)
+		return;
 
 	//safe_bprintf (PRINT_HIGH, "%s voted for %s.\n", ent->client->pers.netname, votemaps[choice]); 
 	safe_bprintf (PRINT_HIGH, "1 vote for %s.\n", votemaps[choice]); 
+	}
 
     mapvotes[choice]++;
 
@@ -1502,6 +1519,68 @@ void VoteMap (edict_t *ent, pmenu_t *p, int choice)
 	gi.unicast (ent, true);
 
 	level.last_vote_time = level.time;
+}
+
+// el mapa tiene bots (navigation/<mapa>.cmp)
+static qboolean MapVote_HasBots (const char *map)
+{
+	char	filename[100];
+	FILE	*f;
+
+	Com_sprintf (filename, sizeof(filename), "navigation/%s.cmp", map);
+	f = DDay_OpenFullPathFile (sys_homedir->string, GAMEVERSION, filename, "rb");
+	if (!f)
+		f = DDay_OpenFullPathFile (sys_basedir->string, GAMEVERSION, filename, "rb");
+	if (!f)
+		f = DDay_OpenFullPathFile (".", GAMEVERSION, filename, "rb");
+	if (!f)
+		return false;
+	fclose (f);
+	return true;
+}
+
+// menu de la votacion por secciones: titulo de cada modo y sus mapas debajo
+static void MapVote_Sections (edict_t *ent)
+{
+	static const char	*title[] = { "*-- Normal --", "*-- Gun Game --", "*-- Free For All --" };
+	static char			text[VOTE_OPTIONS][32];
+	int					i, line, sections = 0, first = -1;
+	qboolean			gap;
+
+	for (i = 0; i < votemaps_count; i++)
+		if (!i || votemodes[i] != votemodes[i - 1])
+			sections++;
+	// linea en blanco entre secciones solo si entra todo hasta la linea 18
+	gap = (6 + sections + votemaps_count + sections - 1 <= 18);
+
+	for (i = 0; i < MENU_MAX; i++)
+		vote_line_option[i] = -1;
+
+	client_menu (ent, 4, "*VOTA EL PROXIMO MAPA", PMENU_ALIGN_CENTER, NULL, NULL);
+	line = 6;
+	for (i = 0; i < votemaps_count && line < MENU_MAX - 3; i++)
+	{
+		if (!i || votemodes[i] != votemodes[i - 1])
+		{
+			if (i && gap)
+				line++;
+			client_menu (ent, line++, (char *)title[votemodes[i]], PMENU_ALIGN_CENTER, NULL, NULL);
+		}
+		Com_sprintf (text[i], sizeof(text[i]), "    %s %.18s", (bots->value && MapVote_HasBots (votemaps[i])) ? "*" : " ",
+			votemaps[i]);
+		client_menu (ent, line, text[i], PMENU_ALIGN_LEFT, NULL, VoteMap);
+		vote_line_option[line] = i;
+		if (first < 0)
+			first = line;
+		line++;
+	}
+
+	line++;
+	if (bots->value)
+		client_menu (ent, line++, "* = tiene bots", PMENU_ALIGN_CENTER, NULL, NULL);
+	client_menu (ent, line, "Usa [ y ] para elegir", PMENU_ALIGN_CENTER, NULL, NULL);
+
+	PMenu_Open (ent, ent->client->menu_cur, first, sizeof(ent->client->menu_cur) / sizeof(pmenu_t));
 }
 
 void MapVote(edict_t *ent)
@@ -1518,6 +1597,12 @@ void MapVote(edict_t *ent)
 	memset(mapname, 0, sizeof(mapname));
 
 	PMenu_Close(ent);
+
+	if (vote_by_modes)
+	{
+		MapVote_Sections (ent);
+		return;
+	}
 
 	client_menu(ent, 4, "*VOTE FOR THE NEXT MAP! " , PMENU_ALIGN_CENTER, NULL, NULL );
 	

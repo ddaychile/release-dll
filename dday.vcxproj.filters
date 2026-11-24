@@ -104,6 +104,9 @@
     <ClCompile Include="src\g_turret.c">
       <Filter>Source Files %28%2a.c%29</Filter>
     </ClCompile>
+    <ClCompile Include="src\g_vote.c">
+      <Filter>Source Files %28%2a.c%29</Filter>
+    </ClCompile>
     <ClCompile Include="src\g_utils.c">
       <Filter>Source Files %28%2a.c%29</Filter>
     </ClCompile>

@@ -2101,7 +2101,7 @@ else if ((level.time < ent->leave_limbo_time) && (ent->client->limbo_mode)) //fa
 else if (level.map_vote_time > 0)
 {
     ent->client->ps.stats[STAT_TIMER_ICON] = gi.imageindex("i_dday");
-    ent->client->ps.stats[STAT_TIMER] = ((int)(15 + level.map_vote_time - level.time));
+    ent->client->ps.stats[STAT_TIMER] = ((int)(MapVote_Seconds () + level.map_vote_time - level.time));
 }
 // Mostrar cooldown del ataque aéreo - ZeRo
 else if (ent->client->resp.mos == OFFICER &&
