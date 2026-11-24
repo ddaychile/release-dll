@@ -771,7 +771,7 @@ void Drop_Weapon (edict_t *ent, gitem_t *item)
 
 	        //faf:  changed a bit for team dll support:
 
-	if (!strcmp(item->dllname, team_list[1]->teamid))  //faf: if team 1 weap... usually axis
+	if (team_list[1] && !strcmp(item->dllname, team_list[1]->teamid))  //faf: if team 1 weap... usually axis
 	{
 		if (item->position == LOC_PISTOL)
 		{

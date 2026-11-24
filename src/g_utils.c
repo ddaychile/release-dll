@@ -632,8 +632,55 @@ void ClientSetMaxSpeed (edict_t *ent, qboolean sync);
 void ClientCvarSync (edict_t *ent, qboolean dump);
 
 
+// Free For All: teamless mode, nobody is a teammate of anybody
+qboolean G_IsFFA(void)
+{
+	return (ffa && ffa->value && deathmatch->value && !ctb_mode->value);
+}
+
+// Free For All: nobody may keep a reference to a player that leaves. The slot is reused by the next
+// player or bot, which would be credited the kills of the one that left (see Killed in g_combat.c)
+void FFA_ForgetPlayer (edict_t *gone)
+{
+	edict_t	*other;
+	int		i;
+
+	if (!G_IsFFA())
+		return;
+
+	for (i = 1; i <= maxclients->value; i++)
+	{
+		other = &g_edicts[i];
+
+		if (other->client && other->client->last_wound_inflictor == gone)
+			other->client->last_wound_inflictor = NULL;
+	}
+}
+
+// Seconds of lobby at the start of the level (level_wait plus the extra delay of the team);
+// Free For All has its own fixed time and no team delay
+float G_LobbyTime(float team_delay)
+{
+	if (G_IsFFA())
+		return FFA_LEVEL_WAIT;
+
+	return level_wait->value + team_delay;
+}
+
+// Seconds before a dead player can come back (RI); Free For All has its own fixed time
+float G_RespawnInterval(void)
+{
+	if (G_IsFFA())
+		return FFA_RESPAWN_INTERVAL;
+
+	return RI->value;
+}
+
 qboolean OnSameTeam(edict_t *self,edict_t *target)
 {
+	if (G_IsFFA())
+		return false;
+
 	if (!self ||
 		!target ||
 		!self->client ||

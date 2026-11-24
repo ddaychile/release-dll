@@ -60,6 +60,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define	svc_temp_entity		3
 #define	svc_layout			4
 #define	svc_inventory		5
+#define	svc_sound			9
 
 //==================================================================
 
@@ -686,6 +687,37 @@ extern	cvar_t	*deathmatch;
 
 extern	cvar_t	*coop;
 extern	cvar_t	*ctb_mode; // kernel: selects mode for CTB (0 disabled, 1 one briefcase, 2 many briefcases)
+extern	cvar_t	*ffa; // Free For All mode (0 disabled, 1 enabled)
+extern	qboolean	ffa_statusbar_active; // Free For All statusbar built (g_spawn.c)
+extern	int		ffa_mos;			// Free For All: class (weapon) of every player in this match, drawn at the start of the level
+extern	int		ffa_team;			// Free For All: team_list index of the faction of that weapon (skin and loadout of everybody)
+extern	int		ffa_pistol;			// Free For All: the weapon of the match is the pistol of the class (a pistol match)
+#define FFA_PISTOL_MAGS		6		// Free For All: pistol magazines in a pistol match (the class gives 2 or 3 in team games)
+extern	char	*ffa_weapon_name;	// Free For All: pickup name of that weapon
+void FFA_RouletteInit (void);		// g_spawn.c
+extern	cvar_t	*ffa_gungame;		// Free For All Gun Game: every kill gives the killer the next weapon of a ladder (0 disabled, 1 enabled)
+extern	cvar_t	*ffa_gg_steps;		// Free For All Gun Game: weapons of the ladder before the knife (default 29: 30 steps with the knife; 0 = all the weapons)
+extern	cvar_t	*ffa_gg_factions;	// Free For All Gun Game: weapons of the ladder from all the factions (1, default) or only from the two of the map (0)
+extern	cvar_t	*ffa_gg_deaths;		// Free For All Gun Game: deaths in a row that make a player go down one weapon (0 = a fifth of the steps, negative = no demotion)
+#define FFA_GG_MAX_STEPS	64		// Free For All Gun Game: size of the ladder (the knife included)
+extern	qboolean	ffa_gg_on;		// Free For All Gun Game is active in this level (the ladder was built)
+extern	gitem_t	*ffa_ladder[FFA_GG_MAX_STEPS];	// Free For All Gun Game: weapon of each step, the knife is the last
+extern	int		ffa_ladder_mags[FFA_GG_MAX_STEPS];	// Free For All Gun Game: spare magazines given with each weapon
+extern	int		ffa_ladder_len;		// Free For All Gun Game: number of steps
+extern	int		ffa_gg_banner;		// Free For All Gun Game: image index of the banner of the lobby (pics/ffa_gungame.png), 0 = none
+extern	edict_t	*ffa_gg_winner;		// Free For All Gun Game: the player who killed with the last weapon
+void FFA_GunGameGive (edict_t *ent);	// p_classes.c: gives the weapon of the step of the player
+gitem_t *FFA_GunGameWeapon (edict_t *ent);	// p_classes.c: weapon of the step of the player
+void FFA_GunGameThink (edict_t *ent);	// p_classes.c: gives the weapon of a new step, once per frame and outside the weapon code
+void FFA_GunGameKill (edict_t *killer, int mod);	// p_classes.c: a kill of the player, promotes or wins
+void FFA_GunGameDeath (edict_t *victim, qboolean suicide, int mod);	// p_classes.c: a death of the player, may demote
+extern	cvar_t	*ffa_gg_snd_up;		// Free For All Gun Game: sound (path in the sound folder) of the player who goes up a step
+extern	cvar_t	*ffa_gg_snd_down;	// Free For All Gun Game: sound of the player who goes down a step
+extern	cvar_t	*ffa_gg_victory_vol;	// Free For All Gun Game: volume (0 to 1, default 0.5) of the victory anthem of the end of the match
+void FFA_RouletteSetup (int count, int *images, int winner, char *name);	// p_hud.c
+#define FFA_DEFAULT_FRAGLIMIT	30	// Free For All frags to win when the server fraglimit is 0
+#define FFA_LEVEL_WAIT			10	// Free For All seconds of lobby at the start of the level
+#define FFA_RESPAWN_INTERVAL	3	// Free For All seconds to respawn after dying
 
 extern	cvar_t	*dmflags;
 
@@ -935,6 +967,15 @@ void Think_Arty (edict_t *ent);
 //qboolean FindOnTeam(edict_t *ent);
 
 qboolean OnSameTeam(edict_t *self,edict_t *target);
+qboolean G_IsFFA(void);
+void FFA_JoinPlayer(edict_t *ent);
+void FFA_HudReset(void);
+void FFA_SpawnReset(void);
+void initialize_random_seed();	// p_classes.c
+void FFA_ForgetPlayer(edict_t *gone);
+void FFA_ShowAnnouncement(char *top_text, int number, char *bottom_text);
+float G_LobbyTime(float team_delay);
+float G_RespawnInterval(void);
 
 
 
@@ -1407,6 +1448,14 @@ typedef struct
 	int			streak;
 
 	int			points; // kernel: to count points in coop mode
+
+	int			ffa_kills;		// Free For All: kills made by this player
+	int			ffa_deaths;		// Free For All: every death, suicides included
+	int			ffa_milestone;	// Free For All: last announced multiple of 10 frags
+	int			ffa_warned;		// Free For All: 1 = "5 frags away" announced, 2 = "1 frag away" announced
+	int			ffa_level;		// Free For All Gun Game: step of the ladder of this player
+	int			ffa_streak;		// Free For All Gun Game: deaths in a row without a kill
+	int			ffa_pending;	// Free For All Gun Game: the weapon of the new step is given at the next frame
 
 } client_respawn_t;
 
@@ -1947,6 +1996,13 @@ typedef struct
 TeamS_t *team_list[MAX_TEAMS];
 
 void InitMOS_List(TeamS_t *team,SMos_t *mos_list);
+
+// Free For All Gun Game: items and class loadouts of the factions, also the ones that are not in the map (g_ents.c)
+int FFA_FactionCount (void);
+char *FFA_FactionDll (int f);
+SMos_t *FFA_FactionMos (int f);
+gitem_t *FFA_FactionItem (int f, char *pickup_name);
+gitem_t *FFA_InsertFactionItem (int f, gitem_t *src);
 
 extern int Last_Team_Winner;
 

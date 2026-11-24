@@ -908,9 +908,9 @@ void SV_CalcBlend (edict_t *ent)
 
 
 	// fade into lobby
-	if (level.framenum < ((int)level_wait->value * 10))
+	if (level.framenum < ((int)G_LobbyTime(0) * 10))
 	{
-		SV_AddBlend (0.0, 0.0, 0.0, (1.0 - (float)(level.framenum / (level_wait->value * 10.0))), ent->client->ps.blend);
+		SV_AddBlend (0.0, 0.0, 0.0, (1.0 - (float)(level.framenum / (G_LobbyTime(0) * 10.0))), ent->client->ps.blend);
 	}
 
 	// fade to black if dead
@@ -1278,7 +1278,8 @@ void P_ShowID (edict_t *ent)
 				 (ent->client->resp.show_id &&
 				  ent->client->resp.team_on && ent->client->resp.mos &&
 				  tr.ent->client->resp.team_on && tr.ent->client->resp.mos &&
-				  ent->client->resp.team_on->index == tr.ent->client->resp.team_on->index))
+				  ent->client->resp.team_on->index == tr.ent->client->resp.team_on->index &&
+				  !G_IsFFA()))
 		{
 			ent->client->ps.stats[STAT_IDENT] = 1;
 			ent->client->ps.stats[STAT_IDENT_PLAYER] = CS_PLAYERSKINS + (tr.ent - g_edicts - 1);	

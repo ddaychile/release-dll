@@ -183,7 +183,39 @@ void Killed (edict_t *targ, edict_t *inflictor, edict_t *attacker, int damage, v
 
 	if(!targ->deadflag)
 	{
-		
+		// Free For All: every death counts (suicides included); a kill goes to the attacker, or
+		// to whoever last wounded the victim when the victim bled out (as in the score below)
+		if (G_IsFFA() && targ->client)
+		{
+			edict_t	*killer = NULL;
+
+			targ->client->resp.ffa_deaths++;
+
+			if (attacker && attacker->client && attacker != targ)
+			{
+				attacker->client->resp.ffa_kills++;
+				killer = attacker;
+			}
+			else if ((attacker == targ || attacker == NULL || attacker == world) &&
+				targ->client->last_wound_inflictor &&
+				targ->client->last_wound_inflictor != targ &&
+				targ->client->last_wound_inflictor->client)
+			{
+				targ->client->last_wound_inflictor->client->resp.ffa_kills++;
+				killer = targ->client->last_wound_inflictor;
+			}
+
+			// Gun Game: the killer goes up a step, the victim may go down
+			if (ffa_gg_on)
+			{
+				// forced team changes and penalties are not real deaths
+				if (meansOfDeath != MOD_CHANGETEAM && meansOfDeath != MOD_CHANGETEAM_WOUNDED && meansOfDeath != MOD_PENALTY)
+					FFA_GunGameDeath (targ, !killer, meansOfDeath);
+				if (killer)
+					FFA_GunGameKill (killer, meansOfDeath);
+			}
+		}
+
 	// pbowens: suicide gives other team kill
 		if (targ->client && targ->client->resp.team_on)
 		{
@@ -211,7 +243,8 @@ void Killed (edict_t *targ, edict_t *inflictor, edict_t *attacker, int damage, v
 				}
 				else
 				{
-					team_list[(targ->client->resp.team_on->index+1)%2]->kills++;
+					if (!G_IsFFA())
+						team_list[(targ->client->resp.team_on->index+1)%2]->kills++;
 					//targ->client->resp.plus_minus--;	
 					if (targ->client->aim)
 						targ->client->resp.stat_bot_minus--;
@@ -236,7 +269,7 @@ void Killed (edict_t *targ, edict_t *inflictor, edict_t *attacker, int damage, v
 			attacker->client->resp.team_on )
 		{
 
-			if (attacker != targ && attacker->client->resp.team_on == targ->client->resp.team_on) {
+			if (attacker != targ && attacker->client->resp.team_on == targ->client->resp.team_on && !G_IsFFA()) {
 				if (team_kill->value == 2)
 					attacker->client->penalty = PENALTY_TEAM_KILL;
 			}
@@ -302,7 +335,7 @@ void Killed (edict_t *targ, edict_t *inflictor, edict_t *attacker, int damage, v
 		//targ->client->limbo_mode=true;
 
 		if (!targ->deadflag)
-			targ->client->forcespawn = (level.framenum + FORCE_RESPAWN);
+			targ->client->forcespawn = (level.framenum + (G_IsFFA() ? (int)(G_RespawnInterval() * 10) : FORCE_RESPAWN));
 	}
 
 	targ->die_time=0;
@@ -721,6 +754,10 @@ void Drop_Flamed (edict_t *ent)
 	int		index;
 	gitem_t *item;
 
+	// Free For All Gun Game: the weapon of the ladder is never dropped
+	if (G_IsFFA() && ffa_gg_on)
+		return;
+
 	item = 	ent->client->pers.weapon;
 
 	if (item->classnameb == WEAPON_FISTS ||
@@ -847,7 +884,7 @@ void T_Damage (edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir,
 		if (!inflictor->client->resp.team_on)
 			continue;
 		if (check_ent->client->resp.team_on ==
-			 inflictor->client->resp.team_on)
+			 inflictor->client->resp.team_on && !G_IsFFA())
 			continue;
 		if (check_ent->enemy)
 			continue;
@@ -1113,6 +1150,7 @@ void T_Damage (edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir,
 
 			// wheaty: Don't let drop shot affect Morphine/Flamethrower/Fists/Binocs
 			if (randnum >= DROP_SHOT && IsValidPlayer(targ) &&
+				!(G_IsFFA() && ffa_gg_on) && // Gun Game: the weapon of the ladder is never dropped
 				!(targ->client->newweapon) && //faf:  if dropping/changing weap, dont hit gun
 				targ->client->pers.weapon &&
 				targ->client->pers.weapon->classname &&

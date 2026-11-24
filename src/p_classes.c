@@ -51,7 +51,7 @@ void Load_Weapon (edict_t *ent, gitem_t	*item)
 	}
 
 
-	if (!strcmp(item->dllname, team_list[1]->teamid))  //faf:  if its a team 1 weap...(usually grm)
+	if (team_list[1] && !strcmp(item->dllname, team_list[1]->teamid))  //faf:  if its a team 1 weap...(usually grm)
 	{
 		if (item->position == LOC_PISTOL)
 			ent->client->mags[1].pistol_rnd = ammo_item->quantity;
@@ -97,7 +97,32 @@ void Load_Weapon (edict_t *ent, gitem_t	*item)
 			ent->client->mags[0].submg2_rnd = ammo_item->quantity;
 	}
 
-		else if (!strcmp(item->ammo, "flame_mag"))
+	// Free For All Gun Game: a weapon of a faction that is not in the map uses the magazines of its slot
+	else if (G_IsFFA() && ffa_gg_on && item->position != LOC_FLAME)
+	{
+		mags_t	*m = &ent->client->mags[(item->mag_index == 1) ? 1 : 0];
+
+		if (item->position == LOC_PISTOL)
+			m->pistol_rnd = ammo_item->quantity;
+		else if (item->position == LOC_RIFLE)
+			m->rifle_rnd = ammo_item->quantity;
+		else if (item->position == LOC_SNIPER)
+			m->sniper_rnd = ammo_item->quantity;
+		else if (item->position == LOC_SUBMACHINEGUN)
+			m->submg_rnd = ammo_item->quantity;
+		else if (item->position == LOC_L_MACHINEGUN)
+			m->lmg_rnd = ammo_item->quantity;
+		else if (item->position == LOC_H_MACHINEGUN)
+			m->hmg_rnd = ammo_item->quantity;
+		else if (item->position == LOC_ROCKET)
+			m->antitank_rnd = ammo_item->quantity;
+		else if (item->position == LOC_SHOTGUN)
+			m->shotgun_rnd = ammo_item->quantity;
+		else if (item->position == LOC_SUBMACHINEGUN2)
+			m->submg2_rnd = ammo_item->quantity;
+	}
+
+	else if (!strcmp(item->ammo, "flame_mag"))
 		ent->client->flame_rnd = ammo_item->quantity;
 
 		// El sniper se entrega listo para disparar (cerrojo cerrado) al spawnear o recogerlo por primera vez
@@ -116,8 +141,15 @@ void Give_Class_Weapon(edict_t *ent)
 
 	client=ent->client;
 
+	// Free For All Gun Game: the weapon is the one of the step of the player
+	if (G_IsFFA() && ffa_gg_on)
+	{
+		FFA_GunGameGive(ent);
+		return;
+	}
 
-	if (knifefest->value)
+	// Free For All defines its own loadout: the legacy loadout overrides below do not apply to it
+	if (knifefest->value && !G_IsFFA())
 	{
 		item = FindItem("Helmet");
 		client->pers.inventory[ITEM_INDEX(item)] = 1;
@@ -156,25 +188,29 @@ void Give_Class_Weapon(edict_t *ent)
 		client->pers.inventory[ITEM_INDEX(item)] = 1;
 	}
 	// faf rifle-only code  //ddaylife 
-	if ((mauser_only->value == 1) && !(client->resp.mos == MEDIC))
+	if (!G_IsFFA() && (mauser_only->value == 1) && !(client->resp.mos == MEDIC))
 	{
 		item = FindTeamItem(team_list[1]->teamid, LOC_RIFLE);
 	}
-	else if ((sniper_only->value == 1) && !(client->resp.mos == MEDIC))
+	else if (!G_IsFFA() && (sniper_only->value == 1) && !(client->resp.mos == MEDIC))
 	{
 		item = FindTeamItem(team_list[(client->resp.team_on->index)]->teamid, LOC_SNIPER);
 	}
-	else if (swords->value == 1 && client->resp.mos != MEDIC)
+	else if (!G_IsFFA() && swords->value == 1 && client->resp.mos != MEDIC)
 	{
 		item = FindItem("Sword");
 	}
-	else if (random_class->value == 1) // Modo de clases al azar al spawnear, se activa con random_class 1 - ZeRo
+	else if (!G_IsFFA() && random_class->value == 1) // Modo de clases al azar al spawnear, se activa con random_class 1 - ZeRo
 	{ 
 		int random_value = (rand() % 9); // `rand() % 9` genera [0, 8] que son los numeros correspondientes a las clases.
 		client->resp.mos = random_value; // Le asignamos el numero generado.
 		item = FindItemInTeam(client->resp.team_on->mos[client->resp.mos]->weapon1,
 							  client->resp.team_on->teamid); // Le entregamos el arma principal a la clase sorteada.
 	}
+
+	else if (G_IsFFA() && ffa_pistol) // Free For All pistol match: the pistol of the class is the only weapon
+		item = FindItemInTeam(client->resp.team_on->mos[client->resp.mos]->weapon2,
+							  client->resp.team_on->teamid);
 
 	else
 		item = FindItemInTeam(client->resp.team_on->mos[client->resp.mos]->weapon1,
@@ -194,7 +230,9 @@ void Give_Class_Weapon(edict_t *ent)
 
 	item = NULL;
 
-	if ((item = FindItemInTeam(client->resp.team_on->mos[client->resp.mos]->weapon2,
+	// Free For All: no secondary weapon (pistol), only the primary weapon and the knife
+	if (!G_IsFFA() &&
+		(item = FindItemInTeam(client->resp.team_on->mos[client->resp.mos]->weapon2,
                                client->resp.team_on->teamid)))
 		client->pers.inventory[ITEM_INDEX(item)] = 1;
 
@@ -226,7 +264,7 @@ void Give_Class_Weapon(edict_t *ent)
 	//if(client->resp.team_on->mos[client->resp.mos]->grenades)
 	//{
 
-	if (!no_nades->value)//ddaylife
+	if (!no_nades->value && !G_IsFFA())//ddaylife
 		// kernel: this forces team id when assigns grenades (italians has potato masher like germans)
 		if ((item = FindItemInTeam(client->resp.team_on->mos[client->resp.mos]->grenades,
                                    client->resp.team_on->teamid)))
@@ -234,7 +272,8 @@ void Give_Class_Weapon(edict_t *ent)
 	//}
 	//if(client->resp.team_on->mos[client->resp.mos]->special)
 	//{
-    if ((item = FindItemInTeam(client->resp.team_on->mos[client->resp.mos]->special,
+    if (!G_IsFFA() &&	// Free For All: only the weapon of the match and the knife (not the binoculars of the Officer)
+		(item = FindItemInTeam(client->resp.team_on->mos[client->resp.mos]->special,
                                client->resp.team_on->teamid)))
 		client->pers.inventory[ITEM_INDEX(item)]=client->resp.team_on->mos[client->resp.mos]->specnum;
 	//}
@@ -248,12 +287,16 @@ void Give_Class_Weapon(edict_t *ent)
 void Give_Class_Ammo(edict_t *ent)
 {
 	gitem_t *item, *ammo_item;
-	
-	if (ent->client->resp.team_on->mos[ent->client->resp.mos]->ammo1 )
+
+	// Free For All Gun Game: FFA_GunGameGive already gave the ammo of the step
+	if (G_IsFFA() && ffa_gg_on)
+		return;
+
+	if (ent->client->resp.team_on->mos[ent->client->resp.mos]->ammo1 && !(G_IsFFA() && ffa_pistol))
 	{
-		if ((mauser_only->value == 1) && !(ent->client->resp.mos == MEDIC))
+		if (!G_IsFFA() && (mauser_only->value == 1) && !(ent->client->resp.mos == MEDIC))
 			item= FindTeamItem(team_list[1]->teamid, LOC_RIFLE);
-		else if ((sniper_only->value == 1) && !(ent->client->resp.mos == MEDIC))
+		else if (!G_IsFFA() && (sniper_only->value == 1) && !(ent->client->resp.mos == MEDIC))
 			item= FindTeamItem(team_list[(ent->client->resp.team_on->index)]->teamid, LOC_SNIPER);
 		else
 			item = FindItemInTeam(ent->client->resp.team_on->mos[ent->client->resp.mos]->weapon1,
@@ -273,14 +316,15 @@ void Give_Class_Ammo(edict_t *ent)
 		}
 	}
 
-	if (ent->client->resp.team_on->mos[ent->client->resp.mos]->ammo2 )
+	// Free For All only gives the pistol (and its own number of magazines) in a pistol match
+	if (ent->client->resp.team_on->mos[ent->client->resp.mos]->ammo2 && (!G_IsFFA() || ffa_pistol))
 	{
 		item = FindItemInTeam(ent->client->resp.team_on->mos[ent->client->resp.mos]->weapon2,
 							  ent->client->resp.team_on->teamid);
 		if (item)
 		{
 			ammo_item = FindItemInTeam(item->ammo, item->dllname);
-			if (!Add_Ammo(ent, ammo_item, ent->client->resp.team_on->mos[ent->client->resp.mos]->ammo2))
+			if (!Add_Ammo(ent, ammo_item, G_IsFFA() ? FFA_PISTOL_MAGS : ent->client->resp.team_on->mos[ent->client->resp.mos]->ammo2))
 				safe_cprintf(ent, PRINT_HIGH, "No ammo for %s\n", item->pickup_name);
 		}
 		else
@@ -292,6 +336,166 @@ void Give_Class_Ammo(edict_t *ent)
 	}
 }
 
+
+// Free For All Gun Game: takes every weapon and ammo of the player and gives the weapon of his step of the
+// ladder (loaded, with its spare magazines) and the knife, fists and helmet. It is used when the player
+// spawns (Give_Class_Weapon) and when he gets to the next step while he is alive.
+void FFA_GunGameGive (edict_t *ent)
+{
+	gclient_t	*client = ent->client;
+	gitem_t		*item, *ammo_item;
+	int			i, level = client->resp.ffa_level;
+
+	if (ffa_ladder_len < 1)
+		return;
+
+	if (level < 0)
+		level = 0;
+	if (level >= ffa_ladder_len)
+		level = ffa_ladder_len - 1;
+
+	item = ffa_ladder[level];
+
+	for (i = 0; i <= game.num_items; i++)
+	{
+		if (itemlist[i].flags & (IT_WEAPON | IT_AMMO))
+			client->pers.inventory[i] = 0;
+	}
+
+	client->pers.inventory[ITEM_INDEX(FindItem("Helmet"))] = 1;
+	client->pers.inventory[ITEM_INDEX(FindItem("Fists"))] = 1;
+	// on the last step the knife is the only weapon, so there are some to throw (as in knifefest)
+	client->pers.inventory[ITEM_INDEX(FindItem("Knife"))] = (level == ffa_ladder_len - 1) ? 5 : 1;
+
+	client->pers.inventory[ITEM_INDEX(item)] = 1;
+
+	if (item->position != LOC_KNIFE)
+	{
+		Load_Weapon (ent, item);
+
+		ammo_item = FindItemInTeam(item->ammo, item->dllname);
+		if (ammo_item && ffa_ladder_mags[level] > 0)
+			Add_Ammo(ent, ammo_item, ffa_ladder_mags[level]);
+	}
+
+	client->pers.selected_item = ITEM_INDEX(item);
+	client->newweapon = item;
+
+	// as when the weapon is put away in the weapon code (p_generic_wep.c) before the change
+	client->drop = false;
+	client->aim = false;
+	ChangeWeapon(ent);
+}
+
+// Free For All Gun Game: weapon of the step of the player (the ladder must be built: ffa_ladder_len > 0)
+gitem_t *FFA_GunGameWeapon (edict_t *ent)
+{
+	int		step = ent->client->resp.ffa_level;
+
+	if (step < 0)
+		step = 0;
+	if (step >= ffa_ladder_len)
+		step = ffa_ladder_len - 1;
+
+	return ffa_ladder[step];
+}
+
+// Free For All Gun Game: the player killed somebody. He goes up one step; a kill with the knife on the last step wins.
+void FFA_GunGameKill (edict_t *killer, int mod)
+{
+	gclient_t	*client = killer->client;
+
+	if (!ffa_gg_on || ffa_gg_winner)
+		return;
+
+	if (client->resp.ffa_level >= ffa_ladder_len - 1)
+	{
+		// the knife (in the hand or thrown) and the fists; a bleed-out does not count
+		if ((mod & ~MOD_FRIENDLY_FIRE) == MOD_KNIFE || (mod & ~MOD_FRIENDLY_FIRE) == MOD_FISTS)
+			ffa_gg_winner = killer;
+		return;
+	}
+
+	client->resp.ffa_level++;
+	client->resp.ffa_streak = 0;
+
+	if (client->resp.ffa_level >= ffa_ladder_len - 1)
+		safe_bprintf (PRINT_HIGH, "%s is on the knife level!\n", client->pers.netname);
+
+	// the weapon changes at the next frame: the kill happens in the middle of the weapon code of the killer
+	client->resp.ffa_pending = 1;
+}
+
+void turret_off (edict_t *self);
+
+// Free For All Gun Game: plays a sound only for that player, at full volume wherever he is (a svc_sound sent to
+// his client alone: without attenuation, so it is not lost among the shots or when he is dead)
+static void FFA_GunGameSound (edict_t *ent, char *name)
+{
+	if (!ent->client || ent->ai || !name || !name[0])
+		return;
+
+	gi.WriteByte (svc_sound);
+	gi.WriteByte (2 | 8);					// SND_ATTENUATION | SND_ENT
+	gi.WriteByte (gi.soundindex (name));
+	gi.WriteByte (0);						// attenuation 0 (ATTN_NONE)
+	gi.WriteShort (((ent - g_edicts) << 3) | CHAN_AUTO);
+	gi.unicast (ent, true);
+}
+
+// Free For All Gun Game: gives the weapon of the new step to the player who killed (ClientBeginServerFrame)
+void FFA_GunGameThink (edict_t *ent)
+{
+	gclient_t	*client = ent->client;
+
+	if (!client->resp.ffa_pending)
+		return;
+
+	client->resp.ffa_pending = 0;
+
+	if (!ffa_gg_on || ent->health <= 0 || ent->deadflag)
+		return;
+
+	turret_off (ent);
+	FFA_GunGameGive (ent);
+	safe_cprintf (ent, PRINT_HIGH, "Level %i of %i: %s\n", client->resp.ffa_level + 1, ffa_ladder_len,
+				  ffa_ladder[client->resp.ffa_level]->pickup_name);
+	FFA_GunGameSound (ent, ffa_gg_snd_up->string);
+}
+
+// Free For All Gun Game: the player died. A suicide or a kill with a knife takes him down one step; so do the
+// deaths in a row without a kill (ffa_gg_deaths; 0 = a fifth of the steps, at least 2, so the longer the ladder
+// the more he can die; a negative value turns that demotion off). The weapon of the new step is given when he
+// spawns; the sound of going down is heard now.
+void FFA_GunGameDeath (edict_t *victim, qboolean suicide, int mod)
+{
+	gclient_t	*client = victim->client;
+	int			limit = ffa_gg_deaths ? (int)ffa_gg_deaths->value : 0;
+	qboolean	knifed = !suicide && (mod & ~MOD_FRIENDLY_FIRE) == MOD_KNIFE;
+
+	if (!ffa_gg_on || ffa_gg_winner)
+		return;
+
+	if (limit == 0)
+	{
+		limit = ffa_ladder_len / 5;
+		if (limit < 2)
+			limit = 2;
+	}
+
+	client->resp.ffa_streak++;
+
+	if (suicide || knifed || (limit > 0 && client->resp.ffa_streak >= limit))
+	{
+		if (client->resp.ffa_level > 0)
+		{
+			client->resp.ffa_level--;
+			safe_cprintf (victim, PRINT_HIGH, "You go down to level %i of %i\n", client->resp.ffa_level + 1, ffa_ladder_len);
+			FFA_GunGameSound (victim, ffa_gg_snd_down->string);
+		}
+		client->resp.ffa_streak = 0;
+	}
+}
 
 void Show_Mos(edict_t *ent)
 {

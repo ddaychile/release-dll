@@ -1093,7 +1093,7 @@ void AI_Think (edict_t *self)
 				continue;
 			if (e->health < 1)
 				continue;
-			if (e->client->resp.team_on != self->client->resp.team_on)
+			if (e->client->resp.team_on != self->client->resp.team_on || G_IsFFA())
 				continue;
 //			if (!e->s.origin)
 //				continue;
