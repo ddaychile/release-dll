@@ -30,7 +30,7 @@ ARCH := $(shell uname -m | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ -e s/arm.*/ar
 #ARCH=i386
 #ARCH=x86_64
 CC=gcc
-BASE_CFLAGS=-Wall -fcommon -Dstricmp=strcasecmp
+BASE_CFLAGS=-Wall -fcommon -std=gnu99 -Dstricmp=strcasecmp
 
 #CFLAGS_RELEASE=$(BASE_CFLAGS) -S
 
@@ -38,7 +38,7 @@ BASE_CFLAGS=-Wall -fcommon -Dstricmp=strcasecmp
 # using 'make build_release'.
 # This top level Makefile will build all Teams if you need (see below).
 
-CFLAGS_RELEASE=$(BASE_CFLAGS) -O3 -ffast-math -funroll-loops -fomit-frame-pointer -fexpensive-optimizations -std=gnu17
+CFLAGS_RELEASE=$(BASE_CFLAGS) -O3 -ffast-math -funroll-loops -fomit-frame-pointer -fexpensive-optimizations
 
 # Nick - Use 'make build_debug' to use this.
 CFLAGS_DEBUG=$(BASE_CFLAGS) -DDEBUG -g
