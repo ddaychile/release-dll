@@ -202,7 +202,7 @@ SMos_t GBR_MOS_List[NUM_CLASSES]=
 		"class_medic",
 		"Morphine",
 		1,
-		"Webley",
+		"Browning Hi-Power",
 		3,
 		NULL,
 		0,

@@ -46,6 +46,8 @@ GunInfo_t rusguninfo[MAX_TEAM_GUNS];
 
 gitem_t rusitems[MAX_TEAM_ITEMS]=
 {
+	BROWNING_WEAPON_ITEM("rus"),
+	BROWNING_AMMO_ITEM("rus"),
 /* Tokarev TT33 becomes the standard issue weapon
 */
 	{

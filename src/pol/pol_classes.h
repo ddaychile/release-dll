@@ -202,7 +202,7 @@ SMos_t POL_MOS_List[NUM_CLASSES]=
 		"class_medic",
 		"Morphine",
 		1,
-		"Vis",
+		"Browning Hi-Power",
 		3,
 		NULL,
 		0,

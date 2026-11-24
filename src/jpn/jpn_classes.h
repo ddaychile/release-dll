@@ -202,7 +202,7 @@ SMos_t JPN_MOS_List[NUM_CLASSES]=
 		"class_medic",
 		"Morphine",
 		1,
-		"Nambu Pistol",
+		"Browning Hi-Power",
 		2,
 		NULL,
 		0,

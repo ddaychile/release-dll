@@ -113,6 +113,8 @@ void SP_item_ammo_mg42(edict_t *self);
 
 spawn_t sp_jpn[MAX_TEAM_ITEMS] =
 {
+	{ "weapon_browning", SP_item_weapon_browning },
+	{ "ammo_browning", SP_item_ammo_browning },
 	{ "weapon_nambu", SP_item_weapon_nambu },
 	{ "weapon_arisaka", SP_item_weapon_arisaka },
 	{ "weapon_type_100", SP_item_weapon_type_100 },

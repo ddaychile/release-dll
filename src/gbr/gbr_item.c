@@ -47,6 +47,8 @@ GunInfo_t gbrguninfo[MAX_TEAM_GUNS];
 
 gitem_t gbritems[MAX_TEAM_ITEMS]=
 {
+	BROWNING_WEAPON_ITEM("gbr"),
+	BROWNING_AMMO_ITEM("gbr"),
 /* Webley becomes the standard issue weapon */
 	{
 		"weapon_webley",
