@@ -2828,10 +2828,12 @@ void Weapon_LMG_Fire (edict_t *ent)
 	int mag_index=ent->client->pers.weapon->mag_index;
 	int mod=guninfo->MeansOfDeath;
 	int	damage = guninfo->damage_direct;
+	int	spread = LMG_SPREAD;
+	qboolean	bloom;
 
 	if (ent->client->next_fire_frame > level.framenum)
 		return;
-	
+
 	if (!(ent->client->buttons & BUTTON_ATTACK))
 	{
 		ent->client->machinegun_shots = 0;
@@ -2839,12 +2841,12 @@ void Weapon_LMG_Fire (edict_t *ent)
 		return;
 	}
 	//ent->client->ps.gunframe++; ddaychile
-	
+
 	if(ent->client->aim)
 	{
 		if (ent->client->ps.gunframe == guninfo->LastAFire)
 			ent->client->ps.gunframe=guninfo->LastAFire-1;
-		else 
+		else
 			ent->client->ps.gunframe=guninfo->LastAFire;
 	}
 	else
@@ -2872,10 +2874,16 @@ void Weapon_LMG_Fire (edict_t *ent)
 
 	ent->client->ps.gunframe++;
 
+	// BAR and MP43: progressive vertical recoil and spread bloom while the trigger is held
+	bloom = (!ent->ai &&
+		(!Q_stricmp(ent->client->pers.weapon->classname, "weapon_BAR") ||
+		 !Q_stricmp(ent->client->pers.weapon->classname, "weapon_mp43")));
+
 	if (!ent->ai)
 		ent->client->machinegun_shots++;
 
-	if (ent->client->machinegun_shots > 9)
+	// bloom weapons keep climbing until the trigger is released (the magazine bounds it)
+	if (!bloom && ent->client->machinegun_shots > 9)
 		ent->client->machinegun_shots = 9;
 
 
@@ -2897,7 +2905,11 @@ void Weapon_LMG_Fire (edict_t *ent)
 	else
 		gi.dprintf("*** Firing System Error\n");
 
-	if (level.framenum % 3 == 0)
+	if (bloom)
+	{
+		ent->client->kick_angles[0] = ent->client->machinegun_shots * -LMG_BLOOM_KICK;
+	}
+	else if (level.framenum % 3 == 0)
 	{
 		if (ent->client->aim)
 			ent->client->kick_angles[0] -= .5;
@@ -2944,11 +2956,15 @@ void Weapon_LMG_Fire (edict_t *ent)
 	// get start / end positions
 	VectorAdd (ent->client->v_angle, ent->client->kick_angles, angles);
 	AngleVectors (angles, forward, right, NULL);
-	
+
 
 	P_ProjectSource (ent->client, ent->s.origin, offset, forward, right, start);
 
-	fire_gun(ent, start, forward, damage, kick, LMG_SPREAD, LMG_SPREAD, mod, false);
+	// the spread stops growing at the 9th shot, only the recoil keeps climbing
+	if (bloom)
+		spread = LMG_SPREAD + ((ent->client->machinegun_shots > 9 ? 9 : ent->client->machinegun_shots) - 1) * LMG_BLOOM_STEP;
+
+	fire_gun(ent, start, forward, damage, kick, spread, spread, mod, false);
 
 	
 

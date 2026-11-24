@@ -100,7 +100,7 @@ SMos_t USM_MOS_List[NUM_CLASSES]=
 		"Light Gunner",
 		"usmc_lmg",
 		"BAR",
-		5,
+		7,
 		NULL,
 		0,
 		"Mk 2 Grenade",
