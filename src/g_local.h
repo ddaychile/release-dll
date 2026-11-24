@@ -2078,8 +2078,10 @@ extern int jpn_index;
 // Medic healthpack: a pack the Medic throws, any teammate that touches it recovers health
 #define HEALTHPACK_HEAL			25		// health that a teammate recovers
 #define HEALTHPACK_DELAY		3		// seconds between two throws
-#define HEALTHPACK_LIFE			60		// seconds a pack stays on the ground
+#define HEALTHPACK_LIFE			180		// seconds a pack stays on the ground (also after its Medic dies)
+#define HEALTHPACK_MAX_PER_MEDIC	6		// packs of one Medic on the ground at once: a new one removes his oldest
 #define HEALTHPACK_FX_TIME		5		// seconds it throws green sparks after it is thrown, then it is just the crate
+#define HEALTHPACK_OWNER_DELAY	1		// seconds before the Medic who threw a pack can take it himself
 #define HEALTHPACK_EDICT_MARGIN	64		// free entities that must be left to throw a pack
 
 

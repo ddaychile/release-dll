@@ -1342,7 +1342,7 @@ void player_die (edict_t *self, edict_t *inflictor, edict_t *attacker, int damag
 	self->client->enviro_framenum = 0;
 
 	// the healthpacks he threw do not stay on the ground when the Medic dies
-	RemoveHealthpacks (self);
+	// his healthpacks stay on the ground (HEALTHPACK_LIFE); they are removed when he leaves
 
 	// clear inventory
 	memset(self->client->pers.inventory, 0, sizeof(self->client->pers.inventory));

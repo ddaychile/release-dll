@@ -2446,9 +2446,11 @@ void Weapon_Bandage(edict_t *ent)
 
 HEALTHPACK
 
-The Medic selects it (use special) and throws it with fire. A teammate that touches the pack
-recovers HEALTHPACK_HEAL health and is cured of bleeding and leg wounds, as with the syringe.
-Packs belong to the Medic that threw them and are removed when he dies or leaves (RemoveHealthpacks).
+The Medic selects it (use special) and throws it with fire. A teammate that touches the pack, or the Medic himself
+after HEALTHPACK_OWNER_DELAY seconds, recovers HEALTHPACK_HEAL health and is cured of bleeding and leg wounds, as
+with the syringe.
+Packs belong to the Medic that threw them: they stay HEALTHPACK_LIFE seconds, also after he dies, and are removed
+when he leaves (RemoveHealthpacks). He has at most HEALTHPACK_MAX_PER_MEDIC on the ground: a new one removes his oldest.
 
 ======================================================================
 */
@@ -2470,7 +2472,11 @@ static qboolean Healthpack_EdictsLeft (void)
 
 static void healthpack_touch (edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *surf)
 {
-	if (!other->client || other == ent->owner)
+	if (!other->client)
+		return;
+
+	// the Medic can take his own packs too, but not as they leave his hand
+	if (other == ent->owner && level.time < ent->timestamp + HEALTHPACK_OWNER_DELAY)
 		return;
 
 	if (other->health < 1 || other->deadflag || other->flyingnun)
@@ -2501,7 +2507,7 @@ static void healthpack_touch (edict_t *ent, edict_t *other, cplane_t *plane, csu
 		other->ai->med_heal_time = level.time;
 
 	safe_cprintf (other, PRINT_HIGH, "You recovered health with a healthpack.\n");
-	if (ent->owner && ent->owner->inuse && ent->owner->client)
+	if (ent->owner && ent->owner->inuse && ent->owner->client && ent->owner != other)
 		safe_cprintf (ent->owner, PRINT_HIGH, "%s recovered health with your healthpack.\n", other->client->pers.netname);
 	gi.sound (other, CHAN_ITEM, gi.soundindex ("items/pkup.wav"), 1, ATTN_NORM, 0);
 
@@ -2555,6 +2561,24 @@ static qboolean Healthpack_Throw (edict_t *ent)
 	{
 		safe_cprintf (ent, PRINT_HIGH, "You cannot throw a healthpack now.\n");
 		return false;
+	}
+
+	// his packs stay after he dies: at most HEALTHPACK_MAX_PER_MEDIC on the ground, the oldest goes
+	{
+		edict_t	*e, *oldest = NULL;
+		int		i, n = 0;
+
+		for (i = game.maxclients + 1; i < globals.num_edicts; i++)
+		{
+			e = &g_edicts[i];
+			if (!e->inuse || e->classnameb != HEALTHPACK || e->owner != ent)
+				continue;
+			n++;
+			if (!oldest || e->timestamp < oldest->timestamp)
+				oldest = e;
+		}
+		if (n >= HEALTHPACK_MAX_PER_MEDIC && oldest)
+			G_FreeEdict (oldest);
 	}
 
 	AngleVectors (ent->client->v_angle, forward, right, NULL);
