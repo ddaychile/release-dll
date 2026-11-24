@@ -775,7 +775,7 @@ void BOT_DMclass_ChooseWeapon(edict_t *self)
 	if (dist < 500 && self->client->pers.weapon && self->client->pers.weapon->position == LOC_SNIPER &&
 		!self->client->newweapon)
 	{
-		if(self->client->sniper_loaded[self->client->resp.team_on->index] == false)
+		if(self->client->sniper_loaded[self->client->pers.weapon->mag_index] == false)
 		{
 			it = FindNextPickup(self, LOC_PISTOL);
 			index = ITEM_INDEX(it);

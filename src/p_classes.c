@@ -97,8 +97,12 @@ void Load_Weapon (edict_t *ent, gitem_t	*item)
 			ent->client->mags[0].submg2_rnd = ammo_item->quantity;
 	}
 
-	else if (!strcmp(item->ammo, "flame_mag"))
+		else if (!strcmp(item->ammo, "flame_mag"))
 		ent->client->flame_rnd = ammo_item->quantity;
+
+		// El sniper se entrega listo para disparar (cerrojo cerrado) al spawnear o recogerlo por primera vez
+		if (item->position == LOC_SNIPER)
+			ent->client->sniper_loaded[item->mag_index] = true;
 }
 
 

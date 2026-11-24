@@ -308,7 +308,7 @@ void P_ExplosionEffects (edict_t *player)
 	if (player->client->dmgef_intensity < 0) // negative numbers are
 		player->client->dmgef_intensity = 50;
 
-	intensity = (int)(player->client->dmgef_intensity / 10);
+	intensity = (int)(player->client->dmgef_intensity / 15); // faf: bajado de /10 a /15 para suavizar el remezon
 	//gi.dprintf("P_ExplosionEffects::intensity: %i\n",intensity);
 
 	if (frame <= (SWAY_BREAK * SWAY_MULTI) + SWAY_START) { // start/finish view kicks & color blend

@@ -256,6 +256,35 @@ qboolean Pickup_Weapon (edict_t *ent, edict_t *other)
 				ent->flags |= FL_RESPAWN;
 		}
 	}
+	else
+	{
+		// faf: fix - restaurar municion/cerrojo del arma TIRADA especifica que se toco,
+		// en vez de depender de guninfo (global, compartido, causaba recargas fantasma
+		// en jugadores random que tuvieran la misma arma en otra parte del mapa)
+		if (other->client)
+		{
+			int mi = item->mag_index;
+
+			switch (item->position)
+			{
+				case LOC_PISTOL:         other->client->mags[mi].pistol_rnd  = ent->count; break;
+				case LOC_RIFLE:          other->client->mags[mi].rifle_rnd   = ent->count; break;
+				case LOC_SNIPER:         other->client->mags[mi].sniper_rnd  = ent->count;
+				                         other->client->sniper_loaded[mi]   = ent->health ? true : false;
+				                         break;
+				case LOC_SUBMACHINEGUN:  other->client->mags[mi].submg_rnd   = ent->count; break;
+				case LOC_SUBMACHINEGUN2: other->client->mags[mi].submg2_rnd  = ent->count; break;
+				case LOC_L_MACHINEGUN:   other->client->mags[mi].lmg_rnd     = ent->count; break;
+				case LOC_H_MACHINEGUN:   other->client->mags[mi].hmg_rnd     = ent->count; break;
+				case LOC_ROCKET:         other->client->mags[mi].antitank_rnd= ent->count; break;
+				case LOC_SHOTGUN:        other->client->mags[mi].shotgun_rnd = ent->count; break;
+				default:
+					if (item->ammo && !strcmp(item->ammo, "flame_mag"))
+						other->client->flame_rnd = ent->count;
+					break;
+			}
+		}
+	}
 
 /*  BROKEN: Pick up flamethrower bug..
 	Using guninfo in this function crashes Quake2...
@@ -846,10 +875,18 @@ void Drop_Weapon (edict_t *ent, gitem_t *item)
 		ent->client->flame_rnd = 0;
 	}
 
-	if (item->guninfo)
-		item->guninfo->rnd_count = item_rounds;
-
-	Drop_Item (ent, item);
+	// faf: fix - ya NO se guarda en guninfo (global, compartido por todos los
+	// jugadores que usan este tipo de arma). Se guarda en el edict tirado
+	// especifico, y se restaura directo al recogerlo en Pickup_Weapon.
+	{
+		edict_t *dropped = Drop_Item (ent, item);
+		if (dropped)
+		{
+			dropped->count = item_rounds;
+			// reusamos "health" (sin uso en un arma tirada) para el estado del cerrojo del sniper
+			dropped->health = (item->position == LOC_SNIPER) ? ent->client->sniper_loaded[item->mag_index] : 0;
+		}
+	}
 
 	ent->client->pers.inventory[index] = 0;
 }

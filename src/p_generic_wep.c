@@ -156,8 +156,8 @@ void Weapon_Generic (edict_t *ent,
 
 		ent->client->ps.fov=STANDARD_FOV; // reset sniper
 
-		if (ent->client->pers.weapon->position == LOC_SNIPER)
-			ent->client->sniper_loaded[ent->client->resp.team_on->index] = true;
+		// faf: el bolt/recarga se confirma solo al TERMINAR la animacion (ver bloque FRAME_RELOAD_LAST mas abajo).
+		// Si se cancela (cambio de arma) antes de terminar, sniper_loaded no debe quedar en true.
 
 
 /*
@@ -276,6 +276,9 @@ void Weapon_Generic (edict_t *ent,
 			ent->client->ps.gunframe = FRAME_IDLE_FIRST;
             ent->client->weaponstate = WEAPON_READY;
 
+			// faf: la animacion de bolt/recarga terminó de verdad -> ahora si queda cargado
+			if (ent->client->pers.weapon->position == LOC_SNIPER)
+				ent->client->sniper_loaded[ent->client->pers.weapon->mag_index] = true;
 
 			if (ent->client->pers.weapon->topoff==1)
 			{
@@ -332,7 +335,7 @@ void Weapon_Generic (edict_t *ent,
 		ent->client->ps.fov = STANDARD_FOV;
 
 		if (ent->client->pers.weapon->position == LOC_SNIPER)
-			ent->client->sniper_loaded[ent->client->resp.team_on->index] = false;
+			ent->client->sniper_loaded[ent->client->pers.weapon->mag_index] = false;
 
 		// pbowens: there is no LastRound animation, skip
 		if (FRAME_LASTRD_LAST == FRAME_RELOAD_LAST)
@@ -409,13 +412,13 @@ void Weapon_Generic (edict_t *ent,
 //			ent->client->sniper_loaded[ent->client->resp.team_on->index] = true;
 
 		// Nerfeo recarga automatica doble pipa
-		if (ent->client->pers.weapon->position == LOC_SNIPER)
-		{
-			if (ent->client->p_rnd && *ent->client->p_rnd == ammo_item->quantity) //if fully loaded, assume it's bolted
-				ent->client->sniper_loaded[ent->client->resp.team_on->index] = true;
-		}
+		//if (ent->client->pers.weapon->position == LOC_SNIPER)
+		//{
+		//	if (ent->client->p_rnd && *ent->client->p_rnd == ammo_item->quantity) //if fully loaded, assume it's bolted
+		//		ent->client->sniper_loaded[ent->client->resp.team_on->index] = true;
+	//	}
 
-		ent->client->sniper_loaded[ent->client->resp.team_on->index] = true; // carga de bala en el arma sola (Esta linea fea no existe en el codigo original - ZeRo)
+		//ent->client->sniper_loaded[ent->client->resp.team_on->index] = true; // carga de bala en el arma sola (Esta linea fea no existe en el codigo original - ZeRo)
 
 		if (ent->client->ps.gunframe == FRAME_ACTIVATE_LAST)
 		{
@@ -423,7 +426,7 @@ void Weapon_Generic (edict_t *ent,
 			{
 				if((ent->client->p_fract)&&(*ent->client->p_fract));
 				else
-				{ //load the weapon initially.
+								{ //load the weapon initially.
 					ammo_item = FindItemInTeam(ent->client->pers.weapon->ammo, ent->client->pers.weapon->dllname);
 
 					// Next two lines commented to fix reload bug.
@@ -431,10 +434,17 @@ void Weapon_Generic (edict_t *ent,
 					if (ent->client->pers.weapon->guninfo) {
 						*ent->client->p_rnd = ent->client->pers.weapon->guninfo->rnd_count;
 						ent->client->pers.weapon->guninfo->rnd_count = 0; // make null after use
+
+						// Reclamamos el estado del cerrojo guardado al dropear
+						if (ent->client->pers.weapon->position == LOC_SNIPER)
+						{
+							ent->client->sniper_loaded[ent->client->pers.weapon->mag_index] = ent->client->pers.weapon->guninfo->chamber_loaded;
+							ent->client->pers.weapon->guninfo->chamber_loaded = false;
+						}
 					}
 
 					//ent->client->pers.inventory[ITEM_INDEX(ammo_item)]--;
-				}  
+				}
 			}
 			
 			ent->client->weaponstate = WEAPON_READY;
@@ -541,7 +551,7 @@ no_fire:
 
 			if (ent->client->pers.weapon->position == LOC_SNIPER &&
 				ent->client->aim && 
-				ent->client->sniper_loaded[ent->client->resp.team_on->index] &&
+				ent->client->sniper_loaded[ent->client->pers.weapon->mag_index] &&
 				ent->client->weaponstate_last != WEAPON_END_MAG)
 			{
 				GunInfo_t *guninfo=ent->client->pers.weapon->guninfo;
@@ -723,7 +733,7 @@ skip_anim:
 
 
 		if (ent->client->pers.weapon->position == LOC_SNIPER &&
-			!ent->client->sniper_loaded[ent->client->resp.team_on->index])
+			!ent->client->sniper_loaded[ent->client->pers.weapon->mag_index])
 		{
 			GunInfo_t *guninfo=ent->client->pers.weapon->guninfo;
 
@@ -781,7 +791,7 @@ skip_anim:
 				{
 					ent->client->ps.gunframe = guninfo->FO[0];
 					ent->client->weaponstate = WEAPON_READY;
-					ent->client->sniper_loaded[ent->client->resp.team_on->index] = true;
+					ent->client->sniper_loaded[ent->client->pers.weapon->mag_index] = true;
 				}
 			}
 

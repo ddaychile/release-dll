@@ -3695,7 +3695,7 @@ void Weapon_Sniper_Fire (edict_t *ent)
 
 
 	if (!ent->client->mags[mag_index].sniper_rnd ||
-		ent->client->sniper_loaded[ent->client->resp.team_on->index] == false)
+		ent->client->sniper_loaded[mag_index] == false)
 	{
 		if ((ent->client->ps.gunframe != guninfo->AFO[2]) &&
 			(ent->client->buttons & BUTTON_ATTACK) )
@@ -3774,7 +3774,7 @@ void Weapon_Sniper_Fire (edict_t *ent)
 		else
 			fire_gun(ent, start, forward, damage, kick, 50, 50, mod, false);
 
-	ent->client->sniper_loaded[ent->client->resp.team_on->index] = false;
+	ent->client->sniper_loaded[mag_index] = false; // faf: fix - antes escribia en team_on->index, no en el indice del arma
 	// rezmoth - cosmetic recoil
 //faf	ent->client->kick_angles[0] -= 3;
 

@@ -1737,7 +1737,7 @@ void AI_Think (edict_t *self)
 
 //bolt sniper whenever needed
 if (!self->client->newweapon && self->client->resp.team_on && self->client->pers.weapon && self->client->pers.weapon->position == LOC_SNIPER &&
-	self->client->sniper_loaded[self->client->resp.team_on->index] == false)
+	self->client->sniper_loaded[self->client->pers.weapon->mag_index] == false)
 {
 	Cmd_Scope_f(self);
 }

@@ -311,9 +311,11 @@ typedef struct
 	int		sniper_bolt_frame;	
 
 	// OTHER
-	int	  rnd_count;					//Hack to get the right # of rounds in the clip currently loaded (for dropping/picking up the weapon)
+		int	  rnd_count;					//Hack to get the right # of rounds in the clip currently loaded (for dropping/picking up the weapon)
+		qboolean chamber_loaded;			//Hack igual que rnd_count, pero para saber si el cerrojo estaba cargado al soltar el arma
 
 } GunInfo_t;
+
 
 
 typedef struct gitem_s
