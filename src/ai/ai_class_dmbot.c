@@ -365,7 +365,7 @@ void BOT_DMclass_CombatMovement( edict_t *self, usercmd_t *ucmd )
 
 	if (self->client->pers.weapon && self->client->pers.weapon->position != LOC_KNIFE &&
 		self->client->pers.weapon->position != LOC_FLAME &&
-		self->enemy && self->client->resp.mos != H_GUNNER)
+		self->enemy && AI_BotMos (self) != H_GUNNER)
 	{
 		VectorSubtract( self->s.origin, self->enemy->s.origin, attackvector);
 		dist = VectorLength( attackvector);
@@ -600,7 +600,7 @@ qboolean BOT_DMclass_FindEnemy(edict_t *self)
 		if (AIEnemies[i]->solid == SOLID_TRIGGER)
 			continue;
 
-		if (self->client->resp.mos == H_GUNNER && !hmgvisible(self, AIEnemies[i]))
+		if (AI_BotMos (self) == H_GUNNER && !hmgvisible(self, AIEnemies[i]))
 		{
 			if (visible(self, AIEnemies[i]))
 			{
@@ -1053,13 +1053,13 @@ void BOT_CheckFireWeapon (edict_t *self, usercmd_t *ucmd)
 	
 
 
-	if ((self->client->resp.mos == H_GUNNER || self->client->resp.mos == ENGINEER) && self->ai->state != BOT_STATE_CAMP && self->stanceflags == STANCE_STAND)
+	if ((AI_BotMos (self) == H_GUNNER || AI_BotMos (self) == ENGINEER) && self->ai->state != BOT_STATE_CAMP && self->stanceflags == STANCE_STAND)
 	{
 		if (self->enemy)
 		{
 			if (self->enemy->client)
 			{
-				if (self->client->resp.mos == H_GUNNER && pronevisible(self, self->enemy))
+				if (AI_BotMos (self) == H_GUNNER && pronevisible(self, self->enemy))
 				{
 					if (self->oldstance == self->stanceflags)
 						change_stance(self, STANCE_CRAWL);
@@ -1845,8 +1845,15 @@ void BOT_DMclass_RunFrame( edict_t *self )
 	}
 	//ucmd.forwardmove = ucmd.forwardmove/2 ;
 
-
-	
+	// Gun Game del FFA: el PIAT no dispara si el que lo lleva se mueve, asi que con un enemigo y ya agachado y
+	// apuntando el bot se queda quieto (fuera del Gun Game los bots no lo usan: no se cambia su forma de jugar)
+	if (G_IsFFA() && ffa_gg_on && self->enemy && self->client->aim && self->stanceflags != STANCE_STAND &&
+		self->client->pers.weapon && self->client->pers.weapon->classnameb == WEAPON_PIAT)
+	{
+		ucmd.forwardmove = 0;
+		ucmd.sidemove = 0;
+		ucmd.upmove = 0;
+	}
 
 	//set up for pmove
 	ucmd.angles[PITCH] = ANGLE2SHORT(self->s.angles[PITCH]);

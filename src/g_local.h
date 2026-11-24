@@ -478,6 +478,7 @@ typedef struct
 	int 		allied_sandbags;
 	int 		axis_sandbags;
 
+	qboolean	nofalldamage;	// "nofalldamage" "1" en el worldspawn: en este mapa la caida no hace dano
 } level_locals_t;
 
 
@@ -493,6 +494,7 @@ typedef struct
 	float		skyrotate;
 	vec3_t		skyaxis;
 	char		*nextmap;
+	int			nofalldamage;	// worldspawn: sin dano de caida en el mapa
 
 
 	int			lip;
@@ -695,6 +697,7 @@ extern	int		ffa_pistol;			// Free For All: the weapon of the match is the pistol
 #define FFA_PISTOL_MAGS		6		// Free For All: pistol magazines in a pistol match (the class gives 2 or 3 in team games)
 extern	char	*ffa_weapon_name;	// Free For All: pickup name of that weapon
 void FFA_RouletteInit (void);		// g_spawn.c
+extern	cvar_t	*ffa_roulette;		// Free For All: 1 = un arma sorteada por mapa (con ruleta); 0 = todos Sniper (clasico, por defecto)
 extern	cvar_t	*ffa_gungame;		// Free For All Gun Game: every kill gives the killer the next weapon of a ladder (0 disabled, 1 enabled)
 extern	cvar_t	*ffa_gg_steps;		// Free For All Gun Game: weapons of the ladder before the knife (default 29: 30 steps with the knife; 0 = all the weapons)
 extern	cvar_t	*ffa_gg_factions;	// Free For All Gun Game: weapons of the ladder from all the factions (1, default) or only from the two of the map (0)
@@ -709,11 +712,12 @@ extern	edict_t	*ffa_gg_winner;		// Free For All Gun Game: the player who killed 
 void FFA_GunGameGive (edict_t *ent);	// p_classes.c: gives the weapon of the step of the player
 gitem_t *FFA_GunGameWeapon (edict_t *ent);	// p_classes.c: weapon of the step of the player
 void FFA_GunGameThink (edict_t *ent);	// p_classes.c: gives the weapon of a new step, once per frame and outside the weapon code
-void FFA_GunGameKill (edict_t *killer, int mod);	// p_classes.c: a kill of the player, promotes or wins
+void FFA_GunGameKill (edict_t *killer, edict_t *victim, int mod);	// p_classes.c: a kill of the player, promotes or wins
 void FFA_GunGameDeath (edict_t *victim, qboolean suicide, int mod);	// p_classes.c: a death of the player, may demote
 extern	cvar_t	*ffa_gg_snd_up;		// Free For All Gun Game: sound (path in the sound folder) of the player who goes up a step
 extern	cvar_t	*ffa_gg_snd_down;	// Free For All Gun Game: sound of the player who goes down a step
 extern	cvar_t	*ffa_gg_victory_vol;	// Free For All Gun Game: volume (0 to 1, default 0.5) of the victory anthem of the end of the match
+extern	cvar_t	*ffa_gg_leader_level;	// Free For All Gun Game: from this step on the leader(s) get a gold aura + light (0 = off)
 void FFA_RouletteSetup (int count, int *images, int winner, char *name);	// p_hud.c
 #define FFA_DEFAULT_FRAGLIMIT	30	// Free For All frags to win when the server fraglimit is 0
 #define FFA_LEVEL_WAIT			10	// Free For All seconds of lobby at the start of the level
@@ -968,6 +972,13 @@ void Think_Arty (edict_t *ent);
 
 qboolean OnSameTeam(edict_t *self,edict_t *target);
 qboolean G_IsFFA(void);
+// Free For All scoreboard pictures. The leading '/' makes them full paths: the client downloads the .png
+// itself (a plain name like "ffa_score" makes it ask for pics/ffa_score.pcx, which does not exist)
+#define FFA_PIC_SCORE	"/pics/ffa_score.png"
+#define FFA_PIC_WINNER	"/pics/ffa_winner.png"
+#define FFA_PIC_GG		"/pics/ffa_gungame.png"		// Gun Game: banner of the lobby
+#define FFA_PIC_GG_WIN	"/pics/ffa_gungame_win.png"	// Gun Game: banner of the winner
+#define FFA_PIC_ROLL	"/pics/ffa_%s.png"			// weapon roulette: banner of each weapon (icon of the weapon)
 void FFA_JoinPlayer(edict_t *ent);
 void FFA_HudReset(void);
 void FFA_SpawnReset(void);
@@ -1680,6 +1691,7 @@ struct gclient_s
 	float		jump_pause_time;
 
 	edict_t     *last_wound_inflictor;
+	int			last_wound_ffa_level;	// Gun Game: step of last_wound_inflictor when he hurt him (a bleed-out wins only from the last step)
 
 	int			sidestep_anim;
 	int			last_sidestep_anim;
@@ -2328,5 +2340,13 @@ void SP_objective_flag (edict_t *self);
 void briefcase_warn (edict_t *ent);//faf;  ctb code
 qboolean Pickup_Briefcase (edict_t *ent, edict_t *other); 
 void Drop_Briefcase (edict_t *ent, gitem_t *item);
+// g_svcmds.c: cachetada anti-campeo del Gun Game
+extern	cvar_t	*ffa_anticamp;		// 1 (default) = quien se queda quieto ffa_camp_secs en el Gun Game recibe cachetadas (0 = off)
+extern	cvar_t	*ffa_camp_secs;
+extern	cvar_t	*ffa_camp_dist;
+extern	cvar_t	*slap_push;			// fuerza del empujon de la cachetada
+extern	cvar_t	*slap_damage;		// dano de la cachetada (0 = ninguno)
+void Svcmd_Slap_f (void);
+void Anticamp_RunFrame (void);
 
 #endif /* __G_LOCAL_H__ */

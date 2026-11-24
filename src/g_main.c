@@ -47,6 +47,7 @@ cvar_t	*deathmatch;
 cvar_t	*coop;
 cvar_t	*ctb_mode; // kernel: selects mode for CTB (0 disabled, 1 one briefcase, 2 many briefcases)
 cvar_t	*ffa; // Free For All mode (0 disabled, 1 enabled): teamless, every player is an enemy
+cvar_t	*ffa_roulette;
 cvar_t	*ffa_gungame;
 cvar_t	*ffa_gg_steps;
 cvar_t	*ffa_gg_deaths;
@@ -54,6 +55,12 @@ cvar_t	*ffa_gg_factions;
 cvar_t	*ffa_gg_snd_up;
 cvar_t	*ffa_gg_snd_down;
 cvar_t	*ffa_gg_victory_vol;
+cvar_t	*ffa_gg_leader_level;
+cvar_t	*ffa_anticamp;
+cvar_t	*ffa_camp_secs;
+cvar_t	*ffa_camp_dist;
+cvar_t	*slap_push;
+cvar_t	*slap_damage;
 cvar_t	*dmflags;
 cvar_t	*skill;
 cvar_t	*fraglimit;
@@ -1035,7 +1042,7 @@ static void FFA_AnnounceWinner (void)
 	qboolean	tie;
 	edict_t		*top = FFA_TopPlayer(&tie);
 
-	// Gun Game: the one who killed with the knife on the last step wins
+	// Gun Game: the one who killed on the last step wins
 	if (ffa_gg_on && ffa_gg_winner)
 	{
 		safe_bprintf (PRINT_HIGH, "%s wins the Gun Game!\n", ffa_gg_winner->client->pers.netname);
@@ -1681,6 +1688,7 @@ void G_RunFrame (void)
 		return;
 	}
 
+	Anticamp_RunFrame ();
 	if ((level.framenum%40 == 1 && qbots && bots->value == 0) ||
 		(bots->value == 1 && 
 		//num_clients >= playermaxforbots->value

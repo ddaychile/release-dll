@@ -212,7 +212,7 @@ void Killed (edict_t *targ, edict_t *inflictor, edict_t *attacker, int damage, v
 				if (meansOfDeath != MOD_CHANGETEAM && meansOfDeath != MOD_CHANGETEAM_WOUNDED && meansOfDeath != MOD_PENALTY)
 					FFA_GunGameDeath (targ, !killer, meansOfDeath);
 				if (killer)
-					FFA_GunGameKill (killer, meansOfDeath);
+					FFA_GunGameKill (killer, targ, meansOfDeath);
 			}
 		}
 
@@ -852,7 +852,10 @@ void T_Damage (edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir,
 		targ->client && attacker->client &&
 		targ != attacker &&
 		mod != MOD_EXPLOSIVE)
+	{
 		targ->client->last_wound_inflictor = attacker;
+		targ->client->last_wound_ffa_level = attacker->client->resp.ffa_level;
+	}
 
 
 	//hacky

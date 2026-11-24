@@ -1628,7 +1628,7 @@ void AI_Think (edict_t *self)
 	if ((self->client->resp.AlreadySpawned &&
 		!level.intermissiontime &&
 		(self->ai->state != BOT_STATE_CAMP &&
-		!(self->client->resp.mos == H_GUNNER &&	self->stanceflags != STANCE_STAND))) ||
+		!(AI_BotMos (self) == H_GUNNER &&	self->stanceflags != STANCE_STAND))) ||
 		(self->client->respawn_time < level.time - 60 &&
 		self->client->last_fire_time < level.time - 60 &&
 		self->ai->actual_camp_start < level.time - 60)
@@ -1837,7 +1837,7 @@ if (!self->enemy && self->ai->last_enemy_time < level.time -5 && self->ai->last_
 			if (self->client->aim && self->ai->state != BOT_STATE_CAMP &&    // && self->ai->aimtime < level.time - 4 && self->client->last_fire_time < level.time - 4)
 				 !self->enemy && self->ai->last_enemy_time < level.time - 2)
 			{
-				if ((self->client->resp.mos == H_GUNNER || self->client->resp.mos == ENGINEER) && self->ai->state != BOT_STATE_CAMP && self->stanceflags != STANCE_STAND)
+				if ((AI_BotMos (self) == H_GUNNER || AI_BotMos (self) == ENGINEER) && self->ai->state != BOT_STATE_CAMP && self->stanceflags != STANCE_STAND)
 				{
 					if (self->oldstance == self->stanceflags)
 						change_stance(self, STANCE_STAND);
@@ -1921,3 +1921,22 @@ qboolean toright (edict_t *self, vec3_t point)
 	return false;
 }
 
+
+// Clase que guia a la IA para agacharse, apuntar y elegir enemigos: la del bot o, en el Gun Game del FFA (todos son
+// Infantry), la que corresponde al arma que tiene en la mano. Las ametralladoras pesadas y los cohetes no disparan de
+// pie (el PIAT ademas pide estar quieto), y la IA solo se agacha con ellas si es H_GUNNER o ENGINEER.
+int AI_BotMos (edict_t *self)
+{
+	if (!self->client)
+		return NONE;
+
+	if (G_IsFFA() && ffa_gg_on && self->client->pers.weapon)
+	{
+		if (self->client->pers.weapon->position == LOC_H_MACHINEGUN)
+			return H_GUNNER;
+		if (self->client->pers.weapon->position == LOC_ROCKET)
+			return ENGINEER;
+	}
+
+	return self->client->resp.mos;
+}

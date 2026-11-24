@@ -127,6 +127,7 @@ field_t fields[] = {
 	{"lip", STOFS(lip), F_INT, FFL_SPAWNTEMP},
 	{"distance", STOFS(distance), F_INT, FFL_SPAWNTEMP},
 	{"height", STOFS(height), F_INT, FFL_SPAWNTEMP},
+	{"nofalldamage", STOFS(nofalldamage), F_INT, FFL_SPAWNTEMP},
 	{"noise", STOFS(noise), F_LSTRING, FFL_SPAWNTEMP},
 	{"pausetime", STOFS(pausetime), F_FLOAT, FFL_SPAWNTEMP},
 	{"item", STOFS(item), F_LSTRING, FFL_SPAWNTEMP},
@@ -417,6 +418,7 @@ void InitGame (void)
 	// kernel: modes for CTB: (0 disabled, 1 one briefcase, 2 many briefcases)
 	ctb_mode = gi.cvar("ctb_mode", "0", CVAR_LATCH);
 	ffa = gi.cvar("ffa", "0", CVAR_SERVERINFO|CVAR_LATCH);
+	ffa_roulette = gi.cvar("ffa_roulette", "0", CVAR_LATCH);
 	ffa_gungame = gi.cvar("ffa_gungame", "0", CVAR_LATCH);
 	ffa_gg_steps = gi.cvar("ffa_gg_steps", "29", 0);
 	ffa_gg_deaths = gi.cvar("ffa_gg_deaths", "0", 0);
@@ -424,6 +426,12 @@ void InitGame (void)
 	ffa_gg_snd_up = gi.cvar("ffa_gg_snd_up", "ffa/gg_up2.wav", 0);
 	ffa_gg_snd_down = gi.cvar("ffa_gg_snd_down", "misc/menu3.wav", 0);
 	ffa_gg_victory_vol = gi.cvar("ffa_gg_victory_vol", "0.5", 0);
+	ffa_gg_leader_level = gi.cvar("ffa_gg_leader_level", "0", 0);
+	ffa_anticamp = gi.cvar("ffa_anticamp", "1", 0);
+	ffa_camp_secs = gi.cvar("ffa_camp_secs", "6", 0);
+	ffa_camp_dist = gi.cvar("ffa_camp_dist", "150", 0);
+	slap_push = gi.cvar("slap_push", "320", 0);
+	slap_damage = gi.cvar("slap_damage", "0", 0);
 
 	// kernel: time to display the MOTD at beginning of level
 	motd_time = gi.cvar("motd_time", "10", 0);

@@ -1,6 +1,6 @@
 # Imágenes para Free For All
 
-Estas imágenes las dibuja el **cliente** en el scoreboard de Free For All. Hay que copiarlas a la carpeta `pics/` del juego del servidor y de los jugadores (`<carpeta del juego>/dday/pics/`), o incluirlas en el pak de distribución. Si el servidor tiene `allow_download_pics` activado, el cliente puede pedirlas al conectarse (el servidor las precarga con `gi.imageindex`; la descarga automática de PNG hay que verificarla en cada motor).
+Estas imágenes las dibuja el **cliente** en el scoreboard de Free For All. Hay que copiarlas a la carpeta `pics/` del juego del servidor y de los jugadores (`<carpeta del juego>/dday/pics/`), o incluirlas en el pak de distribución. Con `allow_download_pics 1` en el servidor, el jugador que no las tiene las baja solo al conectarse: el servidor las precarga con ruta completa (`/pics/ffa_score.png`, constantes `FFA_PIC_*` en `src/g_local.h`), y así Q2PRO pide el `.png`. Con un nombre corto como `ffa_score` el cliente pediría `pics/ffa_score.pcx`, que no existe, y no bajaría nada.
 
 Si falta alguna, el juego funciona igual: el texto se dibuja sin fondo.
 

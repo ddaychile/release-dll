@@ -400,19 +400,37 @@ gitem_t *FFA_GunGameWeapon (edict_t *ent)
 	return ffa_ladder[step];
 }
 
-// Free For All Gun Game: the player killed somebody. He goes up one step; a kill with the knife on the last step wins.
-void FFA_GunGameKill (edict_t *killer, int mod)
+// Free For All Gun Game: the player killed somebody. He goes up one step; any kill on the last step wins (the
+// knife, the fists, the thrown helmet...), but not one with a weapon of an earlier step: a grenade thrown before
+// he went up, or the bleed-out of a wound he made before getting to the last step.
+void FFA_GunGameKill (edict_t *killer, edict_t *victim, int mod)
 {
 	gclient_t	*client = killer->client;
+	int			last = ffa_ladder_len - 1;
 
 	if (!ffa_gg_on || ffa_gg_winner)
 		return;
 
-	if (client->resp.ffa_level >= ffa_ladder_len - 1)
+	if (client->resp.ffa_level >= last)
 	{
-		// the knife (in the hand or thrown) and the fists; a bleed-out does not count
-		if ((mod & ~MOD_FRIENDLY_FIRE) == MOD_KNIFE || (mod & ~MOD_FRIENDLY_FIRE) == MOD_FISTS)
+		switch (mod & ~MOD_FRIENDLY_FIRE)
+		{
+		case MOD_WOUND:
+			// the wound must have been made on the last step
+			if (victim->client && victim->client->last_wound_inflictor == killer &&
+				victim->client->last_wound_ffa_level >= last)
+				ffa_gg_winner = killer;
+			break;
+		case MOD_PISTOL: case MOD_SHOTGUN: case MOD_RIFLE: case MOD_LMG: case MOD_HMG: case MOD_GRENADE:
+		case MOD_G_SPLASH: case MOD_ROCKET: case MOD_R_SPLASH: case MOD_SUBMG: case MOD_SNIPER:
+		case MOD_HANDGRENADE: case MOD_HG_SPLASH: case MOD_HELD_GRENADE: case MOD_BACKBLAST: case MOD_TNT:
+		case MOD_TNT1: case MOD_HELD_TNT: case MOD_TNT_SPLASH: case MOD_TNT1_SPLASH: case MOD_BAYONET:
+			// weapons of the earlier steps (a grenade or a rocket still in the air when he went up)
+			break;
+		default:
 			ffa_gg_winner = killer;
+			break;
+		}
 		return;
 	}
 
@@ -455,6 +473,12 @@ void FFA_GunGameThink (edict_t *ent)
 
 	if (!ffa_gg_on || ent->health <= 0 || ent->deadflag)
 		return;
+
+	// the kill cures him of the bleeding and the limp (not the health), as a healthpack does
+	ent->wound_location = 0;
+	ent->die_time = 0;
+	client->bleedwarn = false;
+	WeighPlayer (ent);
 
 	turret_off (ent);
 	FFA_GunGameGive (ent);
