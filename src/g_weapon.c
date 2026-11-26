@@ -2960,9 +2960,14 @@ void Weapon_LMG_Fire (edict_t *ent)
 
 	P_ProjectSource (ent->client, ent->s.origin, offset, forward, right, start);
 
-	// the spread stops growing at the 9th shot, only the recoil keeps climbing
-	if (bloom)
-		spread = LMG_SPREAD + ((ent->client->machinegun_shots > 9 ? 9 : ent->client->machinegun_shots) - 1) * LMG_BLOOM_STEP;
+	// no bloom for the first shots, then the spread grows up to LMG_BLOOM_MAX;
+	// only the recoil keeps climbing after that
+	if (bloom && ent->client->machinegun_shots > LMG_BLOOM_START)
+	{
+		spread = LMG_SPREAD + (ent->client->machinegun_shots - LMG_BLOOM_START) * LMG_BLOOM_STEP;
+		if (spread > LMG_BLOOM_MAX)
+			spread = LMG_BLOOM_MAX;
+	}
 
 	fire_gun(ent, start, forward, damage, kick, spread, spread, mod, false);
 
